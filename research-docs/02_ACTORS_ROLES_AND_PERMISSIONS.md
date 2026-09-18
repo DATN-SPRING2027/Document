@@ -1,345 +1,94 @@
-# CONTINUUM AI ACTORS ROLES AND PERMISSIONS
+# CONTINUUM AI — Actors, roles and permissions
 
 ## Document status
 
-- Status: Accepted MVP baseline
+- Status: Accepted MVP authorization baseline
 - Date: 2026-09-18
-- Scope: Knowledge continuity and handover for one software project with multiple teams
-- Purpose: Define actors, persistent roles, temporary assignments, lifecycle states, authorization scopes, and the MVP permission matrix.
+- Scope: One software project with multiple teams; organizational identity/capability layer only where needed to create a project
 
-## 1. Authorization principle
+## 1. Decision
 
-Continuum AI does not determine access from a single role name. An authorization decision is calculated from:
+The three persistent **human roles** are `ADMIN`, `TEAM_LEADER` and `MEMBER`. `SME` (Subject Matter Expert), `KNOWLEDGE_OWNER` and `SUCCESSOR` are scoped, time-bounded **assignments**, not roles. `ONBOARDING` and `OFFBOARDING` are membership states, not roles. `PROJECT_MANAGER`, `PROJECT_ADMIN` and `TEAM_MEMBER` are superseded names and must not be used as new role codes.
 
-```text
-Effective permission
-= persistent project role
-+ project and team membership scope
-+ explicit knowledge or handover assignment
-+ source and resource ACL
-+ membership lifecycle state
-- explicit deny
-```
+An `ADMIN` grants the organization-level capability `project.create` separately to a `TEAM_LEADER`. Team leadership alone **never** implies this capability. The grant is explicit, revocable, time-bounded if appropriate, and audited. A leader cannot self-grant it or pass it to another person. An authorized leader may create a project, but that action does not make them an `ADMIN` or give access to other projects.
 
-Rules:
-
-1. A user can hold more than one role in the same project.
-2. Every role assignment has a scope such as project, team, module, process, or knowledge resource.
-3. Explicit deny overrides inherited allow.
-4. Source and document ACLs are inherited by extracted knowledge unless an authorized owner applies a stricter policy.
-5. Authorization is enforced before retrieval. Restricted evidence must never enter the LLM context.
-6. Frontend route guards improve user experience but never replace backend authorization.
-7. Administrative access does not automatically grant permission to read confidential knowledge.
-
-## 2. Project and team structure
+## 2. Scope and authorization
 
 ```text
-Software Project
-|
-+-- Project Manager
-+-- Project Administrator
-|
-+-- Team A
-|   +-- Team Leader
-|   +-- Team Members
-|
-+-- Team B
-    +-- Team Leader
-    +-- Team Members
+Organization (ADMIN, explicit project.create capability grants)
+  └── Project (membership and project policy)
+       ├── Team A (TEAM_LEADER, MEMBER)
+       └── Team B (TEAM_LEADER, MEMBER)
+            └── Domain / resource ACL / temporary assignments
 ```
 
-A project can contain multiple teams. A team can have one or more leaders and multiple members. Knowledge is primarily scoped to a project and may be further restricted to a team, module, process, role, or explicit user list.
+Effective access depends on active organization/project/team membership, persistent role, explicit capability grant, scoped assignment, resource/source ACL, lifecycle state, and explicit deny. **Deny takes precedence.** Authorization is enforced by NestJS before retrieval and again before passing a citation or snippet to the LLM. Client-side guards are only UX. No role or assignment automatically bypasses a confidential source ACL.
 
-## 3. Persistent human roles
+Role and assignment records need `organizationId`, subject, scope, `validFrom`, optional `validUntil`, `assignedBy` and audit reference. An expired/revoked grant has no effect. Cross-tenant or cross-project access must be explicitly authorized, not inferred from a matching email or title.
 
-### 3.1. PROJECT_MANAGER
+## 3. Human actors
 
-The Project Manager is the actor responsible for continuity across the whole project and its teams.
+### ADMIN
 
-Main responsibilities:
+- Manages organization users, project/team membership, role assignments, scoped capability grants, integrations, source policies and audit.
+- May create projects and assign leaders. May manage project/team configuration according to organization policy.
+- May inspect technical status and metadata; **does not automatically read confidential content or verify knowledge**. Exceptional access, if implemented, requires a separately approved, reasoned and audited process.
 
-- Create and maintain the project-level knowledge continuity policy.
-- View project-wide coverage, gaps, freshness, concentration, and handover progress within allowed ACLs.
-- Initiate a handover when a leader or member leaves or changes responsibility.
-- Assign or approve a successor.
-- Coordinate handover across multiple teams.
-- Escalate unresolved gaps and overdue reviews.
-- Approve an explicit waiver when a required handover item cannot be completed.
-- Review project-level audit and evaluation reports.
+### TEAM_LEADER
 
-Restrictions:
+- Manages assigned project/team workspaces, members and knowledge requirements within granted scope; tracks who owns each domain/module; follows up on missing updates and reviews handover.
+- May create teams and invite/add members **within an existing project only if project policy permits**. May grant ordinary member access within their scope, never a role/capability broader than their delegation, and never override source ACL.
+- May create a **new project only if an ADMIN has granted `project.create` at organization scope**. On creation, project membership/initial team-leader assignment is established by an audited bootstrap policy; no implicit organization-admin rights follow.
+- Can review/approve knowledge only within a policy-authorized team/domain scope and after evidence checks. Specialist verification should use an SME or Knowledge Owner assignment.
 
-- Project Manager access remains subject to confidential resource ACLs.
-- The Project Manager must not verify specialized knowledge without an appropriate owner or SME assignment, except through an audited emergency policy.
+### MEMBER
 
-### 3.2. TEAM_LEADER
+- Contributes manual notes and documents, records what was done/how/why, maintains assigned knowledge, asks the assistant, flags gaps, and participates in transfer.
+- Reads only resources permitted by active membership and ACL. Creating a note or uploading a source does not authorize self-verification or wider disclosure.
 
-The Team Leader is responsible for knowledge continuity inside an assigned team.
+Every leader is also expected to contribute knowledge; contribution is not delegated solely to members.
 
-Main responsibilities:
+## 4. Scoped assignments and lifecycle
 
-- Define required knowledge for the team, modules, and recurring processes.
-- Assign Knowledge Owners and SME reviewers.
-- Monitor missing, outdated, conflicting, or concentrated knowledge.
-- Review team-level Proposed Knowledge when authorized.
-- Initiate and manage handover for team members.
-- Propose or assign a successor within project policy.
-- Confirm whether a handover package is ready for transfer.
-- Follow up when required knowledge has not been updated.
-
-Restrictions:
-
-- Team Leader authority is limited to assigned teams and resources.
-- A Team Leader cannot access another team's restricted knowledge without an explicit grant.
-
-### 3.3. TEAM_MEMBER
-
-Every project member is both a knowledge consumer and a knowledge contributor. Knowledge capture is not limited to leaders.
-
-Main responsibilities:
-
-- Search and ask questions over authorized project knowledge.
-- Create or update knowledge related to assigned work.
-- Record decisions, procedures, incidents, lessons learned, known issues, workarounds, dependencies, and ownership changes.
-- Review AI-extracted claims originating from the member's work.
-- Report outdated, incorrect, missing, or conflicting knowledge.
-- Participate in scheduled knowledge reviews and AI interviews.
-- Complete assigned handover items when leaving or changing responsibilities.
-
-Restrictions:
-
-- Members can only access knowledge allowed by project membership, team scope, role scope, and resource ACL.
-- A member cannot activate or verify organizational knowledge solely because they created it.
-
-### 3.4. PROJECT_ADMIN
-
-The Project Administrator manages the technical configuration of Continuum AI for the project.
-
-Main responsibilities:
-
-- Manage project membership, team membership, and persistent role assignments.
-- Configure connectors, data sources, ingestion settings, and retention policies.
-- Manage permission policies and resource ACLs.
-- View technical job status, connector errors, and security audit events.
-- Revoke sessions or service credentials according to policy.
-
-Restrictions:
-
-- Project Administrator is not a default Knowledge Owner or SME.
-- Technical administration does not grant automatic access to confidential source content.
-- Administrative override, when allowed, must require a reason and produce an audit event.
-
-### 3.5. PROJECT_MANAGER versus PROJECT_ADMIN
-
-| Question | PROJECT_MANAGER | PROJECT_ADMIN |
+| Assignment/state | Meaning | Permission effect |
 | --- | --- | --- |
-| Primary responsibility | Owns project continuity and handover outcomes across teams. | Operates access, integrations, ingestion, and security configuration for the project. |
-| Typical decisions | Which knowledge is required, which gap is urgent, who takes over, and whether a handover is complete or needs a documented waiver. | Who has project/team membership and configured roles, which source connector runs, and which access policy is applied. |
-| Knowledge content | Reads only content allowed by resource ACL; does not automatically verify specialized claims. | Reads metadata and technical status by default, not confidential content or business knowledge. |
-| Handover | Initiates and coordinates handover, assigns or approves a successor, and accepts project-level risk. | Supports access setup and audit; does not decide whether knowledge has been transferred successfully. |
+| `SME` | Expert for a specified domain/module/process/requirement and period | Can review/interview/verify claims **only in that scope**, subject to source ACL and approval policy. |
+| `KNOWLEDGE_OWNER` | Accountable maintainer of a knowledge object or required knowledge area | Can maintain, request review, approve/reject or supersede in scope according to policy; does not gain all project data. |
+| `SUCCESSOR` | Takes over a defined responsibility/handover package | Sees the approved package **and** only evidence allowed by its ACL; never inherits predecessor permissions. |
+| `ONBOARDING` / `OFFBOARDING` | Membership lifecycle state | May narrow permitted actions or trigger checklists/reminders; neither is an RBAC role. |
 
-Example: when a Team Leader leaves, the Project Manager selects a successor and approves the transfer plan. The Project Admin sets up the successor's project/team access and keeps the configuration and audit trail correct. Neither role alone bypasses source ACL or becomes a Knowledge Owner/SME.
+Human review is required before AI-proposed knowledge becomes verified/active. The reviewer must be authorized for both the domain and evidence. A person should not approve their own sensitive proposal where separation of duties is required.
 
-## 4. Assignments and lifecycle states
+## 5. Permission matrix (baseline)
 
-The following concepts affect permissions but are not global hierarchical roles.
+`Yes` always means “within active scope and ACL”; `Grant` means an explicit, audited capability/policy grant; `Assigned` means a matching scoped assignment.
 
-### 4.1. SUBJECT_MATTER_EXPERT assignment
+| Action | ADMIN | TEAM_LEADER | MEMBER | Scoped assignment |
+| --- | --- | --- | --- | --- |
+| Create project | Yes | **Grant: `project.create` at organization scope** | No | No |
+| Create team / add member in existing project | Yes | Grant by project policy, assigned project/team only | No | No |
+| Assign persistent roles or `project.create` | Yes | No | No | No |
+| Configure Jira/R2 connector or source ACL | Yes | Limited delegated project policy; no privilege escalation | No | No |
+| Add manual work/task note; upload allowed source | Yes | Yes | Yes | No extra right |
+| View authorized knowledge / ask chat | Yes | Yes | Yes | No ACL bypass |
+| Propose knowledge or report gap | Yes | Yes | Yes | No extra right |
+| Verify, reject or supersede knowledge | Not by admin role alone | Authorized team/domain policy | No by member role alone | `SME` / `KNOWLEDGE_OWNER` may authorize in scope |
+| Assign knowledge owner/SME | Yes | Assigned team/domain policy | No | No |
+| Initiate/confirm team handover | Yes | Assigned team | No | `SUCCESSOR` participates, cannot self-confirm |
+| See audit | Organization security scope | Assigned team scope | Own activity where policy allows | No extra right |
 
-An SME assignment states that a user can review a specified domain, module, process, or knowledge requirement.
+## 6. Permission codes and enforcement
 
-```text
-SME assignment
-- userId
-- projectId
-- teamId optional
-- scopeType
-- scopeId
-- validFrom
-- validUntil optional
-- assignedBy
-```
+Minimum codes: `project.create`, `project.read`, `project.manage`, `team.create`, `team.member.add`, `role.assign`, `capability.grant`, `source.upload`, `source.manage_acl`, `integration.manage`, `jira.sync.read`, `work_note.create`, `work_note.edit_own`, `knowledge.read`, `knowledge.propose`, `knowledge.verify`, `knowledge.reject`, `knowledge.supersede`, `gap.report`, `handover.manage`, `audit.read`.
 
-An SME may answer gaps, participate in AI interviews, review conflicts, and verify knowledge only inside the assigned scope.
+The capability evaluator must check subject, issuing ADMIN, organization, expiry/revocation and explicit deny for `project.create`. No broad condition such as `role === "TEAM_LEADER"` may substitute for this check. Project/team operations must check scope plus resource ACL. Permission changes invalidate affected sessions/caches as policy requires.
 
-### 4.2. KNOWLEDGE_OWNER assignment
+## 7. System actors and audit
 
-A Knowledge Owner assignment identifies accountability for a Knowledge Object, requirement, process, module, or source.
+The AI orchestrator, ingestion worker, Jira sync worker and scheduler use least-privilege service identities. They may parse, index, draft, suggest or remind, but may not grant access, verify organizational truth, or impersonate a human reviewer. Imported Jira text and files are untrusted input.
 
-The owner can:
+Audit at least: membership/role/assignment changes; `project.create` grants, revocations and use; project/team creation; Jira connection and sync failures; upload/source ACL changes; note edits; knowledge review/version changes; sensitive retrieval/chat access; handover approvals and waivers. Logs must avoid tokens, full prompts and document bodies. Missing daily notes trigger a follow-up, **not employee performance scoring**.
 
-- Review, edit, approve, reject, deprecate, or supersede knowledge in scope.
-- Assign reviewers.
-- Set review intervals.
-- Resolve conflicts with evidence and an audit reason.
+## 8. Scope exclusions
 
-Ownership must not be inferred only from document authorship or job title.
-
-### 4.3. SUCCESSOR assignment
-
-A Successor is a member assigned to take over a responsibility, module, process, or position from another member.
-
-The assignment grants access only to the approved handover scope and does not automatically grant all permissions held by the departing member.
-
-```text
-Successor assignment
-- handoverId
-- predecessorId
-- successorId
-- responsibilityScope
-- accessScope
-- assignedBy
-- validFrom
-- reviewAt optional
-```
-
-The successor can view the assigned handover package, follow the recommended knowledge path, ask scoped questions, and report unresolved gaps.
-
-### 4.4. ONBOARDING MEMBER state
-
-An onboarding member is a `TEAM_MEMBER` whose membership state is `ONBOARDING`. This state enables an onboarding or takeover plan but does not create a separate RBAC role.
-
-### 4.5. DEPARTING MEMBER state
-
-A departing member is a `TEAM_MEMBER` or `TEAM_LEADER` whose membership state is `OFFBOARDING`.
-
-The state triggers:
-
-- Responsibility and ownership analysis.
-- Knowledge coverage analysis.
-- Required handover items.
-- Gap-driven AI interview.
-- Successor assignment and handover progress tracking.
-
-The departing member retains only the access necessary to complete work and handover until the configured end date. Access is revoked or reduced automatically when the membership ends.
-
-## 5. System actors
-
-### 5.1. AI_ORCHESTRATOR
-
-The AI Orchestrator may extract, classify, summarize, detect gaps, propose interview questions, and generate evidence-grounded answers. It cannot:
-
-- Grant permissions.
-- Mark knowledge VERIFIED or ACTIVE.
-- Resolve a critical conflict by itself.
-- Assign a successor by itself.
-- Read evidence outside the authorization scope supplied by the backend.
-
-### 5.2. INGESTION_WORKER
-
-The ingestion worker processes authorized sources, parses documents, creates retrieval indexes, and records job status. It uses a service account with minimum permissions and cannot impersonate a human reviewer.
-
-### 5.3. SCHEDULER_AND_REMINDER
-
-The scheduler detects overdue knowledge, missing required artifacts, incomplete handover items, and review deadlines. It creates notifications or follow-up tasks but does not punish or score employees.
-
-## 6. MVP permission matrix
-
-Legend: `Yes` means allowed within scope, `Assigned` requires an explicit assignment, `Limited` means metadata or authorized scope only, and `No` means denied by default.
-
-| Action | Project Manager | Team Leader | Team Member | Project Admin | SME assignment | Owner assignment | Successor assignment |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| View authorized knowledge | Yes | Yes | Yes | Limited | Assigned | Assigned | Assigned |
-| Ask AI over authorized evidence | Yes | Yes | Yes | Limited | Assigned | Assigned | Assigned |
-| Propose knowledge | Yes | Yes | Yes | No | Assigned | Assigned | No |
-| Update own draft or proposed knowledge | Yes | Yes | Yes | No | Assigned | Assigned | No |
-| Verify or reject knowledge | Limited | Yes | No | No | Assigned | Assigned | No |
-| Deprecate or supersede knowledge | Limited | Yes | No | No | Assigned | Assigned | No |
-| Resolve a knowledge conflict | Limited | Yes | No | No | Assigned | Assigned | No |
-| Define required team knowledge | Limited | Yes | No | No | Consulted | Assigned | No |
-| Report a gap or outdated item | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Initiate team-member handover | Yes | Yes | No | No | No | No | No |
-| Initiate team-leader handover | Yes | No | No | No | No | No | No |
-| Assign successor | Yes | Yes | No | No | No | No | No |
-| View handover package | Yes | Yes | Limited | Limited | Assigned | Assigned | Assigned |
-| Complete handover items | No | Yes | Yes | No | Assigned | Assigned | Yes |
-| Confirm handover readiness | Yes | Yes | No | No | Consulted | Consulted | No |
-| View continuity dashboard | Project | Team | Own or limited | Technical | Assigned | Assigned | Own handover |
-| Manage members and persistent roles | Limited | No | No | Yes | No | No | No |
-| Manage connectors and source ACL | No | No | No | Yes | No | No | No |
-| View audit logs | Project | Team | Own actions | Security and technical | Assigned | Assigned | Own handover |
-
-Every `Limited`, `Project`, `Team`, `Assigned`, and `Own` cell still requires backend evaluation of the resource ACL.
-
-## 7. Required permission codes
-
-```text
-project.read
-project.manage_continuity
-project.view_continuity
-
-team.read
-team.manage_knowledge_requirements
-team.manage_handover
-
-knowledge.read
-knowledge.propose
-knowledge.edit_proposed
-knowledge.verify
-knowledge.reject
-knowledge.deprecate
-knowledge.supersede
-knowledge.resolve_conflict
-
-gap.read
-gap.report
-gap.assign
-gap.resolve
-
-interview.participate
-interview.manage
-interview.read_transcript
-
-handover.initiate
-handover.assign_successor
-handover.read
-handover.complete_item
-handover.confirm_ready
-handover.waive_requirement
-
-source.create
-source.ingest
-source.manage_acl
-
-member.manage
-role.assign
-audit.read
-integration.manage
-```
-
-Backend policies must check permission codes and scope. Application code must not rely on broad conditions such as `role === "ADMIN"` for sensitive actions.
-
-## 8. Required knowledge contribution by actor
-
-| Actor | Required ongoing contribution |
-| --- | --- |
-| Project Manager | Project decisions, cross-team dependencies, milestones, major risks, responsibility changes, and handover approvals |
-| Team Leader | Team processes, module ownership, operating procedures, required knowledge, unresolved gaps, review schedules, and successor recommendations |
-| Team Member | Work decisions, implementation notes, incidents, lessons learned, known issues, workarounds, dependencies, and current responsibility status |
-| Knowledge Owner | Verified versions, validity dates, evidence, review results, supersession reasons, and conflict decisions |
-| SME assignee | Expert review, gap answers, interview claims, exceptions, warnings, and evidence-backed clarifications |
-| Successor assignee | Questions, unresolved gaps, learning progress, takeover confirmation, and post-handover corrections |
-
-## 9. Audit requirements
-
-The system must audit at least:
-
-- Persistent role assignment and removal.
-- SME, Knowledge Owner, and Successor assignment changes.
-- Membership lifecycle changes.
-- Permission and ACL changes.
-- Handover initiation, waiver, confirmation, and completion.
-- Knowledge verification, rejection, deprecation, supersession, and conflict resolution.
-- Access to sensitive knowledge and interview transcripts.
-- Administrative overrides and their reasons.
-
-## 10. MVP exclusions
-
-The MVP does not include:
-
-- Enterprise-wide HR role management.
-- Employee performance scoring.
-- Automatic disciplinary actions for missing knowledge updates.
-- AI-controlled permission grants.
-- Automatic successor assignment without human approval.
-- Global administrator access to all confidential content by default.
+No enterprise-wide HR hierarchy, automatic disciplinary action, AI-controlled permission grants, automatic successor assignment, or blanket ADMIN access to confidential content in the 10-week MVP.

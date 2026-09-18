@@ -24,7 +24,8 @@ This document supplements the Continuum AI Graduation Project Specification v1.0
 | AI service | Python and FastAPI | SAG integration and AI pipeline execution |
 | Retrieval engine | Pinned version of zleap-sag | Event and entity retrieval, semantic search, and source tracing |
 | Initial vector storage | LanceDB through SAG | Retrieval index for the MVP |
-| File storage | MinIO or an S3-compatible service | Original PDF, DOCX, source files, OCR output, and derived artifacts |
+| File storage | Cloudflare R2 first; S3-compatible adapter/fallback | Private originals (PDF, DOCX, Markdown, TXT, images), OCR output, and derived artifacts |
+| Task integration | Jira Cloud REST API, webhooks and reconciliation | Import authorized issue context, prefill confirmed daily/task notes, and keep source references current |
 | LLM access | Provider-agnostic LLM Gateway | Extraction, interview planning, conflict analysis, and evidence-grounded answers |
 | Embedding | Embedding provider configured through SAG | Semantic representation for retrieval |
 | Parsing and OCR | SAG pipeline with explicitly selected MarkItDown or MinerU paths | Document normalization, parsing, and OCR |
@@ -70,14 +71,13 @@ TailAdmin replaces shadcn/ui, Material UI, Ant Design, Chakra UI, Mantine, and u
 
 ## Actor and authorization model
 
-The MVP uses four persistent human roles:
+The MVP uses three persistent human roles:
 
-- `PROJECT_MANAGER`
+- `ADMIN`
 - `TEAM_LEADER`
-- `TEAM_MEMBER`
-- `PROJECT_ADMIN`
+- `MEMBER`
 
-`SUBJECT_MATTER_EXPERT`, `KNOWLEDGE_OWNER`, and `SUCCESSOR` are scoped assignments rather than unrestricted global roles. `ONBOARDING` and `OFFBOARDING` are membership lifecycle states. All members, including leaders, are responsible for contributing and maintaining project knowledge during normal work.
+`SME`, `KNOWLEDGE_OWNER`, and `SUCCESSOR` are scoped assignments rather than unrestricted global roles. `ONBOARDING` and `OFFBOARDING` are membership lifecycle states. A `TEAM_LEADER` can create a new project only when an `ADMIN` separately grants the organization-level `project.create` capability. All members, including leaders, are responsible for contributing and maintaining project knowledge during normal work.
 
 Effective permission is calculated from persistent role, project/team membership, scoped assignment, resource ACL, lifecycle state, and explicit deny. The canonical model and permission matrix are defined in [02_ACTORS_ROLES_AND_PERMISSIONS.md](../research-docs/02_ACTORS_ROLES_AND_PERMISSIONS.md).
 
@@ -90,7 +90,7 @@ React and TailAdmin Web
 NestJS Continuum Core API
     |          |             |
     v          v             v
- MongoDB   Redis BullMQ   MinIO or S3
+ MongoDB   Redis BullMQ   Cloudflare R2
     |
     +------ calls ------> FastAPI AI Service
                               |
@@ -132,6 +132,7 @@ project_memberships
 team_memberships
 roles
 role_assignments
+organization_capability_grants
 sme_assignments
 knowledge_owner_assignments
 handover_assignments
@@ -140,6 +141,16 @@ handover_items
 sources
 source_acls
 documents
+document_versions
+jira_connections
+jira_account_links
+jira_issues
+jira_events
+jira_sync_jobs
+work_notes
+work_note_versions
+chat_sessions
+chat_messages
 knowledge_objects
 knowledge_versions
 knowledge_evidence
@@ -161,11 +172,20 @@ ingestion_jobs
 - Rotate refresh tokens and store only a secure hash or equivalent protected representation.
 - Support revocation and refresh-token reuse detection.
 - RBAC alone is insufficient. Authorization must combine project/team membership, persistent role, scoped assignment, source ACL, document ACL, Knowledge Object scope, and membership lifecycle state.
-- Project Admin does not automatically receive permission to read confidential knowledge.
+- Admin does not automatically receive permission to read confidential knowledge.
 - Successor access is limited to the approved handover scope and does not clone all predecessor permissions.
 - Resolve the allowed source and knowledge scope before retrieval.
 - Restricted evidence must never be retrieved and then removed after it has already entered the LLM context.
 - The backend is authoritative. Frontend route guards are only a user-experience layer.
+- `project.create` requires a separately granted, revocable, audited organization capability; TEAM_LEADER alone is insufficient.
+
+## Jira, daily note, chat, and object-storage constraints
+
+- Manual note entry is always available. Jira issues/comments/status provide prefilled context, not verified organizational knowledge. Authors confirm what/how/why and may correct the draft.
+- Ingest Jira by initial backfill, webhook-driven idempotent updates, and scheduled reconciliation. Track source revisions and permission changes; never store Jira secrets in MongoDB plaintext.
+- Store original uploads in private Cloudflare R2 with a storage adapter so an S3-compatible alternative remains possible. MongoDB stores metadata, object key, checksum and ACL. Signed upload/download paths must be short-lived and permission-checked.
+- Chat is the core successor interface. Every answer must be cited and permission-aware; an insufficient-evidence outcome must be explicit. Chat history cannot become a bypass after source access changes.
+- See [Daily workflow and Jira sync](../research-docs/03_DAILY_WORKFLOW_AND_JIRA_SYNC.md).
 
 ## Queue and AI processing constraints
 
@@ -211,8 +231,15 @@ Do not leave `SAG pipeline / MarkItDown / MinerU` as an unresolved runtime choic
 - API contracts between React, NestJS, and FastAPI are defined through OpenAPI.
 - The LLM Gateway and SAG adapter interfaces are agreed before provider-specific implementation.
 - Security tests confirm that unauthorized evidence never enters retrieval results or LLM context.
-- End-to-end tests cover upload, extraction, verification, cited answer, insufficient evidence, gap closure, and permission denial.
-- Docker Compose starts MongoDB as a replica set and preserves MongoDB, Redis, object storage, and SAG data across restarts.
+- End-to-end tests cover manual/Jira-linked note, upload, extraction, verification, cited answer, insufficient evidence, gap closure, and permission denial.
+- Docker Compose starts MongoDB as a replica set and preserves MongoDB, Redis, and SAG data across restarts; R2 is accessed through testable object-storage configuration.
+
+## Decision record — 2026-09-18
+
+- Replaced four legacy role codes with `ADMIN`, `TEAM_LEADER`, and `MEMBER`; SME and Knowledge Owner remain scoped assignments.
+- New project creation by a Team Leader requires an Admin-issued organization `project.create` grant.
+- Promoted Jira-linked daily/task capture and evidence-grounded chat into the 10-week vertical slice. Other MCP connectors and automated interview are deferred.
+- Selected Cloudflare R2 as the first object store, retaining an S3-compatible abstraction.
 
 ## Documentation consistency rule
 

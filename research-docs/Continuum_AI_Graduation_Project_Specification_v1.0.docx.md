@@ -150,6 +150,7 @@ Continuum AI không cạnh tranh với document storage ở khả năng lưu fil
 ## **3.1. Phạm vi MVP bắt buộc**
 
 * Project, Team, Membership, scoped Role, assignment và resource ACL cơ bản.  
+* Manual daily/task note (làm gì, làm thế nào, vì sao, blocker, bước tiếp theo) và Jira Cloud sync để giảm nhập báo cáo; người viết xác nhận note.
 * Document upload / source management / parsing / OCR khi cần.  
 * Tích hợp SAG cho chunking, event/entity extraction, vector \+ multi retrieval và source tracing.  
 * Knowledge Object Extraction với structured output.  
@@ -157,13 +158,15 @@ Continuum AI không cạnh tranh với document storage ở khả năng lưu fil
 * Knowledge Versioning, owner, validity, source/evidence.  
 * AI Knowledge Assistant: answer \+ citation \+ confidence/status/owner/last verified date.  
 * Knowledge Gap Detection cơ bản.  
-* AI Knowledge Interviewer tạo câu hỏi có mục tiêu và chuyển answer thành Proposed Knowledge.  
-* Knowledge Continuity Dashboard cơ bản: coverage, freshness, concentration, gap, risk.  
+* Handover checklist/successor scope tối thiểu và chat có citation để người sau tiếp quản.
+* Dataset đánh giá retrieval, answer, citation và permission.
 * Audit log và permission-aware retrieval.
 
 ## **3.2. Stretch Goals**
 
-* Google Drive/Confluence/Jira/GitHub connectors ngoài file upload và web source.  
+* Google Drive/Confluence/GitHub connectors ngoài Jira, file upload và manual note.
+* AI Knowledge Interviewer: gap-driven questions và interview → Proposed Knowledge.
+* Advanced freshness/conflict/incident memory và automated employee-transfer analysis.
 * Advanced onboarding journey và personalized learning path.  
 * Advanced offboarding transfer package.  
 * Knowledge Conflict auto-detection nâng cao.  
@@ -185,16 +188,15 @@ Continuum AI tập trung vào một software project có nhiều team. Mọi mem
 
 | Loại | Code | Phạm vi | Mục tiêu và quyền điển hình |
 | ----- | ----- | ----- | ----- |
-| Persistent role | PROJECT\_MANAGER | Project và nhiều team | Theo dõi continuity toàn project, khởi tạo handover, gán successor, điều phối cross-team và xác nhận readiness. |
-| Persistent role | TEAM\_LEADER | Team được giao | Định nghĩa required knowledge, gán owner/SME, theo dõi gap/freshness, quản lý handover của member. |
-| Persistent role | TEAM\_MEMBER | Project/team membership | Tìm kiếm, hỏi AI, tạo/cập nhật knowledge, báo gap, tham gia review/interview và hoàn thành handover. |
-| Persistent role | PROJECT\_ADMIN | Project | Quản lý membership, role, connector, source, permission policy, ACL và technical audit. |
-| Scoped assignment | SUBJECT\_MATTER\_EXPERT | Domain/module/process cụ thể | Trả lời gap, review conflict, tham gia AI interview và verify trong phạm vi được giao. |
+| Persistent role | ADMIN | Organization | Quản lý user/project/team, role, connector, source, ACL, grant và audit; không mặc định đọc dữ liệu confidential. |
+| Persistent role | TEAM\_LEADER | Project/team được giao | Quản lý knowledge và member trong scope; tạo project mới chỉ khi ADMIN cấp riêng quyền tổ chức `project.create`. |
+| Persistent role | MEMBER | Project/team membership | Tìm kiếm, hỏi AI, tạo manual/Jira-linked note, upload, báo gap và tham gia handover. |
+| Scoped assignment | SME | Domain/module/process cụ thể | Review, trả lời gap và verify trong phạm vi được giao. |
 | Scoped assignment | KNOWLEDGE\_OWNER | Knowledge/requirement/process cụ thể | Approve, reject, edit, deprecate, supersede, assign reviewer và đặt review cycle. |
 | Handover assignment | SUCCESSOR | Handover scope cụ thể | Nhận handover package, học knowledge path, hỏi AI và báo phần chưa đủ để tiếp quản. |
 | Lifecycle state | ONBOARDING / OFFBOARDING | Project membership | Kích hoạt onboarding hoặc knowledge-transfer workflow; không phải global RBAC role. |
 
-Quyền hiệu lực được tính từ role + project/team scope + explicit assignment + resource ACL + lifecycle state. Explicit deny có độ ưu tiên cao hơn inherited allow. Chi tiết chuẩn nằm trong `02_ACTORS_ROLES_AND_PERMISSIONS.md`.
+Quyền hiệu lực được tính từ role + project/team scope + capability grant/assignment + resource ACL + lifecycle state. Explicit deny có độ ưu tiên cao hơn inherited allow. Chi tiết chuẩn nằm trong `02_ACTORS_ROLES_AND_PERMISSIONS.md`; quy trình ghi chú/Jira tại `03_DAILY_WORKFLOW_AND_JIRA_SYNC.md`.
 
 &nbsp;
 
@@ -255,18 +257,18 @@ Knowledge phải được version hóa với valid\_from, valid\_until, created\
 
 | Module | Mục tiêu | Chức năng chính |
 | ----- | ----- | ----- |
-| M01 – Identity & Project Access | Quản lý user, project, team, membership, persistent role, scoped assignment và lifecycle state. | RBAC, project/team scope, SME/Owner/Successor assignment, resource ACL. |
-| M02 – Enterprise Knowledge Ingestion | Tiếp nhận nguồn và document, giữ metadata gốc. | Upload, web source, document versions, parsing, OCR, job status. |
+| M01 – Identity & Project Access | Quản lý user, project, team, membership, 3 persistent role, scoped assignment và lifecycle state. | RBAC, `project.create` Admin grant, project/team scope, SME/Owner/Successor assignment, resource ACL. |
+| M02 – Knowledge Capture & Ingestion | Thu nhận manual notes, Jira task context và document, giữ metadata gốc. | Daily/task notes, Jira backfill/webhook/reconciliation, R2 upload, document versions, parsing/OCR, job status. |
 | M03 – SAG Retrieval Layer | Lập index event/entity/vector và tìm evidence. | Fast vector search, Precise multi retrieval, source tracing. |
 | M04 – Knowledge Extraction | Biến source/evidence thành Proposed Knowledge Object. | Type classification, claim/action/condition/reason extraction, source linking. |
 | M05 – Verification Center | Human-in-the-loop review. | Approve, edit, reject, request clarification, assign reviewer, deprecate. |
 | M06 – AI Knowledge Assistant | Hỏi đáp có evidence và context tổ chức. | Permission-aware retrieval, citation, confidence, status, owner, last verified. |
 | M07 – Gap & Conflict Engine | Phát hiện phần thiếu hoặc mâu thuẫn. | Repeated unanswered questions, missing requirements, outdated/unverified info, conflict candidates. |
-| M08 – AI Knowledge Interviewer | Chủ động hỏi SME theo gap/process risk. | Interview plan, adaptive question, claim extraction, confirmation. |
+| M08 – AI Knowledge Interviewer (P1) | Chủ động hỏi SME theo gap/process risk sau khi core chat/gap ổn định. | Interview plan, adaptive question, claim extraction, confirmation. |
 | M09 – Freshness & Versioning | Duy trì current truth theo thời gian. | Review cycle, supersede/deprecate, historical query, staleness signal. |
-| M10 – Continuity Radar | Theo dõi rủi ro ở cấp process/domain. | Coverage, freshness, concentration, gaps, criticality, risk trend. |
+| M10 – Continuity Radar (P1) | Theo dõi rủi ro ở cấp process/domain. | Coverage, freshness, concentration, gaps, criticality, risk trend. |
 | M11 – Successor Takeover | Định tuyến knowledge cần cho phạm vi tiếp quản. | Handover package, required knowledge map, cited AI assistant, readiness progress. |
-| M12 – Member Handover | Ưu tiên capture knowledge trước khi thành viên rời project, chuyển team hoặc đổi responsibility. | Responsibility analysis, missing coverage, interview priorities, successor assignment, transfer package. |
+| M12 – Member Handover | Ưu tiên capture knowledge trước khi thành viên rời project, chuyển team hoặc đổi responsibility. | P0: scoped checklist, successor, chat; P1: automatic responsibility analysis/interview priorities. |
 | M13 – Audit & Observability | Theo dõi action và chất lượng hệ thống. | Audit events, API/LLM/retrieval latency, failures, token/cost, citation coverage. |
 
 &nbsp;
@@ -430,7 +432,8 @@ Dự án nên có LLM Gateway để tránh phụ thuộc một provider. Provide
 | SAG Service | FastAPI \+ zleap-sag / SAG self-hosted API | Reuse open-source retrieval engine qua stable API boundary. |
 | Primary Database | MongoDB + Mongoose | Source of truth cho lifecycle, version, permission, workflow và audit của Continuum. |
 | Vector / Retrieval Index | LanceDB ban đầu qua SAG | Lưu index phục vụ retrieval; không là nguồn truth của Continuum. |
-| Object Storage | MinIO / S3-compatible | Raw documents, OCR outputs, exports. |
+| Object Storage | Cloudflare R2 ưu tiên; S3-compatible adapter dự phòng | Private raw documents, OCR outputs, exports. |
+| Jira Integration | Jira Cloud REST API + webhook + reconciliation | Task context cho manual note, source trace và giảm nhập báo cáo. |
 | Queue | Redis + BullMQ | Async OCR/ingestion/extraction/retry cho backend Node.js. |
 | AI | Provider-agnostic LLM Gateway | Đổi provider và benchmark dễ hơn. |
 | Deployment | Docker Compose | Reproducible local/staging setup cho capstone. |
@@ -457,7 +460,9 @@ Nguồn truth của organizational knowledge nằm trong Continuum structured da
 
 | Nhóm | Collection chính |
 | ----- | ----- |
-| Identity & Scope | organizations, users, projects, teams, project\_memberships, team\_memberships, roles, role\_assignments, sme\_assignments, knowledge\_owner\_assignments |
+| Identity & Scope | organizations, users, projects, teams, project\_memberships, team\_memberships, roles, role\_assignments, organization\_capability\_grants, sme\_assignments, knowledge\_owner\_assignments |
+| Jira & Work Notes | jira\_connections, jira\_account\_links, jira\_issues, jira\_events, jira\_sync\_jobs, work\_notes, work\_note\_versions |
+| Chat | chat\_sessions, chat\_messages |
 | Sources | sources, documents, document\_versions, source\_acls, document\_acls |
 | Knowledge | knowledge\_objects, knowledge\_versions, knowledge\_evidence, knowledge\_owners, knowledge\_verifications |
 | Quality | knowledge\_conflicts, knowledge\_gaps, review\_schedules, knowledge\_reports |
@@ -506,8 +511,9 @@ Quy tắc bắt buộc: xác định Allowed Knowledge Scope trước retrieval.
 | Scope | Ví dụ |
 | ----- | ----- |
 | Project membership | User chỉ truy cập project mà họ đang có membership hợp lệ. |
-| Team membership | TEAM\_LEADER và TEAM\_MEMBER chỉ có quyền mặc định trong team được giao. |
-| Persistent role | PROJECT\_MANAGER có project-wide continuity permission nhưng vẫn chịu resource ACL. |
+| Team membership | TEAM\_LEADER và MEMBER chỉ có quyền mặc định trong team được giao. |
+| Persistent role | ADMIN cấu hình tổ chức nhưng không mặc định đọc confidential knowledge; TEAM\_LEADER trong team được giao. |
+| Organization capability | TEAM\_LEADER cần grant `project.create` riêng từ ADMIN để tạo project mới. |
 | Scoped assignment | SME, Knowledge Owner và Successor chỉ có quyền bổ sung trong phạm vi assignment. |
 | Source/Document | ACL từ source gốc được propagate đến extracted knowledge. |
 | Knowledge Object | Có thể restrictive hơn source nếu chứa sensitive synthesis. |
@@ -532,27 +538,29 @@ Tối thiểu log: knowledge created/edited/verified/rejected/deprecated, permis
 | ID | Requirement | Actor | Priority | Acceptance summary |
 | ----- | ----- | ----- | ----- | ----- |
 | FR-01 | Authentication & Session | User | P0 | Đăng nhập/đăng xuất, session/JWT, account status. |
-| FR-02 | Project, Team & Membership | Project Admin | P0 | CRUD project/team membership, persistent role và lifecycle state. |
-| FR-03 | Scoped RBAC, Assignment & ACL | Project Admin | P0 | Gán role, SME/Owner/Successor assignment và permission theo resource/source. |
-| FR-04 | Source Management | Project Admin/Team Leader | P0 | Tạo source, upload file/web, xem trạng thái ingest trong scope. |
+| FR-02 | Project, Team & Membership | Admin/Team Leader | P0 | Admin quản lý project/team; Leader trong scope, chỉ tạo project mới với `project.create` được Admin cấp. |
+| FR-03 | Scoped RBAC, Assignment & ACL | Admin | P0 | Ba role ADMIN/TEAM\_LEADER/MEMBER; SME/Owner/Successor assignment; source ACL và audited capability grant. |
+| FR-04 | Source Management | Admin/Team Leader/Member | P0 | Manual upload PDF/DOCX/MD/TXT/ảnh; R2 private; metadata MongoDB; ingest theo scope. |
 | FR-05 | Document Processing | System | P0 | Parse/OCR/chunk, metadata, job retry/status. |
 | FR-06 | SAG Indexing | System | P0 | Tạo event/entity/vector index và source trace. |
-| FR-07 | Knowledge Extraction | System/Team Member | P0 | Tạo Proposed Knowledge từ evidence với structured schema và contributor confirmation. |
+| FR-07 | Knowledge Extraction | System/Member | P0 | Tạo Proposed Knowledge từ evidence với structured schema và contributor confirmation. |
 | FR-08 | Knowledge Verification | Owner/Scoped SME | P0 | Approve/edit/reject/request clarification trong assignment scope. |
 | FR-09 | Knowledge Versioning | Owner/System | P0 | Tạo version, supersede/deprecate, validity interval. |
-| FR-10 | AI Search/Assistant | Project Member/Successor | P0 | Query, permission-aware retrieval, answer \+ citation \+ status. |
+| FR-10 | AI Search/Assistant | Member/Successor | P0 | Chat, permission-aware retrieval, answer \+ citation \+ verification status/date. |
 | FR-11 | Insufficient Evidence | System | P0 | Không hallucinate; trả reason và next action. |
-| FR-12 | Historical Query | Project Member | P1 | Trả knowledge đúng validity ở thời điểm yêu cầu. |
+| FR-12 | Historical Query | Member | P1 | Trả knowledge đúng validity ở thời điểm yêu cầu. |
 | FR-13 | Gap Detection & Follow-up | System/Team Leader | P0 | Tạo gap và follow-up từ unanswered questions, missing requirements hoặc overdue updates. |
-| FR-14 | AI Interview Plan | Departing Member/Scoped SME | P0 | Sinh câu hỏi theo gap, responsibility, evidence và handover scope. |
-| FR-15 | Interview Processing | Member/Scoped SME/System | P0 | Transcript → claims → proposed knowledge → contributor confirmation. |
+| FR-14 | AI Interview Plan | Departing Member/Scoped SME | P1 | Sinh câu hỏi theo gap, responsibility, evidence và handover scope. |
+| FR-15 | Interview Processing | Member/Scoped SME/System | P1 | Transcript → claims → proposed knowledge → contributor confirmation. |
 | FR-16 | Conflict Candidate | Owner/Scoped SME | P1 | Phát hiện và đưa candidate conflict vào review queue. |
 | FR-17 | Freshness Review | Owner/Team Leader | P1 | Review cycle và REVIEW\_REQUIRED. |
-| FR-18 | Continuity Dashboard | Project Manager/Team Leader | P0 | Project/team coverage, freshness, concentration, gap, risk và handover progress. |
+| FR-18 | Continuity Dashboard | Admin/Team Leader | P1 | Project/team coverage, freshness, concentration, gap, risk và handover progress. |
 | FR-19 | Successor Onboarding | Successor/Team Leader | P0 | Scoped handover package, knowledge path, cited assistant và unresolved-gap reporting. |
-| FR-20 | Member Handover | Project Manager/Team Leader/Departing Member | P0 | Analyze responsibilities, create transfer plan, assign successor và confirm readiness. |
-| FR-21 | Audit Log | Project Admin/Project Manager | P0 | Tra cứu audit events theo technical, security và project scope. |
-| FR-22 | Evaluation Export | Project Team/Project Admin | P1 | Export benchmark results, latency, citations và model metadata. |
+| FR-20 | Member Handover | Admin/Team Leader/Departing Member | P0 | Scoped checklist, assign successor và confirm readiness; advanced transfer analysis P1. |
+| FR-21 | Audit Log | Admin/Team Leader | P0 | Tra cứu audit events theo technical, security và project/team scope. |
+| FR-22 | Evaluation Export | Project Team/Admin | P1 | Export benchmark results, latency, citations và model metadata. |
+| FR-23 | Daily/Task Notes | Team Leader/Member | P0 | Ghi what/how/why, blocker, next step; liên kết Jira tùy chọn, author xác nhận; tạo được không cần Jira. |
+| FR-24 | Jira Task Sync | Admin/System | P0 | Backfill issue/comment/status, webhook idempotent và reconciliation; permission-aware source mapping. |
 
 &nbsp;
 
@@ -581,7 +589,7 @@ Tối thiểu log: knowledge created/edited/verified/rejected/deprecated, permis
 
 | Thuộc tính | Nội dung |
 | ----- | ----- |
-| Actor | Team Member / Team Leader / Knowledge Owner / System |
+| Actor | Member / Team Leader / Knowledge Owner / System |
 | Precondition | User có quyền tạo source; file hợp lệ. |
 | Main flow | 1\) Upload source. 2\) Parse/OCR. 3\) SAG chunk/event/entity index. 4\) AI extract Proposed Knowledge. 5\) Owner review evidence. 6\) Approve/edit. 7\) System tạo Knowledge Version và ACTIVE status. |
 | Alternative | Parse fail → job failed/retry; extraction low confidence → manual review; source ACL restricts reviewer → deny. |
@@ -593,7 +601,7 @@ Tối thiểu log: knowledge created/edited/verified/rejected/deprecated, permis
 
 | Thuộc tính | Nội dung |
 | ----- | ----- |
-| Actor | Team Member / Team Leader / Project Manager / assigned Successor |
+| Actor | Member / Team Leader / Admin / assigned Successor |
 | Precondition | Authenticated; permission scope resolved. |
 | Main flow | 1\) Query. 2\) Intent/query plan. 3\) Allowed source scope. 4\) SAG retrieval. 5\) Map source chunks \<-\> knowledge. 6\) Filter validity/status/conflict. 7\) Rerank/context. 8\) Generate answer \+ citations \+ metadata. |
 | Alternative | No reliable evidence → insufficient evidence; unresolved conflict → show conflict state; historical query → select historical version. |
@@ -601,31 +609,31 @@ Tối thiểu log: knowledge created/edited/verified/rejected/deprecated, permis
 
 &nbsp;
 
-## **13.3. UC-03 – Knowledge Gap → AI Interview → Gap Resolved**
+## **13.3. UC-03 – Knowledge Gap → human follow-up (AI interview: P1)**
 
 1. Repeated question hoặc missing process requirement tạo candidate gap.  
 2. System gom evidence hiện có và xác định missing claims.  
 3. Team Leader gán Knowledge Owner hoặc scoped SME.  
-4. AI tạo interview plan và câu hỏi theo gap.  
-5. Member hoặc scoped SME trả lời; system trích claim và link transcript/evidence.  
+4. P0: tạo câu hỏi cần SME/Owner trả lời; P1: AI tạo interview plan và câu hỏi theo gap.
+5. Member hoặc scoped SME trả lời; P1: system trích claim và link transcript/evidence.
 6. Contributor xác nhận claim; Knowledge Owner hoặc scoped SME thực hiện verification.  
 7. Knowledge được verify/activate; gap cập nhật Resolved/Partially Resolved.
 
 ## **13.4. UC-04 – Member handover và successor takeover**
 
-1\. Project Manager hoặc Team Leader khởi tạo handover cho bất kỳ leader/member nào rời project hoặc đổi responsibility.
+1\. Admin hoặc Team Leader trong scope khởi tạo handover cho leader/member rời project hoặc đổi responsibility.
 
 2\. System phân tích member–responsibility–module–knowledge–evidence relationships.
 
 3\. System phát hiện required knowledge thiếu, lỗi thời, chưa verify hoặc chỉ phụ thuộc một người.
 
-4\. Team Leader xác nhận priority, system tạo interview topics và handover items.
+4\. Team Leader xác nhận priority và handover items; AI interview topics là P1.
 
-5\. Departing member bổ sung knowledge; Owner/SME verify; Project Manager hoặc Team Leader gán Successor.
+5\. Departing member bổ sung knowledge; Owner/SME verify; Admin hoặc Team Leader trong scope gán Successor.
 
 6\. Successor nhận scoped handover package, hỏi AI và báo unresolved gaps.
 
-7\. Handover chỉ complete khi required items được xử lý hoặc Project Manager ghi nhận waiver có audit reason.
+7\. Handover chỉ complete khi required items được xử lý hoặc Admin/Team Leader có thẩm quyền ghi nhận waiver có audit reason.
 
 # **14\. API VÀ INTEGRATION CONTRACT**
 
@@ -634,6 +642,8 @@ Tối thiểu log: knowledge created/edited/verified/rejected/deprecated, permis
 | Area | Endpoints ví dụ |
 | ----- | ----- |
 | Auth | POST /auth/login; GET /me |
+| Project/capability | POST /projects (requires Admin or active organization `project.create` grant); POST /organization-capability-grants (Admin only) |
+| Jira & notes | POST /jira/connections; POST /jira/webhooks; GET /jira/issues; POST /work-notes; GET /work-notes |
 | Sources | POST /sources; POST /sources/{id}/documents; GET /ingestion-jobs/{id} |
 | Knowledge | GET/POST /knowledge; GET /knowledge/{id}/versions; POST /knowledge/{id}/verify; /reject; /deprecate |
 | Assistant | POST /assistant/query; GET /assistant/threads/{id} |
@@ -741,7 +751,7 @@ Nhóm nên tạo một enterprise-like benchmark có ground truth thay vì chỉ
 | ----- | ----- | ----- |
 | D1 – Verified Search | Upload SOP → extract → verify → employee asks → cited answer. | End-to-end core value; human-in-loop. |
 | D2 – Multi-hop Decision Memory | Incident \+ decision \+ system docs → query “why” → SAG relation retrieval → verified reasoning. | Khác biệt so với vector RAG đơn giản. |
-| D3 – Knowledge Gap Closure | Question không có verified answer → gap → AI interview SME → proposed → verify → ask lại. | Closed-loop organizational memory. |
+| D3 – Knowledge Gap Closure | Question không có verified answer → gap → SME/Owner follow-up → proposed → verify → ask lại; AI interview là P1. | Closed-loop organizational memory. |
 | D4 – Permission | Sales user hỏi Finance knowledge → no restricted retrieval; Finance user hỏi cùng câu → authorized answer. | Enterprise security. |
 | D5 – Offboarding Risk | Mark expert leaving → analyze low coverage/high concentration → prioritized interview topics. | Knowledge continuity use case. |
 
@@ -749,19 +759,16 @@ Nhóm nên tạo một enterprise-like benchmark có ground truth thay vì chỉ
 
 # **18\. KẾ HOẠCH TRIỂN KHAI ĐỒ ÁN**
 
-Kế hoạch dưới đây dùng tuần tương đối để nhóm tự map vào lịch capstone chính thức.
+Kế hoạch 10 tuần (khoảng 2,5 tháng) dùng tuần tương đối để nhóm tự map vào lịch capstone chính thức. P0 là vertical slice có dữ liệu thật, chat và benchmark; tính năng P1 chỉ nhận khi P0 đã ổn định.
 
 | Phase | Tuần | Deliverables |
 | ----- | ----- | ----- |
-| P0 – Foundation | 1–2 | Finalize scope, repo strategy, ADRs, SRS, benchmark design, Docker baseline. |
-| P1 – Core Platform | 3–4 | Auth/RBAC, project/team membership, MongoDB collections và Mongoose schemas, source/document management. |
-| P2 – SAG Integration | 5–6 | SAG deployment, adapter, ingest/search/source tracing, baseline retrieval tests. |
-| P3 – Knowledge Lifecycle | 7–8 | Extraction schema, Knowledge Object, verification, versioning, evidence. |
-| P4 – Assistant & Validation | 9 | Permission-aware search, status/validity filtering, citations, insufficient evidence. |
-| P5 – Gap & Interview | 10–11 | Gap detection, interview plan/session, claim extraction, closure workflow. |
-| P6 – Dashboard & Transfer | 12 | Coverage/concentration/risk dashboard, member handover và successor takeover. |
-| P7 – Evaluation | 13–14 | Benchmark B1/B2/B3, security tests, performance, failure analysis. |
-| P8 – Hardening & Defense | 15–16 | Bugfix, reproducible deployment, final report, demo script, backup recording. |
+| P0 – Foundation | 1 | Scope/actor quyết định, DB/API contracts, dataset design, Docker baseline và chia ownership module. |
+| P1 – Access & project | 2–3 | Auth, 3 role, `project.create` grant, project/team membership, ACL và audit. |
+| P2 – Capture & integration | 3–5 | Manual note, Jira backfill/webhook/reconciliation, R2 upload, parse/OCR/job status. |
+| P3 – Knowledge lifecycle | 5–7 | SAG index/trace, Proposed Knowledge, human verification, immutable version/evidence. |
+| P4 – Chat & handover | 7–8 | Permission-aware chat/citation/insufficient evidence, gap và scoped handover checklist. |
+| P5 – Evaluation & hardening | 9–10 | Dataset benchmark, leak tests, failure analysis, bugfix, reproducible demo và report. |
 
 &nbsp;
 
@@ -834,7 +841,7 @@ Kế hoạch dưới đây dùng tuần tương đối để nhóm tự map vào
 ## **21.2. Future work**
 
 * Temporal/enterprise graph database khi traversal scale lớn.  
-* Broader connectors: Drive, SharePoint, Jira, Slack, Teams, GitHub.  
+* Broader connectors ngoài Jira MVP: Drive, SharePoint, Slack, Teams, GitHub.
 * Advanced conflict resolution workflows và policy diff.  
 * Cross-organization/tenant isolation hardening.  
 * MCP interface để internal AI agents dùng verified organizational context.  
@@ -855,18 +862,16 @@ Continuum AI được định vị là Organizational Knowledge Continuity Syste
 
 # **PHỤ LỤC A – PERMISSION MATRIX MẪU**
 
-| Action | Project Manager | Team Leader | Team Member | Project Admin | SME assignment | Owner assignment | Successor assignment |
-| ----- | ----- | ----- | ----- | ----- | ----- | ----- | ----- |
-| Search allowed knowledge | Project scope + ACL | Team scope + ACL | Membership scope + ACL | Metadata/explicit ACL | Assigned scope | Assigned scope | Handover scope |
-| Propose knowledge | ✓ | ✓ | ✓ | — | Theo assignment | Theo assignment | — |
-| Verify/reject | Limited/audited | Team scope | — | — | Theo assignment | ✓ | — |
-| Resolve conflict | Limited/audited | Team scope | — | — | Theo assignment | ✓ | — |
-| Initiate handover | Leader/member | Team member | — | — | — | — | — |
-| Assign successor | ✓ | Team scope | — | — | — | — | — |
-| View handover package | Project scope + ACL | Team scope + ACL | Own/assigned only | Metadata/explicit ACL | Assigned | Assigned | ✓ |
-| View continuity dashboard | Project | Team | Own/limited | Technical | Assigned | Assigned | Own handover |
-| Manage permissions | Limited policy | — | — | ✓ | — | Resource ACL limited | — |
-| View audit logs | Project | Team | Own actions | Security/technical | Assigned | Assigned | Own handover |
+| Action | Admin | Team Leader | Member | Assignment effect |
+| ----- | ----- | ----- | ----- | ----- |
+| Create project | ✓ | Chỉ với grant `project.create` cấp tổ chức từ Admin | — | Không |
+| Create team / add member | ✓ | Trong project/team được giao, theo policy | — | Không |
+| Grant `project.create` / role | ✓ | — | — | Không |
+| Search/ask chat | ACL cho phép | ACL + team scope | ACL + membership scope | SME/Owner/Successor không vượt ACL |
+| Manual note / upload / propose | ✓ trong scope | ✓ trong scope | ✓ trong scope | Không tự xác minh |
+| Verify/reject knowledge | Không vì Admin role đơn thuần | Nếu policy/domain cho phép | — | SME/Owner trong scope có thể review |
+| Handover | Quản lý trong scope | Quản lý team mình | Tham gia phần được giao | Successor chỉ xem gói + ACL |
+| Audit | Security scope | Team scope | Own actions theo policy | Không thêm quyền |
 
 &nbsp;
 

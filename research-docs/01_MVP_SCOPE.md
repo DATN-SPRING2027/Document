@@ -4,7 +4,7 @@
 
 - Project: Continuum AI
 - Project type: Graduation project and team knowledge continuity system
-- Version: 1.1
+- Version: 1.2
 - Status: Accepted MVP baseline
 - Last updated: 2026-09-18
 
@@ -30,14 +30,13 @@ Knowledge capture begins while the project is active. The system must not wait u
 
 Persistent roles:
 
-- `PROJECT_MANAGER`: manages continuity across the project and multiple teams.
-- `TEAM_LEADER`: manages knowledge requirements and handover inside assigned teams.
-- `TEAM_MEMBER`: contributes, maintains, searches, and transfers knowledge related to assigned work.
-- `PROJECT_ADMIN`: manages membership, connectors, permissions, sources, and technical configuration.
+- `ADMIN`: manages users, projects, teams, roles, connectors and policy at organization scope, without automatic access to confidential content.
+- `TEAM_LEADER`: leads assigned teams and their knowledge workflow. Creating a **new project** requires an explicit organization-level `project.create` grant from an Admin.
+- `MEMBER`: contributes notes/documents and maintains, searches, and transfers knowledge related to assigned work.
 
 Scoped assignments and lifecycle states:
 
-- `SUBJECT_MATTER_EXPERT`: expert assignment for a domain, module, process, or knowledge requirement.
+- `SME`: expert assignment for a domain, module, process, or knowledge requirement.
 - `KNOWLEDGE_OWNER`: accountability assignment for knowledge or a required knowledge area.
 - `SUCCESSOR`: handover assignment for the person taking over a responsibility.
 - `ONBOARDING`: membership state for an incoming member.
@@ -58,6 +57,7 @@ All team members, not only leaders, contribute knowledge during normal project o
 - Current status, unfinished work, risks, and open questions.
 - Knowledge source, evidence, owner, reviewer, version, validity, and review date.
 - Handover notes and successor questions.
+- Task-linked daily notes: what was done, how/why, blockers, next steps, and evidence. Jira data can prefill context, but the person confirms the note.
 
 The system may extract candidates from project artifacts, but AI output remains `PROPOSED` until an authorized human verifies it.
 
@@ -67,7 +67,7 @@ The system may extract candidates from project artifacts, but AI output remains 
 Active project work
       |
       v
-Members and leaders create or update project knowledge
+Members and leaders create notes, upload sources, and confirm Jira-linked work context
       |
       v
 Source ingestion and SAG retrieval indexing
@@ -79,7 +79,7 @@ AI extracts Proposed Knowledge with evidence
 Owner or scoped SME verifies knowledge
       |
       v
-Coverage, freshness, ownership, and gap monitoring
+Coverage, ownership, and basic gap monitoring
       |
       v
 Missing or overdue knowledge creates follow-up
@@ -88,10 +88,10 @@ Missing or overdue knowledge creates follow-up
 Member departure or responsibility transfer
       |
       v
-Coverage analysis and gap-driven AI interview
+Focused handover checklist and unresolved questions
       |
       v
-Verified handover package and successor learning path
+Scoped handover summary and successor learning path
       |
       v
 Successor asks evidence-grounded questions and reports gaps
@@ -103,17 +103,18 @@ Successor asks evidence-grounded questions and reports gaps
 
 - One software project containing multiple teams.
 - Project membership and team membership.
-- Persistent role assignments with project or team scope.
+- Three persistent roles and project/team membership scope; Admin grants `project.create` separately to selected Team Leaders.
 - SME, Knowledge Owner, and Successor assignments.
 - Onboarding and offboarding membership states.
 
 ### 6.2. Continuous knowledge capture
 
-- Manual structured knowledge entry.
-- File upload and source management.
+- Manual structured knowledge entry and short daily/task notes remain the primary capture path.
+- Jira Cloud issue/comment/status sync for linked project work, with initial import, webhook updates, deduplication and reconciliation; users can correct/confirm the resulting note.
+- File upload (PDF, DOCX, Markdown, TXT, image) and source management; Cloudflare R2 stores originals, MongoDB stores metadata.
 - Required knowledge templates by team, module, or process.
 - AI extraction of Proposed Knowledge from authorized evidence.
-- Reminders for missing, stale, overdue, or incomplete knowledge.
+- Reminders for missing/overdue work notes and required knowledge; no employee scoring.
 - Audit trail for contributions and changes.
 
 ### 6.3. Knowledge lifecycle
@@ -121,37 +122,39 @@ Successor asks evidence-grounded questions and reports gaps
 - Proposed, under-review, verified, active, superseded, deprecated, and rejected states.
 - Version, validity interval, owner, reviewer, evidence, and review date.
 - Human verification before organizational activation.
-- Basic conflict and staleness handling.
+- Basic status and review date; automated conflict detection and advanced freshness scoring are later phases.
 
 ### 6.4. Permission-aware assistant
 
 - Search and question answering over authorized project knowledge.
 - Answer, citations, status, owner, version, and last verified date.
 - Permission filtering before retrieval and context construction.
-- Explicit insufficient-evidence and unresolved-conflict responses.
+- Explicit insufficient-evidence response and a way to report a Knowledge Gap; no fabricated answer.
 
 ### 6.5. Handover workflow
 
 - Initiate departure or responsibility transfer for any leader or member.
 - Analyze responsibilities, ownership, evidence, coverage, freshness, and concentration.
 - Create required handover items and identify knowledge gaps.
-- Generate gap-driven AI interview questions.
+- Record unresolved questions for a human follow-up; automated AI interviewing is a stretch capability.
 - Assign a successor and a scoped handover package.
 - Track predecessor tasks, successor questions, unresolved gaps, and readiness.
-- Require Team Leader or Project Manager confirmation before completion.
+- Require the assigned Team Leader or Admin to confirm completion according to scope.
 
 ### 6.6. Evaluation
 
 - A labeled dataset from one project scope.
 - Expected answers and supporting evidence.
-- Vector RAG, SAG, and Continuum validation baselines.
+- At least a versioned retrieval/answer baseline and Continuum result; SAG ablation where feasible.
 - Retrieval, answer, citation, permission, and handover metrics.
 - Repeatable test runs with fixed model and retrieval configuration where possible.
 
 ## 7. Stretch goals
 
-- Jira, GitHub, Google Drive, Confluence, or meeting-note connectors.
+- GitHub, Google Drive, Confluence, MCP-based internal app connectors, or meeting-note connectors beyond Jira.
+- AI-generated interview questions and interview-to-Proposed-Knowledge conversion.
 - Advanced conflict detection.
+- Advanced freshness scoring, incident memory, and automated employee-transfer analysis.
 - Personalized onboarding beyond the assigned handover scope.
 - Temporal graph visualization.
 - Cross-project knowledge transfer.
@@ -181,3 +184,7 @@ The MVP is successful when it demonstrates:
 6. Unauthorized evidence leakage is zero in the security test suite.
 7. The benchmark reports retrieval and answer quality against labeled expected outputs.
 8. The handover evaluation measures time-to-information, answer correctness, unresolved gaps, or equivalent takeover outcomes.
+
+## 10. Delivery boundary: 10 weeks
+
+The demonstrable vertical slice is: Admin configures project/team and grants, members add manual or Jira-linked work notes and documents, files are processed/indexed, AI proposes knowledge for human review, and a successor asks the cited chat assistant with permission checks. Dataset-based evaluation is required. Do not treat every possible dashboard, connector, interview, or enterprise workflow as mandatory in this period. See [Daily workflow and Jira sync](03_DAILY_WORKFLOW_AND_JIRA_SYNC.md).
