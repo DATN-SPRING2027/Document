@@ -427,7 +427,7 @@ Dự án nên có LLM Gateway để tránh phụ thuộc một provider. Provide
 
 | Layer | Công nghệ đã chốt | Lý do |
 | ----- | ----- | ----- |
-| Frontend | React + TypeScript + Vite; Tailwind CSS + TailAdmin | Web application và dashboard theo UI foundation đã chốt; không phụ thuộc frontend Next.js của SAG. |
+| Frontend | Next.js (App Router) + TypeScript; Tailwind CSS + TailAdmin | Web application và dashboard theo UI foundation đã chốt, tối ưu Server/Client components; không phụ thuộc frontend Next.js của SAG. |
 | Core API | Node.js + NestJS + TypeScript | Quản lý domain, RBAC, workflow, validation và audit; tách business layer khỏi retrieval engine. |
 | SAG Service | FastAPI \+ zleap-sag / SAG self-hosted API | Reuse open-source retrieval engine qua stable API boundary. |
 | Primary Database | MongoDB + Mongoose | Source of truth cho lifecycle, version, permission, workflow và audit của Continuum. |

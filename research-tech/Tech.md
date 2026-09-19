@@ -13,8 +13,8 @@ This document supplements the Continuum AI Graduation Project Specification v1.0
 
 | Layer | Approved technology | Responsibility |
 | --- | --- | --- |
-| Frontend | React, TypeScript, Vite | Web application and client-side composition |
-| UI foundation | TailAdmin for React with Tailwind CSS | Dashboard shell, layouts, reusable visual components, and admin experience |
+| Frontend | Next.js (App Router), React, TypeScript | Web application, Server/Client components, and hybrid composition |
+| UI foundation | TailAdmin for Next.js / React with Tailwind CSS | Dashboard shell, layouts, reusable visual components, and admin experience |
 | Server state | TanStack Query | API queries, mutations, caching, invalidation, and request states |
 | Local UI state | Zustand | Small client-only state that does not belong to the server cache |
 | Core backend | Node.js, NestJS, TypeScript | Continuum domain logic, API, validation, permissions, workflows, and audit orchestration |

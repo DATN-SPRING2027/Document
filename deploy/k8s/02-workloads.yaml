@@ -1,0 +1,191 @@
+# ==============================================================================
+# Continuum AI — Kubernetes Deployments (Frontend, Backend Core, AI Engine)
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-nextjs
+  namespace: continuum-core
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: frontend-nextjs
+  template:
+    metadata:
+      labels:
+        app: frontend-nextjs
+    spec:
+      containers:
+        - name: nextjs
+          image: continuum/frontend-nextjs:latest
+          ports:
+            - containerPort: 3000
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: NEXT_PUBLIC_API_URL
+              value: "/api/v1"
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: continuum-core
+spec:
+  selector:
+    app: frontend-nextjs
+  ports:
+    - port: 3000
+      targetPort: 3000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-core
+  namespace: continuum-core
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: backend-core
+  template:
+    metadata:
+      labels:
+        app: backend-core
+    spec:
+      containers:
+        - name: nestjs-core
+          image: continuum/backend-core:latest
+          ports:
+            - containerPort: 3000
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1024Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2048Mi"
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: MONGODB_URI
+              value: "mongodb://mongodb-0.mongo-headless.continuum-data.svc.cluster.local:27017,mongodb-1.mongo-headless.continuum-data.svc.cluster.local:27017,mongodb-2.mongo-headless.continuum-data.svc.cluster.local:27017/continuum?replicaSet=rs0"
+            - name: REDIS_HOST
+              value: "redis-service.continuum-data.svc.cluster.local"
+            - name: SAG_AI_URL
+              value: "http://ai-engine-service.continuum-ai.svc.cluster.local:8001"
+            - name: MONGO_MAX_POOL_SIZE
+              value: "15"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: continuum-core
+spec:
+  selector:
+    app: backend-core
+  ports:
+    - port: 3000
+      targetPort: 3000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-engine
+  namespace: continuum-ai
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ai-engine
+  template:
+    metadata:
+      labels:
+        app: ai-engine
+    spec:
+      containers:
+        - name: fastapi-sag
+          image: continuum/ai-engine:latest
+          ports:
+            - containerPort: 8001
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1536Mi"
+            limits:
+              cpu: "2000m"
+              memory: "3072Mi"
+          env:
+            - name: PORT
+              value: "8001"
+            - name: LANCEDB_PATH
+              value: "/app/data/lancedb"
+            - name: TORCH_NUM_THREADS
+              value: "2"
+          volumeMounts:
+            - name: lancedb-storage
+              mountPath: /app/data/lancedb
+      volumes:
+        - name: lancedb-storage
+          persistentVolumeClaim:
+            claimName: lancedb-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-engine-service
+  namespace: continuum-ai
+spec:
+  selector:
+    app: ai-engine
+  ports:
+    - port: 8001
+      targetPort: 8001
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lancedb-pvc
+  namespace: continuum-ai
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 10Gi

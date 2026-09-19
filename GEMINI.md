@@ -7,6 +7,7 @@ Các ràng buộc ưu tiên cao:
 
 - Tạo branch mới từ `origin/main` cho từng task; không code trực tiếp trên `main`.
 - Tách DB, backend và frontend thành branch/PR riêng.
+- STRICT SPEC FREEZE: Thư mục `Document/architecture`, `Document/database-design` và `Document/deploy` là NGUYÊN BẢN CỐT LÕI (FROZEN BASELINE). Cực kỳ hạn chế thay đổi; gần như KHÔNG ĐƯỢC PHÉP SỬA trừ khi có yêu cầu và xác nhận tường minh từ người dùng.
 - Mọi schema/model/migration/index/data change dùng DB PR riêng; không sửa
   migration cũ và phải chuẩn bị thông báo team.
 - Được push feature branch sau khi kiểm tra/commit; không push trực tiếp hoặc

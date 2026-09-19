@@ -1,0 +1,181 @@
+# Continuum AI — Lean Infrastructure Deployment (Tối ưu cho 1 VPS 8GB - 16GB RAM)
+# File: Document/deploy/docker-compose.lean.yml
+
+version: '3.8'
+
+networks:
+  continuum-vpc:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+volumes:
+  mongo-data:
+    driver: local
+  redis-data:
+    driver: local
+  lancedb-data:
+    driver: local
+
+services:
+  # =========================================================================
+  # 1. BIÊN MẠNG (EDGE & INGRESS REVERSE PROXY)
+  # =========================================================================
+  ingress:
+    image: nginx:alpine
+    container_name: continuum-ingress
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - continuum-vpc
+    depends_on:
+      - frontend
+      - backend
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+  # =========================================================================
+  # 2. GIAO DIỆN NGƯỜI DÙNG (NEXT.JS APP ROUTER + TAILADMIN)
+  # =========================================================================
+  frontend:
+    image: node:20-alpine
+    container_name: continuum-frontend-nextjs
+    restart: always
+    working_dir: /app
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://backend:3000/api/v1
+      - NEXT_PUBLIC_WS_URL=ws://backend:3000
+      - NODE_OPTIONS=--max-old-space-size=384
+    networks:
+      - continuum-vpc
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.2'
+          memory: 256M
+
+  # =========================================================================
+  # 3. BACKEND CORE (NESTJS MODULAR DOMAIN SERVICES + BULLMQ WORKERS)
+  # =========================================================================
+  backend:
+    image: node:20-alpine
+    container_name: continuum-backend-core
+    restart: always
+    working_dir: /app
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - MONGODB_URI=mongodb://db_mongo:27017/continuum?replicaSet=rs0
+      - REDIS_HOST=db_redis
+      - REDIS_PORT=6379
+      - SAG_AI_URL=http://ai_engine:8001
+      - R2_ACCOUNT_ID=${R2_ACCOUNT_ID}
+      - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
+      - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
+      - R2_BUCKET_NAME=continuum-documents
+      - JWT_SECRET=${JWT_SECRET:-super-secret-jwt-key-change-in-prod}
+      - JWT_EXPIRES_IN=15m
+      - REFRESH_EXPIRES_IN=7d
+      - MONGO_MAX_POOL_SIZE=15
+      - BULLMQ_CONCURRENCY=2
+    networks:
+      - continuum-vpc
+    depends_on:
+      - db_mongo
+      - db_redis
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+        reservations:
+          cpus: '0.8'
+          memory: 1024M
+
+  # =========================================================================
+  # 4. SAG AI RETRIEVAL & OCR SERVICE (FASTAPI + LANCEDB)
+  # =========================================================================
+  ai_engine:
+    image: python:3.11-slim
+    container_name: continuum-ai-engine
+    restart: always
+    working_dir: /app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PORT=8001
+      - LANCEDB_PATH=/app/data/lancedb
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - WHISPER_API_KEY=${WHISPER_API_KEY}
+      - TORCH_NUM_THREADS=2
+    volumes:
+      - lancedb-data:/app/data/lancedb
+    networks:
+      - continuum-vpc
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 3072M
+        reservations:
+          cpus: '0.5'
+          memory: 1536M
+
+  # =========================================================================
+  # 5. CƠ SỞ DỮ LIỆU CHÍNH (MONGODB 7.0 REPLICA SET TỐI ƯU BỘ NHỚ)
+  # =========================================================================
+  db_mongo:
+    image: mongo:7.0
+    container_name: continuum-mongodb-rs0
+    restart: always
+    command: >
+      mongod --replSet rs0 --bind_ip_all
+      --wiredTigerCacheSizeGB 1.0
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - continuum-vpc
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 2048M
+        reservations:
+          cpus: '0.5'
+          memory: 1024M
+
+  # =========================================================================
+  # 6. BỘ NHỚ ĐỆM & HÀNG ĐỢI (REDIS 7.2 IN-MEMORY CLUSTER)
+  # =========================================================================
+  db_redis:
+    image: redis:7.2-alpine
+    container_name: continuum-redis-cache-queue
+    restart: always
+    command: >
+      redis-server --appendonly yes
+      --maxmemory 400mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    networks:
+      - continuum-vpc
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 256M

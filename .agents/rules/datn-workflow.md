@@ -15,6 +15,7 @@ Always read and follow `/AI_WORKFLOW.md` and `/AGENTS.md` before editing.
   force-push to `main`, approve, merge, auto-merge, or bypass protection.
 - Open feature PRs only into `main`, then hand the PR URL back for Jira.
 - Follow the verified DATN production architecture; reuse before creating.
+- STRICT SPEC FREEZE: Thư mục `/Document/architecture`, `/Document/database-design`, và `/Document/deploy` là NGUYÊN BẢN CỐT LÕI (FROZEN BASELINE). Cực kỳ hạn chế thay đổi; gần như KHÔNG ĐƯỢC PHÉP SỬA trừ khi có yêu cầu trực tiếp và xác nhận tường minh từ người dùng. Mọi mã nguồn phát triển (backend, frontend, worker) phải tuân thủ tuyệt đối theo specs hiện có.
 - Apply framework/database/UI-specific guidance only after confirming DATN uses
   that technology.
 - Validate untrusted input, protect secrets, and verify affected behavior.

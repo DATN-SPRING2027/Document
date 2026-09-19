@@ -1,0 +1,131 @@
+# ==============================================================================
+# Continuum AI — Ultra-Lean Profile (Dành riêng cho VPS 4GB RAM)
+# Chạy toàn bộ 9 microservices + Mongo + Redis + AI trong < 2.8GB RAM!
+# Lệnh chạy: docker compose -f Document/deploy/docker-compose.4gb-ultra-lean.yml up -d
+# ==============================================================================
+
+version: '3.8'
+
+networks:
+  continuum-vpc:
+    driver: bridge
+
+volumes:
+  mongo-data-4gb:
+  redis-data-4gb:
+  lancedb-data-4gb:
+
+services:
+  # 1. Reverse Proxy (Cực nhẹ: 40MB RAM)
+  ingress:
+    image: nginx:alpine
+    container_name: continuum-ingress
+    restart: always
+    ports:
+      - "80:80"
+    networks:
+      - continuum-vpc
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+
+  # 2. Next.js Frontend (Giới hạn: 256MB RAM)
+  frontend:
+    image: node:20-alpine
+    container_name: continuum-frontend
+    restart: always
+    working_dir: /app
+    environment:
+      - NODE_ENV=production
+      - NODE_OPTIONS=--max-old-space-size=200
+      - NEXT_PUBLIC_API_URL=/api/v1
+    networks:
+      - continuum-vpc
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # 3. Backend Core (NestJS Modular Monolith gộp chung: 450MB RAM)
+  backend:
+    image: node:20-alpine
+    container_name: continuum-backend
+    restart: always
+    working_dir: /app
+    environment:
+      - NODE_ENV=production
+      - NODE_OPTIONS=--max-old-space-size=380
+      - PORT=3000
+      - MONGODB_URI=mongodb://db_mongo:27017/continuum?replicaSet=rs0
+      - REDIS_HOST=db_redis
+      - REDIS_PORT=6379
+      - SAG_AI_URL=http://ai_engine:8001
+      - MONGO_MAX_POOL_SIZE=8
+      - BULLMQ_CONCURRENCY=1
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    networks:
+      - continuum-vpc
+    depends_on:
+      - db_mongo
+      - db_redis
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # 4. FastAPI SAG Engine (Gọi Cloud API, không load model nặng: 400MB RAM)
+  ai_engine:
+    image: python:3.11-slim
+    container_name: continuum-ai-engine
+    restart: always
+    working_dir: /app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PORT=8001
+      - LANCEDB_PATH=/app/data/lancedb
+      - USE_CLOUD_EMBEDDING=true
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - lancedb-data-4gb:/app/data/lancedb
+    networks:
+      - continuum-vpc
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # 5. MongoDB (Ép Cache WiredTiger xuống 256MB: Tối đa 512MB RAM)
+  db_mongo:
+    image: mongo:7.0
+    container_name: continuum-mongodb
+    restart: always
+    command: >
+      mongod --replSet rs0 --bind_ip_all
+      --wiredTigerCacheSizeGB 0.25
+    volumes:
+      - mongo-data-4gb:/data/db
+    networks:
+      - continuum-vpc
+    deploy:
+      resources:
+        limits:
+          memory: 600M
+
+  # 6. Redis (Ép bộ nhớ tối đa 100MB RAM)
+  db_redis:
+    image: redis:7.2-alpine
+    container_name: continuum-redis
+    restart: always
+    command: >
+      redis-server --appendonly no
+      --maxmemory 100mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data-4gb:/data
+    networks:
+      - continuum-vpc
+    deploy:
+      resources:
+        limits:
+          memory: 128M
