@@ -48,7 +48,7 @@ Document/architecture/
 
 | Tầng kiến trúc | Công nghệ đã phê duyệt | Trách nhiệm chính |
 | :--- | :--- | :--- |
-| **Frontend Framework** | **Next.js 14+ (App Router)**, React, TypeScript | Hybrid Rendering (SSR/SSG/Client Components), Route Handlers, Streaming UI |
+| **Frontend Framework** | **Next.js 16 (App Router)**, React 19, TypeScript | Hybrid Rendering (SSR/SSG/Client Components), Route Handlers, Streaming UI |
 | **UI Design System** | **TailAdmin** for Next.js / Tailwind CSS | Dashboard layout, Bảng biểu, Form kiểm chứng, Visual tokens |
 | **Client State** | **TanStack Query v5** + **Zustand** | Quản lý Server Cache, Optimistic UI và Local UI state nhẹ |
 | **Container Orchestration** | **Kubernetes (K8s)** & **Helm v3** | Điều phối Microservices, StatefulSets, HPA Auto-scaling, Self-healing, Probes |

@@ -75,18 +75,19 @@ Do not activate every skill for every task. Use only what the task requires.
 
 ## Architecture and technology rules
 
-The approved proposal currently selects React, TypeScript and Vite for the
-frontend; NestJS and TypeScript for the backend; and MongoDB with Mongoose as
-the primary database. Agents must still verify the initialized DATN source and
-report any conflict before making technology-specific changes.
+The approved frontend uses Next.js 16 (App Router), React 19, TypeScript,
+Tailwind CSS 4 and TailAdmin; the backend uses NestJS and TypeScript; and
+MongoDB with Mongoose is the primary database. Agents must still verify the
+initialized DATN source and report any conflict before making
+technology-specific changes.
 
 - Follow the closest maintained production feature and its tests.
 - Reuse existing components, services, schemas, DTOs, types and utilities before
   creating alternatives.
 - Do not introduce a parallel architecture or dependency without a documented
   reason and the required approval.
-- Apply MongoDB/Mongoose, Node.js, NestJS, React/Vite and TailAdmin guidance in
-  line with the approved proposal and the actual DATN source.
+- Apply MongoDB/Mongoose, Node.js, NestJS, Next.js, React and TailAdmin guidance
+  in line with the approved proposal and the actual DATN source.
 - Record significant architecture decisions in the repository's established ADR
   format; do not import architecture decisions from TAMI or another project.
 

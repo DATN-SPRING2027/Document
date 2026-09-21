@@ -37,7 +37,7 @@ Chỉ được phép sửa đổi bất kỳ tệp tin nào trong 3 thư mục t
 
 - **Backend (NestJS / Python FastAPI):**
   - Mọi Controller, Service, DTO, Mongoose Schema, TypeORM / Drizzle / Prisma Entity, và SQL queries phải ánh xạ chính xác 1:1 theo đúng các trường, kiểu dữ liệu, quan hệ khóa ngoại (FK), và chỉ mục (Index) đã định nghĩa trong `database-design/`.
-- **Frontend (Next.js 14 App Router):**
+- **Frontend (Next.js 16 App Router):**
   - Mọi route, component (đặc biệt là 3D Universe Canvas Three.js), state management (TanStack Query, Zustand) phải tuân thủ chuẩn `architecture/02_FRONTEND_NEXTJS.md`.
 - **DevOps & Infrastructure:**
   - Mọi kịch bản container, ports, environment variables, volumes phải khớp chuẩn với `deploy/` và `architecture/01_SYSTEM_TOPOLOGY.md`.
