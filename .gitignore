@@ -5,3 +5,7 @@
 node_modules/
 .DS_Store
 Thumbs.db
+
+# Sample-Report: file mẫu nặng, mỗi người tự tải về máy
+Technical-Writing-Document/Sample-Report/*.docx
+Technical-Writing-Document/Sample-Report/*.xlsx
