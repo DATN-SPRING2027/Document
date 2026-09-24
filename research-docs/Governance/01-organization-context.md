@@ -3,130 +3,132 @@
 **Ticket**: `DATN-15`  
 **Assignee**: Nguyen Hong Phuc  
 **Due Date**: Sep 26, 2026  
-**Status**: Research Only (No implementation, no code changes, no dependency changes)  
+**Status**: Research Only (No implementation, no code changes, no configuration/dependency changes)  
 **Target System**: DATN / Continuum AI Baseline  
 
 ---
 
 ## 1. Evidence Classification Standard (Truth Grading)
 
-Báo cáo tuân thủ nghiêm ngặt chuẩn phân loại bằng chứng theo quy định của dự án:
-- `[FACT / VERIFIED]`: Đã được kiểm chứng trực tiếp từ mã nguồn thực tế đang tồn tại trong repository.
-- `[IMPLEMENTED]`: Đã có logic/code thực thi hoạt động (không chỉ là schema hay interface).
-- `[DESIGN / PROPOSED]`: Được mô tả trong tài liệu kiến trúc, specification, SRS hoặc ADR nhưng chưa có code.
-- `[PARTIAL]`: Đã có một phần cấu trúc hỗ trợ (như schema), nhưng logic nghiệp vụ/API chưa hoàn thiện.
-- `[GAP]`: Yêu cầu đã được đặc tả trong tài liệu nhưng hoàn toàn chưa có trong mã nguồn.
-- `[INFERENCE]`: Kết luận được tổng hợp và suy luận logic từ nhiều nguồn có cơ sở.
-- `[UNKNOWN]`: Thiếu bằng chứng, không tìm thấy thông tin trong cả tài liệu lẫn mã nguồn.
-- `[DECISION REQUIRED]`: Tồn tại mâu thuẫn hoặc điểm hở kiến trúc cần người/nhóm họp ra quyết định chính thức.
+This report strictly adheres to the project's evidence classification and truth grading standard:
+- `[FACT / VERIFIED]`: Directly verified from existing source code in the repository.
+- `[IMPLEMENTED]`: Executable behavior exists and is operational (not merely a schema or interface).
+- `[DESIGN / PROPOSED]`: Described in architecture documents, specifications, SRS, or ADRs, but not yet implemented in code.
+- `[PARTIAL]`: Supporting infrastructure/scaffolding exists (e.g., database schema), but business logic/API is incomplete.
+- `[GAP]`: Documented requirement exists in specifications but is completely absent from the current codebase.
+- `[INFERENCE]`: Logical conclusion synthesized from multiple substantiated sources.
+- `[UNKNOWN]`: Evidence is insufficient; no record found in documentation or source code.
+- `[DECISION REQUIRED]`: Architectural discrepancies or open policy points requiring team/lead consensus.
 
 ---
 
 ## 2. Executive Summary
 
-1. `[FACT]` / `[PARTIAL]` **Data Isolation Baseline**: Toàn bộ hệ thống cơ sở dữ liệu backend (`DATN-BE`) đã được chuẩn bị cấu trúc Multi-Tenant phân cấp nghiêm ngặt thông qua trường `organizationId` (ObjectId) trên hầu hết các collection: `projects`, `teams`, `lifecycle_*`, `jira_*`, `ingestion_*`, `handover_*`, `audit_logs`.
-2. `[FACT]` / `[PARTIAL]` **Session Binding**: Bảng `refresh_sessions` trong module IAM đã lưu cặp `(userId, organizationId)`. Điều này khẳng định phiên đăng nhập của người dùng được neo chặt vào một ngữ cảnh Organization cụ thể.
-3. `[GAP]` **Zero Context Resolution in Code**: Tại tầng HTTP của backend (`DATN-BE/src/common/http`), hiện tại chỉ có duy nhất `request-id.middleware.ts` (`x-request-id`). Hoàn toàn **chưa có** Middleware, Interceptor, hoặc Custom Param Decorator nào để trích xuất và thiết lập Organization Context cho request.
-4. `[GAP]` **Zero Authorization Guards in Code**: `DATN-BE/src` hiện tại chưa triển khai bất kỳ NestJS Guard (`CanActivate`) nào để kiểm tra quyền truy cập hay chặn truy cập chéo tổ chức (Cross-Organization Denial).
-5. `[GAP]` **Frontend Inactive**: `DATN-FE` hiện tại là template TailAdmin thuần giao diện. Thư mục `src/context` chỉ có `SidebarContext` và `ThemeContext`. Chưa có Auth Context, chưa có Organization Switcher, và chưa lưu trạng thái `activeOrganizationId`.
+1. `[FACT]` / `[PARTIAL]` **Data Isolation Baseline**: The backend persistence layer (`DATN-BE`) enforces a strict multi-tenant boundary via the `organizationId` (`ObjectId`) field across virtually all collections: `projects`, `teams`, `lifecycle_*`, `jira_*`, `ingestion_*`, `handover_*`, and `audit_logs`.
+2. `[FACT]` / `[PARTIAL]` **Session Binding**: The `refresh_sessions` collection in the IAM module binds user sessions to a specific organization via `(userId, organizationId)`. This confirms that user sessions are designed to operate within an explicit organization context.
+3. `[GAP]` **Zero Context Resolution in Code**: At the backend HTTP transport layer (`DATN-BE/src/common/http`), only `request-id.middleware.ts` (`x-request-id`) currently exists. There is **no** Middleware, Interceptor, or Custom Param Decorator implemented to extract, resolve, or attach `organizationId` to the execution context.
+4. `[GAP]` **Zero Authorization Guards in Code**: No NestJS Guards (`CanActivate`) currently exist anywhere in `DATN-BE/src` to enforce organization scope or execute Cross-Organization Denial.
+5. `[GAP]` **Frontend Organization State**: In `DATN-FE`, the Zustand store (`src/stores/client-state.ts`) only contains `activeProjectId`, completely lacking an `activeOrganizationId`. Furthermore, Next.js BFF Proxy (`src/lib/bff-proxy.ts`) maintains a fixed header whitelist that **omits** `x-organization-id`, meaning incoming organization headers would be stripped before reaching the backend.
 
 ---
 
 ## 3. Scope & Focus
 
-### Trong phạm vi nghiên cứu (In Scope):
-- Phạm vi tổ chức (Organization scope) và quan hệ thực thể: `User ➔ Organization` và `Resource ➔ Organization`.
-- Cơ chế nhận diện ngữ cảnh request (Request Context Resolution: Header vs JWT vs Route Param).
-- Cơ chế từ chối và cách ly truy cập chéo tổ chức (Cross-Organization Denial).
-- Sự phụ thuộc của phân quyền Project và Team vào Organization Context.
-- Đối chiếu giữa tài liệu đặc tả kiến trúc (`Document/architecture/05_SECURITY_AND_GOVERNANCE.md`, `02_ACTORS_ROLES_AND_PERMISSIONS.md`) và mã nguồn thực tế (`DATN-BE`, `DATN-FE`).
+### In Scope:
+- Organization scope and domain boundaries: `User ➔ Organization` and `Resource ➔ Organization` relationships.
+- Request context resolution mechanisms (Header vs. JWT Payload vs. Route Param).
+- Cross-organization access denial and tenant boundary isolation.
+- Dependencies of Project and Team authorization upon Organization Context.
+- Comparative analysis between architectural specifications (`Document/architecture/05_SECURITY_AND_GOVERNANCE.md`, `02_ACTORS_ROLES_AND_PERMISSIONS.md`) and actual source code (`DATN-BE`, `DATN-FE`).
 
-### Ngoài phạm vi nghiên cứu (Out of Scope):
-- Tuyệt đối **không code**, không chỉnh sửa cấu hình hệ thống, không thay đổi dependencies, không mở PR.
-- Không tự ý giải quyết các điểm mâu thuẫn hoặc tự chế tác ra hành vi multi-org khi chưa có quyết định của team.
+### Out of Scope:
+- Modifying production code, changing runtime configurations, adding dependencies, or creating implementation PRs.
+- Speculating or inventing arbitrary multi-organization switching behaviors not established in project specifications.
 
 ---
 
 ## 4. Verified Requirements Checklist
 
-| Yêu cầu (Requirement) | Nguồn bằng chứng (Evidence Source) | Phân loại (Classification) | Ghi chú & Hiện trạng kỹ thuật |
+| Requirement | Evidence Source | Classification | Technical Finding & Notes |
 | :--- | :--- | :--- | :--- |
-| **Organization là ranh giới dữ liệu cấp cao nhất** | `05_SECURITY_AND_GOVERNANCE.md`; `02_ACTORS_ROLES_AND_PERMISSIONS.md` | `[DESIGN]` | Mọi tài nguyên dự án, nhóm, tri thức đều trực thuộc một Organization. |
-| **Bảng Organizations tồn tại trong CSDL** | `DATN-BE/src/services/iam/infrastructure/mongodb/mongodb.schemas.ts` | `[FACT]` | Có collection `organizations` với `name`, `slug` (unique index), `plan` (`FREE` \| `ENTERPRISE`), `settings`. |
-| **User không chứa cứng `organizationId`** | `DATN-BE/src/services/iam/infrastructure/mongodb/mongodb.schemas.ts` | `[FACT]` | Schema `users` chỉ chứa `email`, `passwordHash`, `status`, `twoFactorEnabled`. Quan hệ User - Org là quan hệ nhiều - nhiều qua bảng trung gian. |
-| **Liên kết User ➔ Organization qua Role & Membership** | `DATN-BE/.../mongodb.schemas.ts` | `[FACT]` | Được liên kết qua `role_assignments` (index `{ organizationId: 1, projectId: 1, userId: 1 }`) và `organization_capability_grants`. |
-| **Mọi Resource đều gắn cứng `organizationId`** | Toàn bộ các file `persistence.ts` trong `DATN-BE/src/services/*` | `[FACT]` | `projects`, `teams`, `jira_connections`, `raw_documents`, `knowledge_objects`, `audit_logs` đều có `organizationId` và compound index. |
-| **Phiên làm việc (Session) neo theo Organization** | `refresh_sessions` schema trong IAM service | `[FACT]` | Schema khai báo rõ `userId` và `organizationId`. |
-| **Request Context Resolution qua JWT Claims** | `05_SECURITY_AND_GOVERNANCE.md` (Mục 2) | `[DESIGN]` | Tài liệu thiết kế chỉ định Pre-Retrieval ACL giải mã JWT lấy `userId`, `roles`, `teamIds`. |
-| **Middleware / Guard nhận diện Organization Context** | `DATN-BE/src/common/http` | `[GAP]` | Chưa có file middleware hoặc guard nào để validate và inject `organizationId` vào Request pipeline. |
-| **Cross-Organization Access Denial** | `02_ACTORS_ROLES_AND_PERMISSIONS.md` (Mục 2) | `[DESIGN]` | "Deny takes precedence. Cross-tenant or cross-project access must be explicitly authorized, not inferred." |
-| **Enforcement chặn truy cập chéo ở Backend** | `DATN-BE/src` | `[GAP]` | Chưa có Guard hoặc Mongoose Tenant Filter Plugin để tự động từ chối truy cập chéo Org. |
-| **Frontend Organization State / Switcher** | `DATN-FE/src/context`, `src/layout` | `[GAP]` | Chưa có context quản lý Org hiện tại, chưa có UI dropdown chọn Organization. |
+| **Organization is the top-level isolation boundary** | `05_SECURITY_AND_GOVERNANCE.md`; `02_ACTORS_ROLES_AND_PERMISSIONS.md` | `[DESIGN]` | All projects, teams, documents, and knowledge assets belong to an Organization. |
+| **Organizations collection exists in persistence** | `DATN-BE/src/services/iam/infrastructure/mongodb/mongodb.schemas.ts` | `[FACT]` | Collection `organizations` defines `name`, `slug` (unique index), `plan` (`FREE` \| `ENTERPRISE`), and `settings`. |
+| **Users schema does not hardcode `organizationId`** | `DATN-BE/src/services/iam/infrastructure/mongodb/mongodb.schemas.ts` | `[FACT]` | `users` schema only defines `email`, `passwordHash`, `status`, and `twoFactorEnabled`. User-to-Organization relationship is Many-to-Many via intermediate collections. |
+| **User ➔ Organization linkage via Role & Capability** | `DATN-BE/.../mongodb.schemas.ts` | `[FACT]` | Bound through `role_assignments` (unique compound index `{ organizationId: 1, projectId: 1, userId: 1 }`) and `organization_capability_grants`. |
+| **Resources carry mandatory `organizationId`** | All `persistence.ts` across `DATN-BE/src/services/*` | `[FACT]` | `projects`, `teams`, `jira_connections`, `raw_documents`, `knowledge_objects`, and `audit_logs` require `organizationId` with compound indexes. |
+| **Session model binds to Organization** | `refresh_sessions` schema in IAM service | `[FACT]` | Schema explicitly declares `userId: ObjectId` and `organizationId: ObjectId`. |
+| **Request Context Resolution via JWT Claims** | `05_SECURITY_AND_GOVERNANCE.md` (Section 2) | `[DESIGN]` | Pre-Retrieval ACL specifies decoding JWT to extract `userId`, `roles`, and `teamIds`. |
+| **Middleware / Guard for Organization Context** | `DATN-BE/src/common/http` | `[GAP]` | No middleware, interceptor, or guard exists to validate or inject `organizationId` into the request pipeline. |
+| **Cross-Organization Access Denial** | `02_ACTORS_ROLES_AND_PERMISSIONS.md` (Section 2) | `[DESIGN]` | Explicit rule: "Deny takes precedence. Cross-tenant or cross-project access must be explicitly authorized, not inferred." |
+| **Backend Cross-Tenant Enforcement** | `DATN-BE/src` | `[GAP]` | No Guard or Mongoose Tenant Filter plugin exists to reject cross-tenant resource access automatically. |
+| **Frontend Organization State / Switcher** | `DATN-FE/src/stores/client-state.ts`, `src/context` | `[GAP]` | Zustand store only holds `activeProjectId`. No `activeOrganizationId` or Organization Switcher UI exists. |
+| **BFF Proxy Header Forwarding** | `DATN-FE/src/lib/bff-proxy.ts` | `[GAP]` | Whitelist `forwardedHeaders` does NOT include `x-organization-id`. |
 
 ---
 
-## 5. Core Business Rules (Quy tắc nghiệp vụ cốt lõi)
+## 5. Core Business Rules
 
-### 5.1. Quy tắc đã được xác minh (`[FACT]` & `[DESIGN]`)
-1. **BR-ORG-01 (Isolation Boundary)**: `[DESIGN]` Một request chỉ được phép truy xuất hoặc thao tác trên tài nguyên (Resource) có `organizationId` khớp chính xác với Organization Context của phiên làm việc hiện tại.
-2. **BR-ORG-02 (Hierarchical Containment)**: `[FACT]` / `[DESIGN]` Cấu trúc phân cấp bắt buộc:
+### 5.1. Verified & Design Rules
+1. **BR-ORG-01 (Tenant Isolation Boundary)**: `[DESIGN]` A request is only permitted to access or mutate resources whose `organizationId` matches the authenticated session's resolved Organization Context.
+2. **BR-ORG-02 (Hierarchical Containment)**: `[FACT]` / `[DESIGN]` Strict hierarchy is enforced:
    $$\text{Organization} \longrightarrow \text{Project} \longrightarrow \text{Team} \longrightarrow \text{Domain / Resource ACL}$$
-   Không thể tồn tại một Project hay Team độc lập nằm ngoài Organization.
-3. **BR-ORG-03 (Explicit Capability Grant)**: `[FACT]` / `[DESIGN]` Để tạo mới một Project trong Organization, User có vai trò `TEAM_LEADER` bắt buộc phải có bản ghi cấp quyền hợp lệ và còn hiệu lực trong collection `organization_capability_grants` với `capability = 'project.create'`.
-4. **BR-ORG-04 (Admin Limitation)**: `[DESIGN]` Người dùng có vai trò `ADMIN` của Organization có toàn quyền quản trị tài khoản, phân quyền, cấu hình kết nối Jira, nhưng **không có quyền mặc định** đọc nội dung tri thức mật của Project/Team nếu không có membership trong project đó.
-5. **BR-ORG-05 (Audit Provenance)**: `[FACT]` Mọi hành động nhạy cảm cấp Organization (gán role, cấp capability, tạo project) bắt buộc phải ghi log vào collection `audit_logs` có kèm `organizationId`, `actorUserId`, `action`, `targetResourceId`.
+   No standalone Project or Team can exist without an owning Organization.
+3. **BR-ORG-03 (Explicit Project Creation Capability)**: `[FACT]` / `[DESIGN]` To create a Project, a `TEAM_LEADER` must hold an active grant in `organization_capability_grants` with `capability = 'project.create'`. Leadership alone never confers this capability.
+4. **BR-ORG-04 (Admin Content Boundary)**: `[DESIGN]` An `ADMIN` manages organizational users, settings, and integrations, but does **not** have default access to view or verify confidential project/team knowledge without explicit project membership.
+5. **BR-ORG-05 (Audit Provenance)**: `[FACT]` High-privilege mutations at organization scope (role assignment, capability grant, project creation) must emit immutable records to `audit_logs` including `organizationId`, `actorUserId`, `action`, and `targetResourceId`.
 
-### 5.2. Quy tắc chưa xác lập / Cần làm rõ (`[UNKNOWN]` / `[DECISION REQUIRED]`)
-- **BR-ORG-UN01**: Khi người dùng cố tình truy cập tài nguyên của Organization khác (bằng cách sửa ID trên URL/body), hệ thống trả về HTTP `403 Forbidden` hay `404 Not Found`?
-- **BR-ORG-UN02**: Tài khoản người dùng có được phép active ở nhiều Organization cùng một thời điểm qua nhiều tab trình duyệt không, hay mỗi access token chỉ đại diện cho đúng 1 Organization tại một thời điểm?
+### 5.2. Open Rules & Discrepancies (`[UNKNOWN]` / `[DECISION REQUIRED]`)
+- **BR-ORG-UN01**: Does an invalid cross-organization resource request return HTTP `403 Forbidden` or HTTP `404 Not Found`?
+- **BR-ORG-UN02**: Can a user session operate across multiple active organizations concurrently, or is each issued Access Token restricted to exactly one active organization?
 
 ---
 
 ## 6. Requirement ➔ Evidence ➔ Implementation ➔ Gap Matrix
 
-| Phân tầng (Layer) | Yêu cầu nghiệp vụ (Requirement) | Bằng chứng tài liệu (Evidence) | Hiện trạng mã nguồn (Implementation) | Khoảng trống kỹ thuật (Gap) |
+| Architectural Layer | Requirement | Specification Evidence | Source Implementation | Technical Gap |
 | :--- | :--- | :--- | :--- | :--- |
-| **Schema (Database)** | Lưu trữ định danh và cài đặt Organization | `05_SECURITY...md`, `SPEC.md` | Đã có collection `organizations` trong `DATN-BE` (`continuum_iam`) | `[PARTIAL]` Thiếu migration tạo dữ liệu default organization khởi tạo. |
-| **Schema (Database)** | Quan hệ User - Organization | `02_ACTORS...md` | `role_assignments` và `organization_capability_grants` | `[PARTIAL]` Index của `role_assignments` là `{ organizationId: 1, projectId: 1, userId: 1 }`. Nếu gán role cấp Org (không có Project), `projectId` là `null`, cần kiểm tra index sparse. |
-| **API Contract** | Giao thức truyền Organization Context | `05_SECURITY...md` | Chưa có endpoint API nào ngoài `/health` | `[GAP]` Chưa chốt chuẩn truyền: Header `X-Organization-Id` hay Claim trong JWT payload hay URL param. |
-| **Business Logic** | Trích xuất và xác thực Org Context | `05_SECURITY...md` (Mục 2) | File `DATN-BE/src/common/http` chỉ có `request-id` | `[GAP]` Chưa có `OrgContextMiddleware` hoặc NestJS Guard trích xuất Org Context và gán vào request object. |
-| **Security / Guard** | Ngăn chặn truy cập chéo tổ chức (Cross-Org Denial) | `02_ACTORS...md` (Mục 2) | Không có Guard nào trong `DATN-BE/src` | `[GAP]` Cần xây dựng `OrgScopeGuard` chặn đứng request nếu `request.orgId !== resource.orgId`. |
-| **Frontend UI** | Quản lý trạng thái Organization hiện tại | TailAdmin specs | `DATN-FE/src/context` chỉ có Sidebar & Theme | `[GAP]` Hoàn toàn chưa có `OrgContext` / State lưu trữ `activeOrgId` và UI Switcher. |
-| **Integration / E2E** | Test case xác nhận từ chối chéo tổ chức | `DATN-BE/docs/SPEC.md` | `DATN-BE/test` mới chỉ test health check | `[GAP]` Chưa có E2E test cho kịch bản Cross-Org 403/404. |
+| **Database Schema** | Store Organization entities & metadata | `05_SECURITY...md`, `SPEC.md` | Schema `organizations` exists in `DATN-BE` (`continuum_iam`) | `[PARTIAL]` Initial database seed migration for default organization is missing. |
+| **Database Schema** | User-Organization Membership & Roles | `02_ACTORS...md` | `role_assignments` and `organization_capability_grants` | `[PARTIAL]` Index on `role_assignments` is `{ organizationId: 1, projectId: 1, userId: 1 }`. When assigning an Org-level role (`projectId = null`), null handling in compound unique index must be verified. |
+| **API Contract** | Transport protocol for Organization Context | `05_SECURITY...md` | No business endpoints implemented beyond `/health` | `[GAP]` No contract established: Header `X-Organization-Id` vs. JWT claim vs. URL path parameter. |
+| **Business Logic** | Extract and validate Organization Context | `05_SECURITY...md` (Section 2) | `DATN-BE/src/common/http` only contains `request-id` | `[GAP]` Missing `OrgContextMiddleware` or Interceptor to populate `request.orgContext`. |
+| **Security / Guard** | Prevent Cross-Organization Access | `02_ACTORS...md` (Section 2) | No Guards found in `DATN-BE/src` | `[GAP]` Missing `OrgScopeGuard` to reject requests where `request.orgId !== resource.orgId`. |
+| **Frontend UI** | Manage active Organization State | TailAdmin specifications | `DATN-FE/src/stores/client-state.ts` | `[GAP]` Missing `activeOrganizationId` in Zustand store and missing Organization Switcher component. |
+| **BFF Layer** | Forward Organization Header to Backend | BFF specification | `DATN-FE/src/lib/bff-proxy.ts` | `[GAP]` `x-organization-id` is missing from `forwardedHeaders` array. |
+| **Integration / E2E** | Automated tests for cross-tenant rejection | `DATN-BE/docs/SPEC.md` | `DATN-BE/test` only covers `/health` | `[GAP]` Missing E2E test suite for cross-tenant 403/404 enforcement. |
 
 ---
 
 ## 7. API, Data & Security Findings
 
 ### 7.1. Data & Schema Findings
-- **Tính nhất quán ở tầng dữ liệu**: Điểm mạnh là 100% các domain service (`iam`, `lifecycle`, `jira`, `ingestion`, `handover`, `notification`) đều đã gắn trường `organizationId: { type: Schema.Types.ObjectId, required: true }` vào tất cả các schema thực thể.
-- **Index Composite**: Các collection đều có composite index bắt đầu bằng `organizationId`, ví dụ:
+- **Comprehensive Database-Level Multi-Tenancy**: 100% of domain services (`iam`, `lifecycle`, `jira`, `ingestion`, `handover`, `notification`) enforce `organizationId: { type: Schema.Types.ObjectId, required: true }` across all business entities.
+- **Optimized Compound Indexing**: Primary queries leverage compound indexes prefixed by `organizationId`:
   - `projects`: `{ organizationId: 1, code: 1 }`
   - `teams`: `{ organizationId: 1, projectId: 1, code: 1 }`
   - `lifecycle_proposals`: `{ organizationId: 1, projectId: 1, status: 1 }`
-  Điều này tối ưu hóa việc cô lập dữ liệu theo từng tenant ở tầng MongoDB query.
+  This enables deterministic query filtering and partition isolation in MongoDB.
 
-### 7.2. API & Context Findings
-- Hiện tại chưa có quy ước chính thức về việc truyền Organization Context:
-  - **Phương án 1 (Header-based)**: Client gửi `X-Organization-Id: <org_id>` trong mọi request.
-  - **Phương án 2 (JWT-based)**: Client gửi Bearer Token, token chứa sẵn claim `{ org_id: "..." }`. Khi đổi Org phải xin cấp lại Access Token mới.
-  - **Phương án 3 (URL-based)**: Mọi endpoint có prefix `/api/v1/orgs/:orgId/...`.
+### 7.2. API & Context Resolution Findings
+- No unified convention currently exists across BE and FE for passing Organization Context:
+  - **Option 1 (Header-based)**: Client supplies `X-Organization-Id: <id>` with each request.
+  - **Option 2 (Token-based)**: Client supplies Bearer JWT containing an `org_id` claim. Switching organization requires token re-issuance.
+  - **Option 3 (URL-based)**: Endpoints follow `/api/v1/organizations/:orgId/...`.
 
-### 7.3. Security & Vulnerability Findings
-- **Nguy cơ Insecure Direct Object References (IDOR)**: Nếu các API sau này truy vấn trực tiếp bằng `_id` mà không kèm điều kiện `{ organizationId: currentOrgId }`, kẻ tấn công thuộc Org A có thể xem/sửa dữ liệu của Org B bằng cách đoán ID.
-- **Giải pháp kiến trúc bắt buộc**: Cần có một Mongoose Plugin hoặc Base Repository tự động chèn `{ organizationId }` vào tất cả các thao tác `find`, `findOne`, `updateOne`, `deleteOne`.
+### 7.3. Security & Vulnerability Analysis
+- **Insecure Direct Object Reference (IDOR) Risk**: If future services query MongoDB by document `_id` alone without enforcing `{ organizationId: currentOrgId }`, users could access cross-tenant data.
+- **Architectural Safeguard**: Implement a global Mongoose Tenant Plugin or Base Repository pattern to inject tenant isolation filters automatically into all `find`, `update`, and `delete` operations.
 
 ---
 
 ## 8. Frontend & Backend Mismatches & BFF Findings
 
-Dựa trên mã nguồn mới nhất vừa cập nhật từ `DATN-FE` (`origin/main`):
+Based on the latest source code synchronized from `DATN-FE` (`origin/main`):
 
-1. **State Store (`src/stores/client-state.ts`)**:
-   - `[FACT]` Store Zustand hiện tại chỉ có `activeProjectId: string | null` và `setActiveProjectId`.
-   - `[GAP]` **Hoàn toàn thiếu `activeOrganizationId`** để lưu giữ ngữ cảnh Organization đang chọn.
+1. **Client State Store (`src/stores/client-state.ts`)**:
+   - `[FACT]` Zustand store currently defines only `activeProjectId: string | null` and `setActiveProjectId`.
+   - `[GAP]` **`activeOrganizationId` is completely missing**.
 2. **User Identity Contract (`src/lib/queries/auth/useAuth.ts`)**:
-   - `[FACT]` Kiểu dữ liệu `CurrentUserResponse` từ endpoint `/users/me` đã định nghĩa sẵn trường `organizationId: string`:
+   - `[FACT]` The `CurrentUserResponse` interface from `/users/me` already defines `organizationId: string`:
      ```typescript
      export type CurrentUserResponse = Readonly<{
        id: string;
@@ -136,9 +138,9 @@ Dựa trên mã nguồn mới nhất vừa cập nhật từ `DATN-FE` (`origin/
        roles: readonly string[];
      }>;
      ```
-   - `[INFERENCE]` Bản thiết kế FE ngầm định mỗi User thuộc về một `organizationId` chính khi login.
-3. **BFF Proxy Header Whitelist (`src/lib/bff-proxy.ts`)**:
-   - `[FACT]` Next.js BFF Proxy (`/api/backend/[...path]`) lọc header chuyển tiếp qua danh sách cố định:
+   - `[INFERENCE]` The frontend assumes each user belongs to a default active organization upon authentication.
+3. **BFF Proxy Header Dropping (`src/lib/bff-proxy.ts`)**:
+   - `[FACT]` The Next.js BFF proxy restricts forwarded headers to an explicit whitelist:
      ```typescript
      const forwardedHeaders = [
        'accept',
@@ -148,57 +150,57 @@ Dựa trên mã nguồn mới nhất vừa cập nhật từ `DATN-FE` (`origin/
        'x-request-id',
      ];
      ```
-   - `[GAP / WARNING]` **Nguy cơ lỗi tích hợp**: Header `x-organization-id` hiện **KHÔNG** nằm trong `forwardedHeaders`. Nếu Frontend gửi header này lên BFF, proxy sẽ lọc bỏ hoàn toàn trước khi chuyển tiếp sang Backend!
-4. **Về Routing**:
-   - Frontend đang dùng route dạng `/[locale]/(admin)/...` mà không có segment cho `[organizationId]`. Điều này ngụ ý Organization Context trên Frontend phải được duy trì qua State/Cookie/Header thay vì URL Path.
+   - `[GAP / WARNING]` **Integration Defect**: `x-organization-id` is **NOT** present in `forwardedHeaders`. If the client attaches this header, the BFF proxy will silently strip it before the request reaches the backend.
+4. **URL Routing Architecture**:
+   - Routes follow `/[locale]/(admin)/...` with no organizational route slug. Organization context must therefore be resolved through state/headers rather than URL segments.
 
 ---
 
 ## 9. Dependencies for Project & Team Authorization
 
-Phân quyền Project và Team phụ thuộc chặt chẽ vào Organization Context theo chuỗi phụ thuộc (Dependency Chain) sau:
+Project and Team authorization strictly depend on Organization Context via the following authorization chain:
 
-$$\text{Authentication (User Verified)} \longrightarrow \mathbf{\text{Organization Context}} \longrightarrow \text{Project Authorization} \longrightarrow \text{Team Authorization}$$
+$$\text{Authentication (Identity Verified)} \longrightarrow \mathbf{\text{Organization Context}} \longrightarrow \text{Project Scope} \longrightarrow \text{Team Scope}$$
 
-1. **Điều kiện tiên quyết để vào Project**: Người dùng phải có liên kết hợp lệ với Organization chứa Project đó. Nếu Organization Context không hợp lệ hoặc bị đình chỉ (`SUSPENDED`), toàn bộ quyền truy cập Project và Team lập tức bị chặn.
-2. **Quyền hạn tạo Project**: Phụ thuộc vào `organization_capability_grants` tại tầng Organization. Chỉ khi có bản ghi hợp lệ ở tầng này, Team Leader mới có thể gọi API tạo Project.
-3. **Phân cấp dữ liệu Team**: Mọi team đều mang cặp `(organizationId, projectId)`. Việc kiểm tra quyền hạn của Team bắt buộc phải kế thừa và nằm trong phạm vi của Organization tương ứng.
+1. **Project Entry Gate**: A user must possess a valid, active association within the target Organization before any project-level access can be evaluated. If the organization status is suspended or invalid, all downstream access is denied immediately.
+2. **Project Creation Gate**: Creation is gated by an active `organization_capability_grants` entry (`capability = 'project.create'`) at organizational scope.
+3. **Team Boundary**: Teams inherit the composite key `(organizationId, projectId)`. Team access control checks cannot execute without validating the parent organization context.
 
 ---
 
 ## 10. UNKNOWN / DECISION REQUIRED
 
-Trước khi bước vào giai đoạn hiện thực hóa (Implementation), nhóm phát triển và Leader cần thống nhất các quyết định kiến trúc sau:
+The following architectural decisions require consensus before proceeding to implementation:
 
-| Mã quyết định | Vấn đề cần quyết định | Các phương án lựa chọn | Khuyến nghị (Recommendation) |
+| Decision ID | Architectural Question | Viable Options | Recommended Approach |
 | :--- | :--- | :--- | :--- |
-| **DEC-01** | **Cách thức truyền Organization Context trong HTTP Request** | A. Qua Header `X-Organization-Id`<br>B. Nằm trong Payload của JWT Token<br>C. Nằm trên URL Route (`/api/v1/organizations/:orgId/...`) | **Chọn Phương án B kết hợp A**: JWT mang `org_id` mặc định của phiên; có thể hỗ trợ Header `X-Organization-Id` đối với request cần chuyển đổi ngữ cảnh nếu User thuộc nhiều Org. |
-| **DEC-02** | **Mã lỗi HTTP khi vi phạm Cross-Organization Access** | A. Trả về `403 Forbidden`<br>B. Trả về `404 Not Found` | **Chọn Phương án B (404 Not Found)** đối với truy vấn tài nguyên cụ thể để ngăn chặn enumeration attack (dò đoán ID của tổ chức khác). Trả về **403 Forbidden** khi User không có quyền trên toàn bộ Organization Context. |
-| **DEC-03** | **Cơ chế một tài khoản thuộc nhiều Organization (Multi-Org User)** | A. Cho phép 1 User thuộc nhiều Org, khi đăng nhập chọn 1 Active Org.<br>B. MVP chỉ hỗ trợ 1 User thuộc 1 Org duy nhất. | **Chọn Phương án A về mặt Schema** (Schema hiện tại đã hỗ trợ quan hệ N-N), nhưng **giới hạn UI ở MVP** chỉ hiển thị 1 Org mặc định để giảm độ phức tạp giao diện. |
+| **DEC-01** | **Organization Context transport protocol in HTTP requests** | A. HTTP Header `X-Organization-Id`<br>B. Claims in JWT payload<br>C. URL Route Parameter (`/organizations/:orgId/...`) | **Option B + A**: JWT carries the default `org_id` for the session; support `X-Organization-Id` for explicit tenant context switching when a user belongs to multiple organizations. |
+| **DEC-02** | **HTTP status code for Cross-Organization Access Denial** | A. `403 Forbidden`<br>B. `404 Not Found` | **Option B (404 Not Found)** for specific resource requests to prevent tenant enumeration and information leakage. Use **403 Forbidden** only when the user lacks rights to the overall Organization Context. |
+| **DEC-03** | **Multi-Organization user scope for MVP** | A. Full multi-org switching in UI<br>B. Database supports multi-org, but MVP UI fixes to default organization | **Option B**: Maintain multi-tenant schema readiness in DB while constraining MVP UI to a single active organization to maintain velocity. |
 
 ---
 
-## 11. Implementation-Breakdown Recommendation (Đề xuất kế hoạch triển khai)
+## 11. Implementation-Breakdown Recommendation
 
-Tuân thủ nghiêm ngặt quy trình của dự án tại `Document/AI_WORKFLOW.md`, công việc hiện thực hóa sau khi research cần được chia tách thành các nhánh (branch) và PR độc lập theo thứ tự:
+Following the mandatory multi-phase PR workflow defined in `Document/AI_WORKFLOW.md`, future implementation should be divided into three discrete branches:
 
 ```text
 [1. DB PR] ────────► [2. BE PR] ────────► [3. FE PR]
 ```
 
-### Bước 1: Database Branch & PR (`feat/Phuc-org-context-db`)
-- Kiểm tra và bổ sung index cho `role_assignments` đối với các quyền cấp Organization (`projectId: null`).
-- Viết migration script khởi tạo Organization mặc định (`Continuum AI Default Org`) và seed dữ liệu ban đầu.
+### Phase 1: Database Branch & PR (`feat/Phuc-org-context-db`)
+- Verify compound index behavior on `role_assignments` for organization-wide roles (`projectId = null`).
+- Provide an idempotent database migration/seed script creating the initial default organization (`Continuum AI Default Org`).
 
-### Bước 2: Backend Branch & PR (`feat/Phuc-org-context-be-api`)
-- Xây dựng `OrgContextMiddleware` hoặc NestJS Interceptor để đọc `X-Organization-Id` / JWT payload và gắn vào `request.orgContext`.
-- Tạo custom decorator `@CurrentOrg()` và `@CurrentOrgId()`.
-- Xây dựng `OrgScopeGuard` (`CanActivate`) để kiểm tra người dùng có quyền trong Organization hiện tại hay không.
-- Thêm Base Mongoose Tenant Plugin/Helper để tự động inject `{ organizationId }` vào các query.
-- Viết Unit Test và E2E test cho kịch bản hợp lệ và kịch bản từ chối truy cập chéo tổ chức.
+### Phase 2: Backend Branch & PR (`feat/Phuc-org-context-be-api`)
+- Implement `OrgContextMiddleware` to resolve and attach `organizationId` to the request pipeline.
+- Implement `@CurrentOrg()` and `@CurrentOrgId()` parameter decorators.
+- Implement `OrgScopeGuard` (`CanActivate`) enforcing Cross-Organization Denial.
+- Provide a Mongoose tenant query filter helper to prevent cross-tenant IDOR vulnerabilities.
+- Add unit and E2E test suites for authorized tenant access and cross-tenant rejection.
 
-### Bước 3: Frontend Branch & PR (`feat/Phuc-org-context-fe-ui`)
-- Tạo `OrganizationContext` trong `DATN-FE/src/context/OrganizationContext.tsx` để lưu trữ thông tin và trạng thái của Organization đang hoạt động.
-- Cấu hình Axios/Fetch client tự động đính kèm Header `X-Organization-Id` vào tất cả các request gửi sang Backend.
-- Bổ sung `x-organization-id` vào danh sách `forwardedHeaders` trong `DATN-FE/src/lib/bff-proxy.ts`.
-- Xây dựng UI component Organization Switcher / Display trên Navbar hoặc Sidebar của TailAdmin layout.
+### Phase 3: Frontend Branch & PR (`feat/Phuc-org-context-fe-ui`)
+- Extend Zustand store (`src/stores/client-state.ts`) with `activeOrganizationId` and `setActiveOrganizationId`.
+- Add `x-organization-id` to `forwardedHeaders` in `DATN-FE/src/lib/bff-proxy.ts`.
+- Integrate organization context into `apiClient` request headers.
+- Implement UI components for displaying and switching the active organization in the TailAdmin layout.
