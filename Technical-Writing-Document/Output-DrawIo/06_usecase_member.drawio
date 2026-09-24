@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-09-23T15:30:00.000Z" agent="Antigravity" version="24.0.0" type="device">
+  <diagram id="usecase-member" name="Member Use Case">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1220" pageHeight="860" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="&lt;b style=&quot;font-size:16px;&quot;&gt;Member Use Case Diagram&lt;/b&gt;" style="text;html=1;fontSize=16;align=center;verticalAlign=middle;fillColor=none;strokeColor=none;fontColor=#000000;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="380" y="15" width="400" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- System Boundary -->
+        <mxCell id="boundary" value="&lt;b style=&quot;font-size:14px;&quot;&gt;Member Use Case&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontColor=#000000;strokeWidth=2;verticalAlign=top;align=center;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="230" y="55" width="730" height="780" as="geometry" />
+        </mxCell>
+
+        <!-- Primary Actor -->
+        <mxCell id="actor-member" value="Member" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=none;strokeColor=#000000;fontColor=#000000;fontStyle=1;fontSize=12;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="70" y="390" width="45" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- Secondary Actors -->
+        <mxCell id="ext-r2" value="Cloudflare R2" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=none;strokeColor=#000000;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="200" width="45" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ext-llm" value="LLM Providers" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=none;strokeColor=#000000;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="405" width="45" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- Primary Core Use Cases (Column 1) -->
+        <mxCell id="uc-notes" value="Manage Work Notes" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="280" y="100" width="180" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-upload" value="Upload Documents" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="280" y="210" width="180" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-propose" value="Propose Knowledge" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="280" y="310" width="180" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-ask-ai" value="Ask AI Assistant&#xa;(with Citations)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="280" y="415" width="180" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-gap" value="Report Knowledge Gap" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="280" y="525" width="180" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-view-ko" value="View Knowledge Objects" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="280" y="625" width="180" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-handover" value="Participate in Handover&#xa;(as Successor)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="280" y="730" width="185" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- CRUD Notes (SWD392 Pattern) -->
+        <mxCell id="note-notes" value="create, view, edit, confirm" style="shape=note;whiteSpace=wrap;html=1;size=14;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;fontSize=10;fontFamily=Helvetica;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="570" y="105" width="170" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="conn-note-notes" style="dashed=1;dashPattern=1 4;endArrow=none;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="uc-notes" target="note-notes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Secondary & Extended Use Cases (Column 2) -->
+        <mxCell id="uc-jira-prefill" value="Jira Task Prefill" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="570" y="45" width="170" height="48" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-ingest" value="Ingestion &amp;amp; Chunking" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="570" y="210" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-citations" value="View Citation Sources" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="570" y="385" width="175" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-history" value="View Chat History" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="570" y="450" width="175" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-progress" value="Track Learning Progress" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="570" y="732" width="185" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Associations: Member -> Primary Use Cases -->
+        <mxCell id="assoc-notes" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.15;entryX=0;entryY=0.5;" edge="1" parent="1" source="actor-member" target="uc-notes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc-upload" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.25;entryX=0;entryY=0.5;" edge="1" parent="1" source="actor-member" target="uc-upload">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc-propose" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.35;entryX=0;entryY=0.5;" edge="1" parent="1" source="actor-member" target="uc-propose">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc-ask-ai" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="actor-member" target="uc-ask-ai">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc-gap" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.65;entryX=0;entryY=0.5;" edge="1" parent="1" source="actor-member" target="uc-gap">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc-view-ko" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.8;entryX=0;entryY=0.5;" edge="1" parent="1" source="actor-member" target="uc-view-ko">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc-handover" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.9;entryX=0;entryY=0.5;" edge="1" parent="1" source="actor-member" target="uc-handover">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Relationships: <<extend>> (from Extension UC towards Base UC) -->
+        <mxCell id="rel-ext-prefill" style="dashed=1;endArrow=open;endSize=6;html=1;strokeColor=#000000;strokeWidth=1;exitX=0;exitY=0.5;entryX=0.9;entryY=0.2;" edge="1" parent="1" source="uc-jira-prefill" target="uc-notes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-ext-prefill" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#000000;labelBackgroundColor=#ffffff;fontFamily=Helvetica;" vertex="1" connectable="0" parent="rel-ext-prefill">
+          <mxGeometry x="0.1" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="rel-ext-citations" style="dashed=1;endArrow=open;endSize=6;html=1;strokeColor=#000000;strokeWidth=1;exitX=0;exitY=0.5;entryX=1;entryY=0.3;" edge="1" parent="1" source="uc-citations" target="uc-ask-ai">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-ext-citations" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#000000;labelBackgroundColor=#ffffff;fontFamily=Helvetica;" vertex="1" connectable="0" parent="rel-ext-citations">
+          <mxGeometry x="0.1" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="rel-ext-history" style="dashed=1;endArrow=open;endSize=6;html=1;strokeColor=#000000;strokeWidth=1;exitX=0;exitY=0.5;entryX=1;entryY=0.7;" edge="1" parent="1" source="uc-history" target="uc-ask-ai">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-ext-history" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#000000;labelBackgroundColor=#ffffff;fontFamily=Helvetica;" vertex="1" connectable="0" parent="rel-ext-history">
+          <mxGeometry x="0.1" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- Relationships: <<include>> (from Base UC towards Included UC) -->
+        <mxCell id="rel-inc-ingest" style="dashed=1;endArrow=open;endSize=6;html=1;strokeColor=#000000;strokeWidth=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="uc-upload" target="uc-ingest">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-inc-ingest" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#000000;labelBackgroundColor=#ffffff;fontFamily=Helvetica;" vertex="1" connectable="0" parent="rel-inc-ingest">
+          <mxGeometry x="-0.1" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="rel-inc-progress" style="dashed=1;endArrow=open;endSize=6;html=1;strokeColor=#000000;strokeWidth=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="uc-handover" target="uc-progress">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-inc-progress" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#000000;labelBackgroundColor=#ffffff;fontFamily=Helvetica;" vertex="1" connectable="0" parent="rel-inc-progress">
+          <mxGeometry x="-0.1" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- Associations: External Services -->
+        <mxCell id="assoc-ext-r2" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="uc-ingest" target="ext-r2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc-ext-llm" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="uc-ask-ai" target="ext-llm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

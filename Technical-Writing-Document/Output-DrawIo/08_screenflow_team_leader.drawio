@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-09-22T01:10:00.000Z" agent="Antigravity" version="24.0.0" type="device">
+  <diagram id="screenflow-leader" name="Team Leader Screen Flow">
+    <mxGraphModel dx="1800" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Screen Flow — Team Leader" style="text;html=1;fontSize=18;fontStyle=1;align=center;fillColor=none;strokeColor=none;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="500" y="10" width="400" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="s-login" value="Login Page" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontColor=#000000;fontStyle=1;fontSize=12;arcSize=20;" vertex="1" parent="1">
+          <mxGeometry x="80" y="450" width="140" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="s-dashboard" value="Team Leader&#xa;Dashboard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontColor=#000000;fontStyle=1;fontSize=12;arcSize=20;" vertex="1" parent="1">
+          <mxGeometry x="340" y="450" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="s-team" value="My Team&#xa;Members" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontColor=#000000;fontSize=11;arcSize=20;" vertex="1" parent="1">
+          <mxGeometry x="620" y="80" width="150" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="s-notes" value="Daily Work&#xa;Notes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontColor=#000000;fontSize=11;arcSize=20;" vertex="1" parent="1">
+          <mxGeometry x="620" y="180" width="150" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="s-newnote" value="Create / Edit&#xa;Work Note" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontColor=#000000;fontSize=11;arcSize=20;" vertex="1" parent="1">
+          <mxGeometry x="870" y="180" width="150" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="s-inbox" value="Verification&#xa;Inbox" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontColor=#000000;fontSize=11;arcSize=20;" vertex="1" parent="1">
+          <mxGeometry x="620" y="290" width="150" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="s-review" value="Knowledge&#xa;Review Detail" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontColor=#000000;fontSize=11;arcSize=20;" vertex="1" parent="1">
+          <mxGeometry x="870" y="290" width="150" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="s-knowledge" value="Knowledge&#xa;Objects" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontColor=#000000;fontSize=11;arcSize=20;" vertex="1" parent="1">
+          <mxGeometry x="620" y="400" width="150" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="s-gaps" value="Knowledge&#xa;Gaps" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontColor=#000000;fontSize=11;arcSize=20;" vertex="1" parent="1">
+          <mxGeometry x="870" y="400" width="150" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="s-handover" value="Handover&#xa;Management" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontColor=#000000;fontSize=11;arcSize=20;" vertex="1" parent="1">
+          <mxGeometry x="620" y="510" width="150" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="s-handoverdetail" value="Handover&#xa;Package Detail" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontColor=#000000;fontSize=11;arcSize=20;" vertex="1" parent="1">
+          <mxGeometry x="870" y="510" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="s-interview" value="Audio&#xa;Interview" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontColor=#000000;fontSize=11;arcSize=20;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="510" width="140" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="s-docs" value="Documents&#xa;Library" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontColor=#000000;fontSize=11;arcSize=20;" vertex="1" parent="1">
+          <mxGeometry x="620" y="620" width="150" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="s-chat" value="AI Chat&#xa;Assistant" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontColor=#000000;fontSize=11;arcSize=20;" vertex="1" parent="1">
+          <mxGeometry x="620" y="730" width="150" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="s-notif" value="Notifications" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontColor=#000000;fontSize=11;arcSize=20;" vertex="1" parent="1">
+          <mxGeometry x="620" y="840" width="150" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="s-profile" value="Profile" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontColor=#000000;fontSize=11;arcSize=20;" vertex="1" parent="1">
+          <mxGeometry x="620" y="930" width="150" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="f1" style="endArrow=block;html=1;strokeColor=#000000;endFill=1;" edge="1" source="s-login" target="s-dashboard" parent="1" />
+        <mxCell id="f2" style="endArrow=block;html=1;strokeColor=#000000;endFill=1;" edge="1" source="s-dashboard" target="s-team" parent="1" />
+        <mxCell id="f3" style="endArrow=block;html=1;strokeColor=#000000;endFill=1;" edge="1" source="s-dashboard" target="s-notes" parent="1" />
+        <mxCell id="f4" style="endArrow=block;html=1;strokeColor=#000000;endFill=1;" edge="1" source="s-dashboard" target="s-inbox" parent="1" />
+        <mxCell id="f5" style="endArrow=block;html=1;strokeColor=#000000;endFill=1;" edge="1" source="s-dashboard" target="s-knowledge" parent="1" />
+        <mxCell id="f6" style="endArrow=block;html=1;strokeColor=#000000;endFill=1;" edge="1" source="s-dashboard" target="s-handover" parent="1" />
+        <mxCell id="f7" style="endArrow=block;html=1;strokeColor=#000000;endFill=1;" edge="1" source="s-dashboard" target="s-docs" parent="1" />
+        <mxCell id="f8" style="endArrow=block;html=1;strokeColor=#000000;endFill=1;" edge="1" source="s-dashboard" target="s-chat" parent="1" />
+        <mxCell id="f9" style="endArrow=block;html=1;strokeColor=#000000;endFill=1;" edge="1" source="s-dashboard" target="s-notif" parent="1" />
+        <mxCell id="f10" style="endArrow=block;html=1;strokeColor=#000000;endFill=1;" edge="1" source="s-dashboard" target="s-profile" parent="1" />
+        <mxCell id="f11" style="endArrow=block;html=1;strokeColor=#000000;endFill=1;" edge="1" source="s-notes" target="s-newnote" parent="1" />
+        <mxCell id="f12" style="endArrow=block;html=1;strokeColor=#000000;endFill=1;" edge="1" source="s-inbox" target="s-review" parent="1" />
+        <mxCell id="f13" style="endArrow=block;html=1;strokeColor=#000000;endFill=1;" edge="1" source="s-knowledge" target="s-gaps" parent="1" />
+        <mxCell id="f14" style="endArrow=block;html=1;strokeColor=#000000;endFill=1;" edge="1" source="s-handover" target="s-handoverdetail" parent="1" />
+        <mxCell id="f15" style="endArrow=block;html=1;strokeColor=#000000;endFill=1;" edge="1" source="s-handoverdetail" target="s-interview" parent="1" />
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
