@@ -24,8 +24,8 @@ This report strictly adheres to the project's evidence classification and truth 
 
 ## 2. Executive Summary
 
-1. `[FACT]` / `[PARTIAL]` **Data Isolation Baseline**: The backend persistence layer (`DATN-BE`) enforces a strict multi-tenant boundary via the `organizationId` (`ObjectId`) field across virtually all collections: `projects`, `teams`, `lifecycle_*`, `jira_*`, `ingestion_*`, `handover_*`, and `audit_logs`.
-2. `[FACT]` / `[PARTIAL]` **Session Binding**: The `refresh_sessions` collection in the IAM module binds user sessions to a specific organization via `(userId, organizationId)`. This confirms that user sessions are designed to operate within an explicit organization context.
+1. `[FACT]` / `[PARTIAL]` **Data Model Scaffolding (Not Runtime Enforcement)**: The backend persistence layer (`DATN-BE`) contains schema and index scaffolding declaring `organizationId` (`ObjectId`) across most domain-scoped collections (`projects`, `teams`, `lifecycle_*`, `jira_*`, `documents`, `handover_*`). However, this is persistence-level scaffolding only, NOT runtime enforcement: global entities (`users`, `organizations`, `roles`) are not organization-scoped, `auditSchema.organizationId` is optional (`organizationId?: string`), and executable guards or query tenant filters are completely absent.
+2. `[FACT]` / `[PARTIAL]` **Session Binding**: The `refresh_sessions` collection in the IAM module binds user sessions to a specific organization via `(userId, organizationId)`. This confirms that user sessions are intended to operate within an explicit organization context.
 3. `[GAP]` **Zero Context Resolution in Code**: At the backend HTTP transport layer (`DATN-BE/src/common/http`), only `request-id.middleware.ts` (`x-request-id`) currently exists. There is **no** Middleware, Interceptor, or Custom Param Decorator implemented to extract, resolve, or attach `organizationId` to the execution context.
 4. `[GAP]` **Zero Authorization Guards in Code**: No NestJS Guards (`CanActivate`) currently exist anywhere in `DATN-BE/src` to enforce organization scope or execute Cross-Organization Denial.
 5. `[GAP]` **Frontend Organization State**: In `DATN-FE`, the Zustand store (`src/stores/client-state.ts`) only contains `activeProjectId`, completely lacking an `activeOrganizationId`. Furthermore, Next.js BFF Proxy (`src/lib/bff-proxy.ts`) maintains a fixed header whitelist that **omits** `x-organization-id`, meaning incoming organization headers would be stripped before reaching the backend.
@@ -53,9 +53,9 @@ This report strictly adheres to the project's evidence classification and truth 
 | :--- | :--- | :--- | :--- |
 | **Organization is the top-level isolation boundary** | `05_SECURITY_AND_GOVERNANCE.md`; `02_ACTORS_ROLES_AND_PERMISSIONS.md` | `[DESIGN]` | All projects, teams, documents, and knowledge assets belong to an Organization. |
 | **Organizations collection exists in persistence** | `DATN-BE/src/services/iam/infrastructure/mongodb/mongodb.schemas.ts` | `[FACT]` | Collection `organizations` defines `name`, `slug` (unique index), `plan` (`FREE` \| `ENTERPRISE`), and `settings`. |
-| **Users schema does not hardcode `organizationId`** | `DATN-BE/src/services/iam/infrastructure/mongodb/mongodb.schemas.ts` | `[FACT]` | `users` schema only defines `email`, `passwordHash`, `status`, and `twoFactorEnabled`. User-to-Organization relationship is Many-to-Many via intermediate collections. |
+| **Users schema does not hardcode `organizationId`** | `DATN-BE/src/services/iam/infrastructure/mongodb/mongodb.schemas.ts` | `[FACT]` | `users` schema defines `email`, `passwordHash`, `fullName`, `avatarUrl`, `status`, `twoFactorEnabled`, `twoFactorSecretEncrypted`, and `lastLoginAt` (without `organizationId`). User-to-Organization relationship is Many-to-Many via intermediate collections. |
 | **User ➔ Organization linkage via Role & Capability** | `DATN-BE/.../mongodb.schemas.ts` | `[FACT]` | Bound through `role_assignments` (unique compound index `{ organizationId: 1, projectId: 1, userId: 1 }`) and `organization_capability_grants`. |
-| **Resources carry mandatory `organizationId`** | All `persistence.ts` across `DATN-BE/src/services/*` | `[FACT]` | `projects`, `teams`, `jira_connections`, `raw_documents`, `knowledge_objects`, and `audit_logs` require `organizationId` with compound indexes. |
+| **Resources carry mandatory `organizationId` in scoped collections** | All `persistence.ts` across `DATN-BE/src/services/*` | `[FACT]` | `projects`, `teams`, `jira_connections`, `documents` (and `document_versions`), and `knowledge_objects` require `organizationId` with compound indexes. (Note: `audit_logs` declares optional `organizationId?: string`). |
 | **Session model binds to Organization** | `refresh_sessions` schema in IAM service | `[FACT]` | Schema explicitly declares `userId: ObjectId` and `organizationId: ObjectId`. |
 | **Request Context Resolution via JWT Claims** | `05_SECURITY_AND_GOVERNANCE.md` (Section 2) | `[DESIGN]` | Pre-Retrieval ACL specifies decoding JWT to extract `userId`, `roles`, and `teamIds`. |
 | **Middleware / Guard for Organization Context** | `DATN-BE/src/common/http` | `[GAP]` | No middleware, interceptor, or guard exists to validate or inject `organizationId` into the request pipeline. |
@@ -94,19 +94,20 @@ This report strictly adheres to the project's evidence classification and truth 
 | **Security / Guard** | Prevent Cross-Organization Access | `02_ACTORS...md` (Section 2) | No Guards found in `DATN-BE/src` | `[GAP]` Missing `OrgScopeGuard` to reject requests where `request.orgId !== resource.orgId`. |
 | **Frontend UI** | Manage active Organization State | TailAdmin specifications | `DATN-FE/src/stores/client-state.ts` | `[GAP]` Missing `activeOrganizationId` in Zustand store and missing Organization Switcher component. |
 | **BFF Layer** | Forward Organization Header to Backend | BFF specification | `DATN-FE/src/lib/bff-proxy.ts` | `[GAP]` `x-organization-id` is missing from `forwardedHeaders` array. |
-| **Integration / E2E** | Automated tests for cross-tenant rejection | `DATN-BE/docs/SPEC.md` | `DATN-BE/test` only covers `/health` | `[GAP]` Missing E2E test suite for cross-tenant 403/404 enforcement. |
+| **Integration / E2E** | Automated tests for cross-tenant rejection | `DATN-BE/docs/SPEC.md` | `DATN-BE/test` only covers `/health` (Checks 0 on GitHub PR) | `[GAP]` `[UNIMPLEMENTED]` Zero automated tests exist for tenant isolation or cross-tenant rejection; this remains an explicit gap rather than a validated security result. |
 
 ---
 
 ## 7. API, Data & Security Findings
 
 ### 7.1. Data & Schema Findings
-- **Comprehensive Database-Level Multi-Tenancy**: 100% of domain services (`iam`, `lifecycle`, `jira`, `ingestion`, `handover`, `notification`) enforce `organizationId: { type: Schema.Types.ObjectId, required: true }` across all business entities.
+- **Domain Entity Schema Scaffolding**: Domain services (`iam`, `lifecycle`, `jira`, `ingestion`, `handover`, `notification`) declare `organizationId` on their scoped business entities, but this is static schema scaffolding, not runtime enforcement. Crucially: global entities (`users`, `organizations`, `roles`) do not have an `organizationId` scope; `audit_logs` defines `organizationId` as optional (`{ type: String, index: true }`); and no automated tenant query filters or guards exist at runtime.
 - **Optimized Compound Indexing**: Primary queries leverage compound indexes prefixed by `organizationId`:
   - `projects`: `{ organizationId: 1, code: 1 }`
   - `teams`: `{ organizationId: 1, projectId: 1, code: 1 }`
   - `lifecycle_proposals`: `{ organizationId: 1, projectId: 1, status: 1 }`
-  This enables deterministic query filtering and partition isolation in MongoDB.
+  - `documents`: `{ organizationId: 1, projectId: 1, status: 1, createdAt: 1 }`
+  This enables deterministic query filtering and partition isolation in MongoDB once runtime tenant parameters are supplied.
 
 ### 7.2. API & Context Resolution Findings
 - No unified convention currently exists across BE and FE for passing Organization Context:
@@ -170,13 +171,14 @@ $$\text{Authentication (Identity Verified)} \longrightarrow \mathbf{\text{Organi
 
 ## 10. UNKNOWN / DECISION REQUIRED
 
-The following architectural decisions require consensus before proceeding to implementation:
+> [!IMPORTANT]
+> The architectural items below (`DEC-01`, `DEC-02`, and `DEC-03`) remain unaccepted and pending official decision. All recommendations provided are **strictly non-binding exploratory options** for team discussion and must not be treated as approved requirements until the team lead / architecture authority explicitly decides.
 
-| Decision ID | Architectural Question | Viable Options | Recommended Approach |
+| Decision ID | Architectural Question | Viable Options | Non-Binding Recommendation (Pending Lead Decision) |
 | :--- | :--- | :--- | :--- |
-| **DEC-01** | **Organization Context transport protocol in HTTP requests** | A. HTTP Header `X-Organization-Id`<br>B. Claims in JWT payload<br>C. URL Route Parameter (`/organizations/:orgId/...`) | **Option B + A**: JWT carries the default `org_id` for the session; support `X-Organization-Id` for explicit tenant context switching when a user belongs to multiple organizations. |
-| **DEC-02** | **HTTP status code for Cross-Organization Access Denial** | A. `403 Forbidden`<br>B. `404 Not Found` | **Option B (404 Not Found)** for specific resource requests to prevent tenant enumeration and information leakage. Use **403 Forbidden** only when the user lacks rights to the overall Organization Context. |
-| **DEC-03** | **Multi-Organization user scope for MVP** | A. Full multi-org switching in UI<br>B. Database supports multi-org, but MVP UI fixes to default organization | **Option B**: Maintain multi-tenant schema readiness in DB while constraining MVP UI to a single active organization to maintain velocity. |
+| **DEC-01** | **Organization Context transport protocol in HTTP requests** | A. HTTP Header `X-Organization-Id`<br>B. Claims in JWT payload<br>C. URL Route Parameter (`/organizations/:orgId/...`) | **Option B + A (Non-binding suggestion)**: JWT carries the default `org_id` for the session; support `X-Organization-Id` for explicit tenant context switching when a user belongs to multiple organizations. |
+| **DEC-02** | **HTTP status code for Cross-Organization Access Denial** | A. `403 Forbidden`<br>B. `404 Not Found` | **Option B (404 Not Found) (Non-binding suggestion)** for specific resource requests to prevent tenant enumeration and information leakage. Use `403 Forbidden` only when the user lacks rights to the overall Organization Context. |
+| **DEC-03** | **Multi-Organization user scope for MVP** | A. Full multi-org switching in UI<br>B. Database supports multi-org, but MVP UI fixes to default organization | **Option B (Non-binding suggestion)**: Maintain multi-tenant schema readiness in DB while constraining MVP UI to a single active organization to maintain velocity. |
 
 ---
 
