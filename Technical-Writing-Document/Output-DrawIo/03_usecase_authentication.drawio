@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-09-23T15:45:00.000Z" agent="Antigravity" version="24.0.0" type="device">
+  <diagram id="usecase-auth" name="Authentication Use Case">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1180" pageHeight="790" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title Header -->
+        <mxCell id="title" value="&lt;b style=&quot;font-size:16px;&quot;&gt;Authentication Use Case Diagram&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:12px;color:#4B5563;&quot;&gt;Continuum AI Platform — Standard UML Use Case Specification&lt;/span&gt;" style="text;html=1;fontSize=14;align=center;verticalAlign=middle;fillColor=none;strokeColor=none;fontColor=#111827;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="360" y="15" width="460" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- System Boundary -->
+        <mxCell id="boundary" value="&lt;b style=&quot;font-size:14px;&quot;&gt;Authentication Module&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontColor=#000000;strokeWidth=2;verticalAlign=top;align=center;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="250" y="60" width="670" height="680" as="geometry" />
+        </mxCell>
+
+        <!-- Specific Role Actors (Left Column) -->
+        <mxCell id="actor-admin" value="Admin" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=none;strokeColor=#000000;fontColor=#000000;fontStyle=1;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="50" y="140" width="45" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="actor-leader" value="Team Leader" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=none;strokeColor=#000000;fontColor=#000000;fontStyle=1;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="50" y="285" width="45" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="actor-member" value="Member" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=none;strokeColor=#000000;fontColor=#000000;fontStyle=1;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="50" y="430" width="45" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- Generalization Parent Actor: User -->
+        <mxCell id="actor-user" value="User" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=none;strokeColor=#000000;fontColor=#000000;fontStyle=1;fontSize=12;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="150" y="285" width="45" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- Secondary External Actor: Email Service (Right Side) -->
+        <mxCell id="ext-email" value="Email Service" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=none;strokeColor=#000000;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="990" y="375" width="45" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- Generalization Inheritance Arrows (UML Empty Triangle) -->
+        <mxCell id="gen-admin" style="endArrow=block;endFill=0;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.5;entryX=0;entryY=0.25;" edge="1" parent="1" source="actor-admin" target="actor-user">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gen-leader" style="endArrow=block;endFill=0;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="actor-leader" target="actor-user">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gen-member" style="endArrow=block;endFill=0;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.5;entryX=0;entryY=0.75;" edge="1" parent="1" source="actor-member" target="actor-user">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ================= PRIMARY USE CASES (COLUMN 1) ================= -->
+        <mxCell id="uc-login" value="Sign in" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="290" y="110" width="170" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-logout" value="Logout" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="290" y="215" width="170" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-forgotpw" value="Forgot Password" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="290" y="320" width="170" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-changepw" value="Change Password" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="290" y="425" width="170" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-profile" value="Manage profile" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="290" y="530" width="170" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-2fa" value="Enable / Disable 2FA" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="290" y="635" width="170" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- ================= SECONDARY USE CASES (COLUMN 2) ================= -->
+        <mxCell id="uc-refresh" value="Refresh Token" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="640" y="80" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-verify-2fa" value="Verify 2FA TOTP Code" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="640" y="145" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-validate" value="Validate JWT Claims" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="640" y="210" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-blacklist" value="Token Blacklist Check&#xa;(Redis)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="640" y="285" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-sendmail" value="Send Reset Email" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="640" y="380" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- CRUD Note for Manage Profile (SWD392 Pattern) -->
+        <mxCell id="note-profile" value="view profile, update name &amp;amp; avatar" style="shape=note;whiteSpace=wrap;html=1;size=14;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;fontSize=10;fontFamily=Helvetica;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="640" y="535" width="180" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="conn-note-profile" style="dashed=1;dashPattern=1 4;endArrow=none;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="uc-profile" target="note-profile">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ================= ASSOCIATIONS (USER -> COLUMN 1) ================= -->
+        <mxCell id="assoc-login" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.2;entryX=0;entryY=0.5;" edge="1" parent="1" source="actor-user" target="uc-login">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc-logout" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.35;entryX=0;entryY=0.5;" edge="1" parent="1" source="actor-user" target="uc-logout">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc-forgotpw" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="actor-user" target="uc-forgotpw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc-changepw" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.65;entryX=0;entryY=0.5;" edge="1" parent="1" source="actor-user" target="uc-changepw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc-profile" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.8;entryX=0;entryY=0.5;" edge="1" parent="1" source="actor-user" target="uc-profile">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc-2fa" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.9;entryX=0;entryY=0.5;" edge="1" parent="1" source="actor-user" target="uc-2fa">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ================= RELATIONSHIPS: <<extend>> ================= -->
+        <mxCell id="rel-ext-refresh" style="dashed=1;endArrow=open;endSize=6;html=1;strokeColor=#000000;strokeWidth=1;exitX=0;exitY=0.5;entryX=1;entryY=0.25;" edge="1" parent="1" source="uc-refresh" target="uc-login">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-ext-refresh" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#000000;labelBackgroundColor=#ffffff;fontFamily=Helvetica;" vertex="1" connectable="0" parent="rel-ext-refresh">
+          <mxGeometry x="0.1" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="rel-ext-2fa" style="dashed=1;endArrow=open;endSize=6;html=1;strokeColor=#000000;strokeWidth=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="uc-verify-2fa" target="uc-login">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-ext-2fa" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#000000;labelBackgroundColor=#ffffff;fontFamily=Helvetica;" vertex="1" connectable="0" parent="rel-ext-2fa">
+          <mxGeometry x="0.1" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- ================= RELATIONSHIPS: <<include>> ================= -->
+        <mxCell id="rel-inc-validate" style="dashed=1;endArrow=open;endSize=6;html=1;strokeColor=#000000;strokeWidth=1;exitX=1;exitY=0.8;entryX=0;entryY=0.5;" edge="1" parent="1" source="uc-login" target="uc-validate">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-inc-validate" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#000000;labelBackgroundColor=#ffffff;fontFamily=Helvetica;" vertex="1" connectable="0" parent="rel-inc-validate">
+          <mxGeometry x="-0.1" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="rel-inc-blacklist" style="dashed=1;endArrow=open;endSize=6;html=1;strokeColor=#000000;strokeWidth=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="uc-logout" target="uc-blacklist">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-inc-blacklist" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#000000;labelBackgroundColor=#ffffff;fontFamily=Helvetica;" vertex="1" connectable="0" parent="rel-inc-blacklist">
+          <mxGeometry x="-0.1" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="rel-inc-sendmail" style="dashed=1;endArrow=open;endSize=6;html=1;strokeColor=#000000;strokeWidth=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="uc-forgotpw" target="uc-sendmail">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-inc-sendmail" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#000000;labelBackgroundColor=#ffffff;fontFamily=Helvetica;" vertex="1" connectable="0" parent="rel-inc-sendmail">
+          <mxGeometry x="-0.1" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- Association: Send Reset Email -> Email Service -->
+        <mxCell id="assoc-email" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="uc-sendmail" target="ext-email">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-09-23T15:25:00.000Z" agent="Antigravity" version="24.0.0" type="device">
+  <diagram id="usecase-leader" name="Team Leader Use Case">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1220" pageHeight="840" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="&lt;b style=&quot;font-size:16px;&quot;&gt;Team Leader Use Case Diagram&lt;/b&gt;" style="text;html=1;fontSize=16;align=center;verticalAlign=middle;fillColor=none;strokeColor=none;fontColor=#000000;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="380" y="15" width="400" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- System Boundary -->
+        <mxCell id="boundary" value="&lt;b style=&quot;font-size:14px;&quot;&gt;Team Leader Use Case&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontColor=#000000;strokeWidth=2;verticalAlign=top;align=center;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="230" y="55" width="730" height="760" as="geometry" />
+        </mxCell>
+
+        <!-- Primary Actor -->
+        <mxCell id="actor-leader" value="Team Leader" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=none;strokeColor=#000000;fontColor=#000000;fontStyle=1;fontSize=12;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="70" y="380" width="45" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- Secondary Actor: LLM Provider -->
+        <mxCell id="ext-llm" value="LLM / Whisper STT" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=none;strokeColor=#000000;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="650" width="45" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- Primary Core Use Cases (Column 1) -->
+        <mxCell id="uc-workspace" value="Manage Team Workspace" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="280" y="95" width="180" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-create-proj" value="Create Project&#xa;(with capability grant)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="280" y="185" width="180" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-notes" value="Manage Daily Work Notes" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="280" y="275" width="180" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-verify-inbox" value="Review Verification Inbox" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="280" y="385" width="180" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-handover" value="Manage Handover Workflow" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="280" y="525" width="185" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-interview" value="Conduct Audio Interview" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="280" y="635" width="180" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-ask-ai" value="Ask AI Assistant&#xa;(with Citations)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="280" y="725" width="180" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- CRUD Notes (SWD392 Pattern) -->
+        <mxCell id="note-workspace" value="view members, assign roles,&#xa;team settings" style="shape=note;whiteSpace=wrap;html=1;size=14;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;fontSize=10;fontFamily=Helvetica;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="560" y="100" width="170" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="conn-note-workspace" style="dashed=1;dashPattern=1 4;endArrow=none;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="uc-workspace" target="note-workspace">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="note-notes" value="create, view, edit, confirm" style="shape=note;whiteSpace=wrap;html=1;size=14;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;fontSize=10;fontFamily=Helvetica;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="560" y="280" width="170" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="conn-note-notes" style="dashed=1;dashPattern=1 4;endArrow=none;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="uc-notes" target="note-notes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Secondary & Extended Use Cases (Column 2) -->
+        <mxCell id="uc-approve" value="Verify Knowledge" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="560" y="360" width="175" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-reject" value="Reject Knowledge" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="560" y="420" width="175" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-sme" value="Assign Knowledge Owner&#xa;(SME)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="560" y="480" width="175" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-signoff" value="Sign-off Handover Item" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="560" y="550" width="175" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-gap" value="Generate Gap Analysis" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="560" y="615" width="175" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc-stt" value="Audio STT &amp;amp; Knowledge&#xa;Extraction" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="560" y="685" width="185" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- Associations: Team Leader -> Primary Use Cases -->
+        <mxCell id="assoc-workspace" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.15;entryX=0;entryY=0.5;" edge="1" parent="1" source="actor-leader" target="uc-workspace">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc-create-proj" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.25;entryX=0;entryY=0.5;" edge="1" parent="1" source="actor-leader" target="uc-create-proj">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc-notes" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.35;entryX=0;entryY=0.5;" edge="1" parent="1" source="actor-leader" target="uc-notes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc-verify-inbox" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="actor-leader" target="uc-verify-inbox">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc-handover" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.65;entryX=0;entryY=0.5;" edge="1" parent="1" source="actor-leader" target="uc-handover">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc-interview" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.8;entryX=0;entryY=0.5;" edge="1" parent="1" source="actor-leader" target="uc-interview">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc-ask-ai" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.9;entryX=0;entryY=0.5;" edge="1" parent="1" source="actor-leader" target="uc-ask-ai">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Relationships: <<extend>> (from Extension UC towards Base UC) -->
+        <mxCell id="rel-ext-approve" style="dashed=1;endArrow=open;endSize=6;html=1;strokeColor=#000000;strokeWidth=1;exitX=0;exitY=0.5;entryX=1;entryY=0.3;" edge="1" parent="1" source="uc-approve" target="uc-verify-inbox">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-ext-approve" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#000000;labelBackgroundColor=#ffffff;fontFamily=Helvetica;" vertex="1" connectable="0" parent="rel-ext-approve">
+          <mxGeometry x="0.1" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="rel-ext-reject" style="dashed=1;endArrow=open;endSize=6;html=1;strokeColor=#000000;strokeWidth=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="uc-reject" target="uc-verify-inbox">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-ext-reject" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#000000;labelBackgroundColor=#ffffff;fontFamily=Helvetica;" vertex="1" connectable="0" parent="rel-ext-reject">
+          <mxGeometry x="0.1" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="rel-ext-sme" style="dashed=1;endArrow=open;endSize=6;html=1;strokeColor=#000000;strokeWidth=1;exitX=0;exitY=0.5;entryX=1;entryY=0.8;" edge="1" parent="1" source="uc-sme" target="uc-verify-inbox">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-ext-sme" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#000000;labelBackgroundColor=#ffffff;fontFamily=Helvetica;" vertex="1" connectable="0" parent="rel-ext-sme">
+          <mxGeometry x="0.1" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="rel-ext-signoff" style="dashed=1;endArrow=open;endSize=6;html=1;strokeColor=#000000;strokeWidth=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="uc-signoff" target="uc-handover">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-ext-signoff" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#000000;labelBackgroundColor=#ffffff;fontFamily=Helvetica;" vertex="1" connectable="0" parent="rel-ext-signoff">
+          <mxGeometry x="0.1" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- Relationships: <<include>> (from Base UC towards Included UC) -->
+        <mxCell id="rel-inc-gap" style="dashed=1;endArrow=open;endSize=6;html=1;strokeColor=#000000;strokeWidth=1;exitX=1;exitY=0.7;entryX=0;entryY=0.5;" edge="1" parent="1" source="uc-handover" target="uc-gap">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-inc-gap" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#000000;labelBackgroundColor=#ffffff;fontFamily=Helvetica;" vertex="1" connectable="0" parent="rel-inc-gap">
+          <mxGeometry x="-0.1" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="rel-inc-stt" style="dashed=1;endArrow=open;endSize=6;html=1;strokeColor=#000000;strokeWidth=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="uc-interview" target="uc-stt">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-inc-stt" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#000000;labelBackgroundColor=#ffffff;fontFamily=Helvetica;" vertex="1" connectable="0" parent="rel-inc-stt">
+          <mxGeometry x="-0.1" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- Association: External Services -->
+        <mxCell id="assoc-ext-stt" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="uc-stt" target="ext-llm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc-ext-ask" style="endArrow=none;html=1;strokeColor=#000000;strokeWidth=1.2;exitX=1;exitY=0.5;entryX=0;entryY=0.8;" edge="1" parent="1" source="uc-ask-ai" target="ext-llm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
