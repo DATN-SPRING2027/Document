@@ -32,21 +32,23 @@ This document covers the current state of authentication, login workflows, token
 | Requirement | Evidence | Current Implementation | Gap / Mismatch |
 |---|---|---|---|
 | **Login API** | `DATN-BE` OpenAPI (`/api/v1/auth/login`) | **None** in `DATN-BE` (`iam/controllers` is empty). | Implementation is entirely missing. |
-| **Current User API** | FE `useAuth.ts` expects `/users/me`. | **None** in BE OpenAPI and code. | Missing endpoint in OpenAPI & code. |
-| **Token Storage** | FE docs mandate `HttpOnly` cookies. | FE BFF proxies `Set-Cookie` blindly; BE OpenAPI returns tokens in JSON body (`AuthSession.tokens`). | **Critical Contract Mismatch**: If BE returns JSON, FE JS will receive tokens and violate the "No localStorage" rule. If BE sends cookies, OpenAPI is incorrect. |
-| **API Path Prefix** | BE OpenAPI groups users under `/api/v1/iam/users`. | FE `useAuth` calls `apiClient("/users/me")`, which BFF routes to `/api/v1/users/me`. | **Path Mismatch**: FE omits `/iam` from the path. |
+| **Current User API** | SPEC-002 defines `GET /api/v1/auth/me`. | FE `useAuth.ts` calls `/users/me`. BE OpenAPI and code omit this endpoint. | **Path Mismatch & Missing Endpoint**: FE must call `/api/v1/auth/me` and BE must implement it per SPEC-002. |
+| **Token Storage** | SPEC-002/ADR-001 mandate `HttpOnly` cookies. | FE BFF proxies `Set-Cookie` blindly; BE OpenAPI returns tokens in JSON body (`AuthSession.tokens`). | **Critical Contract Mismatch**: If BE returns JSON, FE JS will receive tokens and violate the "No localStorage" rule. If BE sends cookies, OpenAPI is incorrect. |
+| **Refresh/Logout Contract** | SPEC-002 defines refresh through `continuum_refresh` cookie and logout through cookies/Bearer. | BE OpenAPI (`/api/v1/auth/refresh`, `/api/v1/auth/logout`) expects `refreshToken` in JSON body. | **Critical Contract Mismatch**: OpenAPI violates SPEC-002 by requiring `refreshToken` in JSON payload rather than relying on cookies. |
 | **Refresh Tokens** | BE OpenAPI (`/api/v1/auth/refresh`). | **None**. | Implementation is entirely missing. |
 
 ## 5. API/Contract Findings
 - **API Naming / Path Mismatch**: 
-  - `DATN-FE` expects `/users/me` to resolve the current session's profile.
-  - `DATN-BE` OpenAPI does not declare a `me` endpoint. It only defines `/api/v1/iam/users/{userId}`.
-  - `DATN-FE` API client calls lack the `/iam` service prefix, whereas `DATN-BE` OpenAPI specifies it for user resources.
-- **Login Contract**: The OpenAPI defines `LoginRequest` (email, password) and returns an `AuthSession` object with a `TokenPair` (accessToken, refreshToken, tokenType=Bearer) in the JSON body.
-- **Data/Session Findings**: The database schema in `DATN-BE` includes `refresh_sessions` (with `tokenHash`, `familyId`, `userId`, `expiresAt`) intended for Secure Session Rotation and Reuse Detection, but the logic is unimplemented.
+  - SPEC-002 defines `GET /api/v1/auth/me`.
+  - `DATN-FE` expects `/users/me` to resolve the current session's profile, deviating from SPEC-002.
+  - `DATN-BE` OpenAPI does not declare `/api/v1/auth/me` endpoint.
+- **Login/Refresh/Logout Contract**: The OpenAPI defines `LoginRequest` (email, password) and returns an `AuthSession` object with a `TokenPair` (accessToken, refreshToken, tokenType=Bearer) in the JSON body. Furthermore, OpenAPI requires `refreshToken` in JSON bodies for refresh/logout, while SPEC-002 explicitly defines refresh through the `continuum_refresh` cookie and logout through cookies or Bearer authentication.
+- **Response Shape Mismatch**: `DATN-BE` OpenAPI defines `AuthSession` as nested with `tokens` and `user`. However, `DATN-FE` defines `AuthSession` (in `useAuth.ts`) as flat with `accessToken`, `tokenType`, and `expiresInSeconds`. Current FE auth tests (`useAuth.spec.tsx`) encode this stale, flat response shape.
+- **Empty Body Handling Gap**: `DATN-BE` OpenAPI states `/api/v1/auth/logout` returns `204 No Content`. However, the FE `apiClient` always parses successful responses with `response.json()`, which will throw an error on empty 204 responses.
+- **Data/Session Findings**: The database schema in `DATN-BE` includes `refresh_sessions` (with `tokenHash`, `userId`, `expiresAt`). The fields `familyId`, `revokedAt`, and `revokedReason` are documented/target fields but are missing from the current Mongoose schema implementation. Logic is unimplemented.
 
 ## 6. Security Findings
-- **HttpOnly Boundary**: There is a severe conflict between the architecture documentation and the API specification. `DATN-FE` explicitly prohibits storing tokens in browser memory. However, `DATN-BE` is specified to return `TokenPair` in the JSON response, forcing frontend JavaScript to handle the raw tokens. The BFF `route.ts` is merely a dumb proxy; it does not intercept JSON tokens to inject them into `Set-Cookie` headers.
+- **HttpOnly Boundary**: There is a severe implementation gap diverging from the SPEC-002/ADR-001 baseline. `DATN-FE` explicitly prohibits storing tokens in browser memory. However, `DATN-BE` is specified to return `TokenPair` in the JSON response, forcing frontend JavaScript to handle the raw tokens. The BFF `route.ts` is merely a dumb proxy; it does not intercept JSON tokens to inject them into `Set-Cookie` headers.
 - **Brute-Force**: The 5 times/15 mins rate limiting is specified in architecture but unimplemented in code.
 
 ## 7. Dependencies
@@ -55,13 +57,11 @@ This document covers the current state of authentication, login workflows, token
 - `tough-cookie` in FE.
 
 ## 8. UNKNOWN / DECISION REQUIRED
-- **Token Delivery Mechanism**: Will the Backend natively set `HttpOnly` cookies and rely on the FE/BFF to forward them, or will the BFF intercept the `AuthSession` JSON response to set the cookie? 
-- **Endpoint Design**: Should `/users/me` be added to `DATN-BE` OpenAPI, or will the FE parse the JWT to get `userId` and call `/api/v1/iam/users/{userId}`? (The former is standard).
-- **Service Prefixing**: Should `DATN-FE` update its `apiClient` routes to include the `/iam/` prefix (e.g., `/iam/users/me`), or will an API Gateway strip it?
+- **Service Prefixing**: Will an API Gateway strip the `/api/v1` prefix in the future, or should `DATN-FE` unconditionally update its `apiClient` routes? (Note: For `Auth`, SPEC-002 is the accepted baseline, so we use `/api/v1/auth/*`).
 
 ## 9. Implementation-Breakdown Recommendation
-1. **Decision Gate**: Resolve the HttpOnly vs JSON Bearer token discrepancy. Recommendation: Backend handles Bearer authentication natively, but the Login endpoint returns `Set-Cookie` headers directly, which the Next.js BFF seamlessly proxies.
-2. **Contract Update**: Add `/api/v1/auth/me` or `/api/v1/iam/users/me` to the `DATN-BE` OpenAPI spec.
-3. **Frontend Refactor**: Update FE `useAuth.ts` to match the exact paths defined in BE (with correct `/iam` prefixes).
-4. **Backend Implementation**: Implement `AuthController` with endpoints: `/login`, `/refresh`, and `/logout`, writing session rows to `refresh_sessions` collection.
+1. **Align with SPEC-002 Baseline**: Update BE OpenAPI and FE implementations to strictly follow SPEC-002/ADR-001 for HttpOnly BFF cookies, removing JSON-based refresh tokens.
+2. **Contract Update**: Add `GET /api/v1/auth/me` to the `DATN-BE` OpenAPI spec per SPEC-002.
+3. **Frontend Refactor**: Update FE `useAuth.ts` and auth tests to match the exact paths defined in SPEC-002 (`/api/v1/auth/me`) and the nested `AuthSession` response shape. Enhance `apiClient` to safely handle `204 No Content` empty bodies.
+4. **Backend Implementation**: Implement `AuthController` with endpoints: `/login`, `/refresh`, and `/logout`, writing session rows to `refresh_sessions` collection. Update the Mongoose schema to add the missing `familyId`, `revokedAt`, and `revokedReason` fields.
 5. **Security Integration**: Implement Redis or in-memory Rate Limiter for the Brute-force constraint.
