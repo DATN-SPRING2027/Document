@@ -46,7 +46,7 @@ Mỗi khi có thay đổi về tài liệu, **phải thêm một dòng vào bả
 | 22/09/2026 | **Phúc** | Khởi tạo SRS | `Submit-Report/Report3_SRS.md` | Tạo khung đặc tả yêu cầu phần mềm | Commit trong repo | Approved |
 | 23/09/2026 | **Phúc** | Vẽ sơ đồ hệ thống | `Output-DrawIo/` | Vẽ Context, Use Case, Screen Flow, ERD | 10 file `.drawio` | Approved |
 | 24/09/2026 | **Phúc** | Thiết lập workspace tài liệu | `Technical-Writing-Document/` | Chuyển xưởng tự động hóa + tạo folder 5 thành viên + viết Workflow | Commit trong repo | Approved |
-| 28/09/2026 | **Tài** | Nghiên cứu Phase 0 (DATN-23) | `research-docs/SAG-Knowledge-Routing-RAG/00-phase-0-contracts-and-foundations.md` | Khởi tạo baseline nghiên cứu và kế hoạch Phase 0 Contracts & Foundations | PR pending | Draft |
+| 28/09/2026 | **Tài** | Nghiên cứu Phase 0 (DATN-23) | `research-docs/SAG-Knowledge-Routing-RAG/00-phase-0-contracts-and-foundations.md` | Hoàn thiện baseline nghiên cứu và kế hoạch Phase 0 Contracts & Foundations | [PR #14](https://github.com/DATN-SPRING2027/Document/pull/14) | Draft |
 | *[Ngày]* | *[Phúc / Thắng / Danh / Tài / Tiên]* | *[Tên task đã làm]* | *[File tài liệu]* | *[Mô tả nội dung]* | *[Link PR hoặc Commit]* | *[Draft / Approved]* |
 
 ---
