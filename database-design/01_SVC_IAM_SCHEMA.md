@@ -66,6 +66,7 @@ export interface IProject {
   name: string;
   code: string;                  // VD: "CONT", "PAYMENT"
   description?: string;
+  visibility: 'PRIVATE' | 'PUBLIC'; // Mặc định: 'PRIVATE'
   status: 'ACTIVE' | 'ARCHIVED';
   createdBy: Types.ObjectId;     // User tạo (Phải có grant 'project.create')
   createdAt: Date;
@@ -83,6 +84,9 @@ export interface ITeam {
   updatedAt: Date;
 }
 ```
+* `visibility` chỉ nhận `PRIVATE` hoặc `PUBLIC`; Project mới mặc định là
+  `PRIVATE`. Migration tương ứng backfill các Project document hiện có chưa có
+  trường này thành `PRIVATE`.
 * **Chỉ mục:**
   - `organizations`: `slug` (unique)
   - `projects`: `(organizationId, code)` (unique)
