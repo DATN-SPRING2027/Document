@@ -2,8 +2,8 @@
 ## (Microservices Dedicated Database & Schema Specification - 9 Services + Dedicated Storage)
 
 > **Dự án:** Continuum AI — Nền tảng kế thừa và chuyển giao tri thức dự án phần mềm  
-> **Phiên bản thiết kế DB:** 3.0 (Module hóa hoàn chỉnh: 9 Services + Audit + SAG Post-Extraction Storage)  
-> **Ngăn xếp lưu trữ:** MongoDB 7.0 (Source of Truth) + PostgreSQL 16 & pgvector (SAG Post-Extraction Storage) + Cloudflare R2 (Object Storage)  
+> **Phiên bản thiết kế DB:** 3.0 (Module hóa hoàn chỉnh: 9 Services + Audit + SAG Post-Extraction Storage)
+> **Ngăn xếp lưu trữ:** MongoDB 7.0 (Source of Truth) + PostgreSQL 16 & pgvector (SAG Post-Extraction Storage) + Cloudflare R2 (Object Storage)
 
 ---
 
@@ -20,7 +20,7 @@ Trong kiến trúc Microservices của Continuum AI:
 │                                                                                        │
 │  [01. continuum_iam]          ➔ svc_iam (Auth, Users, 3 Roles, Orgs, Grants)           │
 │  [02. continuum_capture]      ➔ svc_capture (Work Notes What/How/Why, Requirements)     │
-│  [03. continuum_jira]         ➔ svc_jira (Jira Cloud Connector, Issues, Idempotency)    │
+│  [03. continuum_task]         ➔ svc_task (Canonical task lifecycle, history, outbox)     │
 │  [04. continuum_lifecycle]    ➔ svc_lifecycle (Verified Knowledge, Snapshots, Evidence) │
 │  [05. continuum_chat]         ➔ svc_chat (Cited Assistant, Sessions, Messages, Logs)   │
 │  [06. continuum_handover]     ➔ svc_handover (Responsibilities, Handover, Audio STT)    │
@@ -45,7 +45,7 @@ Tất cả các thành phần cơ sở dữ liệu đều có **1 tài liệu đ
 | :---: | :--- | :--- | :--- | :--- |
 | **01** | [01_SVC_IAM_SCHEMA.md](01_SVC_IAM_SCHEMA.md) | **`svc_iam`** | `continuum_iam` (MongoDB) | Xác thực, 3 roles tĩnh (`ADMIN`, `TEAM_LEADER`, `MEMBER`), cấp quyền `project.create`, xoay vòng Refresh Token. |
 | **02** | [02_SVC_CAPTURE_SCHEMA.md](02_SVC_CAPTURE_SCHEMA.md) | **`svc_capture`** | `continuum_capture` (MongoDB) | Ghi nhận What/How/Why, autosave drafts, bắt buộc tác giả tự xác nhận (`authorConfirmedAt`). |
-| **03** | [03_SVC_JIRA_SCHEMA.md](03_SVC_JIRA_SCHEMA.md) | **`svc_jira`** | `continuum_jira` (MongoDB) | Kết nối Jira Cloud, ánh xạ tài khoản, lưu trữ mirror issues, xử lý Idempotent Webhook. |
+| **03** | [12_TASK_MANAGEMENT_SCHEMA.md](12_TASK_MANAGEMENT_SCHEMA.md) | **`svc_task`** | `continuum_task` (MongoDB) | Task canonical, history append-only và outbox tùy chọn; API là đường đọc/ghi duy nhất. |
 | **04** | [04_SVC_LIFECYCLE_SCHEMA.md](04_SVC_LIFECYCLE_SCHEMA.md) | **`svc_lifecycle`** | `continuum_lifecycle` (MongoDB) | Vòng đời tri thức bất biến (`v1 → v2`), Verification Inbox, ACID Transaction, truy vết Evidence. |
 | **05** | [05_SVC_CHAT_SCHEMA.md](05_SVC_CHAT_SCHEMA.md) | **`svc_chat`** | `continuum_chat` (MongoDB) | Hội thoại hỏi đáp RAG, bắt buộc trích dẫn citations, log trạng thái `INSUFFICIENT_EVIDENCE`. |
 | **06** | [06_SVC_HANDOVER_SCHEMA.md](06_SVC_HANDOVER_SCHEMA.md) | **`svc_handover`** | `continuum_handover` (MongoDB) | Quản lý chuyển giao kế thừa, thực thể Trách nhiệm độc lập, phỏng vấn âm thanh bóc băng STT. |
@@ -54,6 +54,8 @@ Tất cả các thành phần cơ sở dữ liệu đều có **1 tài liệu đ
 | **09** | [09_SVC_AI_ENGINE_SCHEMA.md](09_SVC_AI_ENGINE_SCHEMA.md) | **`svc_ai_engine`** | `continuum_ai_adapter` (MongoDB) | Quản lý định tuyến LLM Provider, System Prompt có phiên bản, nhật ký tiêu thụ Token. |
 | **10** | [10_AUDIT_AND_COMPLIANCE_SCHEMA.md](10_AUDIT_AND_COMPLIANCE_SCHEMA.md) | **Cross-Cutting** | `continuum_audit` (MongoDB) | Nhật ký kiểm toán bất biến (Append-only) phục vụ tiêu chuẩn bảo mật doanh nghiệp (SOC2/ISO). |
 | **11** | [11_SAG_STORAGE_SCHEMA.md](11_SAG_STORAGE_SCHEMA.md) | **SAG Subsystem** | `continuum_sag_storage` (PostgreSQL 16 + pgvector / Qdrant) | Tầng lưu trữ tri thức sau extract: Chunks, Events, Entities, Hyperedges quan hệ và Vector Store (pgvector / Qdrant). |
+
+> `03_SVC_JIRA_SCHEMA.md` được giữ làm tài liệu lịch sử; Jira không phải service hoặc nguồn task trong MVP. Task Service thay vị trí của Jira trong danh mục service đang hoạt động.
 
 ---
 

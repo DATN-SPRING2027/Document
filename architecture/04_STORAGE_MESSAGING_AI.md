@@ -35,6 +35,12 @@ Hệ thống phân định ranh giới lưu trữ dữ liệu rõ ràng giữa c
   *Nếu bất kỳ bước nào lỗi, toàn bộ giao dịch bị `abortTransaction()`, đảm bảo tính toàn vẹn 100%.*
 * **Đặc tả Schema chi tiết từng Service:** Xem toàn bộ thiết kế cơ sở dữ liệu vi dịch vụ tại [Document/database-design/](../database-design/README.md).
 
+#### Task Service storage boundary
+
+Task Service dùng database logic riêng `continuum_task` trên replica set hiện có, cấu hình bằng `MONGODB_URI` + `MONGODB_DATABASE` theo mẫu các service hiện tại trong `DATN_BE/docker-compose.microservices.yml`. Service sở hữu `tasks`, append-only `task_events` và `outbox_events` khi cần phát sự kiện bền vững. Ghi task mutation cùng history/outbox bằng transaction trong cùng database. Capture, Handover, Gateway và Agent không truy cập trực tiếp database này; chúng dùng Task API hoặc event contract. Không cần tạo MongoDB cluster vật lý hoặc repo mới.
+
+Task Agent chỉ nhận task context mà API cho phép theo user/scope hiện hành. Bản rewrite/gợi ý được giữ ở dạng proposal; người có quyền xác nhận trước khi mutation cập nhật task canonical. Lịch sử ghi actor, nguồn Agent/proposal, field thay đổi, task version và correlation/operation ID; không lưu full prompt hoặc toàn bộ raw context mặc định. Xem [Task storage design](../database-design/12_TASK_MANAGEMENT_SCHEMA.md) và [ADR-010](../research-tech/ADR-010-task-service-in-existing-repositories.md).
+
 ### 1.2. PostgreSQL 16 + pgvector (Bộ Lưu Trữ SAG & Vũ Trụ Tri Thức 3D)
 * **Tại sao dùng PostgreSQL 16 + pgvector (hoặc Qdrant)?**
   - **Hợp nhất ACID & Không lệch pha:** Thực thể quan hệ (Chunk, Event, Entity, Hyperedge) và Vector Embeddings nằm trong cùng một cơ sở dữ liệu. Khi xóa một tài liệu, toàn bộ vector và liên kết bị xóa theo `ON DELETE CASCADE`, loại bỏ triệt để rủi ro dữ liệu rác/lệch pha giữa relational DB và vector DB rời rạc.
@@ -50,16 +56,16 @@ Hệ thống phân định ranh giới lưu trữ dữ liệu rõ ràng giữa c
 
 ## 2. Hạ tầng Hàng đợi & Xử lý bất đồng bộ (BullMQ + Redis)
 
-Để đảm bảo hệ thống không bị treo request khi người dùng thực hiện các thao tác tốn thời gian (OCR, bóc tách AI, tính toán tọa độ 3D, đồng bộ Jira, gửi mail), toàn bộ tác vụ nền được đẩy qua **BullMQ** trên nền **Redis 7.2**.
+Để không chặn request người dùng khi thực hiện OCR, bóc tách AI, tính toán tọa độ 3D, phát event downstream hoặc gửi mail, các tác vụ nền phù hợp được đẩy qua **BullMQ** trên nền **Redis 7.2**.
 
 ```
 [ Domain Services ] ──(Produce Job)──► [ Redis 7.2 BullMQ ]
                                               │
          ┌──────────────────┬─────────────────┼──────────────────┬──────────────────────┐
          ▼                  ▼                 ▼                  ▼                      ▼
-  [ingestion-queue]  [jira-sync-queue]   [mail-queue]    [handover-queue]    [universe-projection]
+  [ingestion-queue]  [task-event-relay]* [mail-queue]    [handover-queue]    [universe-projection]
          │                  │                 │                  │                      │
-   (MarkItDown/OCR)   (Webhook Sync)    (SMTP/Resend)     (Whisper Audio)     (UMAP/3D Force Layout)
+   (MarkItDown/OCR) (Optional Outbox)  (SMTP/Resend)     (Whisper Audio)     (UMAP/3D Force Layout)
          │                  │                 │                  │                      │
          └──────────────────┴────────┬────────┴──────────────────┴──────────────────────┘
                                      │ (Failed 3 Retries)
@@ -68,14 +74,15 @@ Hệ thống phân định ranh giới lưu trữ dữ liệu rõ ràng giữa c
 ```
 
 ### 2.1. Danh mục các hàng đợi chuyên biệt
+* `task-event-relay` chỉ bật khi có consumer bất đồng bộ thực sự; outbox lưu trong database `continuum_task`, còn relay gửi event tới consumer. Nó không thay thế API đồng bộ cho task command.
 1. **`ingestion-queue`:** Tiếp nhận file mới, tải byte từ R2, chuyển tiếp cho Worker bóc tách text và sinh vector vào PostgreSQL/Qdrant.
 2. **`universe-projection`:** Khi có tài liệu mới hoặc cờ `universe_dirty_sources`, Worker tính toán lại phép chiếu không gian 3D (UMAP/Force-directed graph layout), cập nhật tọa độ $(x, y, z)$ và bán kính cụm module trên nền bất đồng bộ.
-3. **`jira-sync-queue`:** Tiếp nhận webhook Jira, parse cấu trúc issue, đối chiếu worklog và cập nhật `jira_issues`.
+3. **`task-event-relay` (optional):** Chuyển tiếp event đã ghi vào outbox của Task Service tới notification/Agent consumers khi cần. Task CRUD và giao owner vẫn là lệnh HTTP đồng bộ; không thêm queue nếu không có consumer MVP.
 4. **`mail-queue`:** Tiếp nhận các tác vụ gửi email giao dịch, email nhắc nhở cuối ngày và thông báo Verification Inbox.
 5. **`handover-queue`:** Xử lý file ghi âm phỏng vấn, gọi model Whisper để chuyển speech-to-text và trích xuất câu hỏi mở.
 
 ### 2.2. Đường ống xử lý lỗi với Dead Letter Queue (DLQ Pipeline)
-* **Cơ chế Exponential Backoff:** Khi một job gặp sự cố (ví dụ Jira API bị timeout hoặc SMTP bị nghẽn), BullMQ tự động thử lại tối đa **3 lần** với độ trễ tăng theo lũy thừa thời gian:
+* **Cơ chế Exponential Backoff:** Khi một job gặp sự cố (ví dụ SAG downstream hoặc SMTP bị nghẽn), BullMQ tự động thử lại tối đa **3 lần** với độ trễ tăng theo lũy thừa thời gian:
   $$\Delta t = 2^n \times 1000\text{ms} \quad (2\text{s} \longrightarrow 4\text{s} \longrightarrow 8\text{s})$$
 * **Dead Letter Queue (`dlq-failed-jobs`):** Nếu sau 3 lần vẫn thất bại, job sẽ bị đẩy vào DLQ. Hệ thống tự động ghi nhật ký vào `audit_logs` với cờ `SEVERITY: HIGH` và gửi thông báo cho Admin để can thiệp thủ công, tuyệt đối không làm thất thoát dữ liệu.
 

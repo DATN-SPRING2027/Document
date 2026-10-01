@@ -1,9 +1,9 @@
 # Continuum AI — Thiết Kế Tầng Lưu Trữ Tri Thức Sau Trích Xuất (SAG Storage)
 ## (Bản Đối Chiếu Schema Gốc Zleap-AI/SAG & Bản Tinh Chỉnh Áp Dụng Cho Continuum AI)
 
-> **Tài liệu:** Đặc tả kỹ thuật Cơ sở dữ liệu Tri thức sau Trích xuất (Post-Extraction Knowledge Store)  
-> **Hệ quản trị CSDL quan hệ:** **PostgreSQL 16** (Database: `continuum_sag_storage`)  
-> **Kho Vector Lưu Trữ:** **PostgreSQL 16 pgvector** (Mặc định hợp nhất) hoặc **Qdrant** (Lựa chọn chuyên dụng phân tán)  
+> **Tài liệu:** Đặc tả kỹ thuật Cơ sở dữ liệu Tri thức sau Trích xuất (Post-Extraction Knowledge Store)
+> **Hệ quản trị CSDL quan hệ:** **PostgreSQL 16** (Database: `continuum_sag_storage`)
+> **Kho Vector Lưu Trữ:** **PostgreSQL 16 pgvector** (Mặc định hợp nhất) hoặc **Qdrant** (Lựa chọn chuyên dụng phân tán)
 > **Service sở hữu & điều phối:** `svc_ai_engine` (Orchestrator) & `svc_ingestion` (Feeder)  
 > Nằm trong bộ tài liệu thiết kế Database Microservices Continuum AI. Xem [Mục lục](README.md).
 
@@ -11,10 +11,10 @@
 
 ## 1. Ranh Giới Nghiệp Vụ & Vai Trò Trong Dự Án
 
-Trong Continuum AI, **MongoDB 7.0 là Source of Truth** cho toàn bộ dữ liệu nghiệp vụ: tài khoản, phân quyền (IAM), ghi chú công việc (Capture), liên kết Jira, vòng đời tri thức bất biến (Lifecycle), gói bàn giao (Handover) và kiểm toán (Audit).
+Trong Continuum AI, **MongoDB 7.0 là Source of Truth** cho toàn bộ dữ liệu nghiệp vụ: tài khoản, phân quyền (IAM), task nội bộ do Task Service sở hữu, ghi chú công việc (Capture), vòng đời tri thức bất biến (Lifecycle), gói bàn giao (Handover) và kiểm toán (Audit).
 
 Tuy nhiên, đối với bài toán **Truy vấn Tri thức Chuyên sâu (Semantic Search, Multi-hop Reasoning & Graph Retrieval)**:
-- Dữ liệu văn bản kỹ thuật (SRS, Architecture, API Specs, Meeting STT, Jira Issues) sau khi bóc tách cần một **Bộ lưu trữ dữ liệu sau extract chuyên dụng (Post-Extraction Store)**.
+- Chỉ tài liệu/evidence được phép và Work Note đã được xác nhận mới đủ điều kiện vào **Bộ lưu trữ dữ liệu sau extract chuyên dụng (Post-Extraction Store)**. Task records, task title/description/status/assignee không phải nguồn SAG.
 - Dự án chuẩn hóa trên **PostgreSQL 16 kết hợp extension pgvector** dựa trên nguyên lý kiến trúc của **Zleap-AI/SAG (SQL-Retrieval Augmented Generation)**: Thay vì tách biệt 2 hệ thống lưu trữ rời rạc (Relational DB và Vector DB riêng) dễ gây lệch pha dữ liệu khi xóa/sửa, hệ thống hợp nhất toàn bộ thực thể quan hệ (Chunk, Event, Entity, Hyperedge) và các Vector Embeddings vào **duy nhất một Database PostgreSQL 16 + pgvector**.
 
 ```
@@ -99,7 +99,7 @@ Tầng này chịu trách nhiệm trích xuất và lưu trữ cấu trúc tri t
 | **`universe_*` & `exploration_*` (3D Knowledge Galaxy)** | Lưu tọa độ `x, y, z`, `radius`, cụm module và camera | **CHÍNH THỨC SỬ DỤNG & NÂNG CẤP THÀNH ĐIỂM NHẤN CỐT LÕI (WOW-FACTOR)** | Trực quan hóa toàn cảnh tri thức dự án thành một **"Vũ Trụ / Thiên Hà Tri Thức 3D"** (Interactive 3D Knowledge Galaxy trên Three.js). Người kế nhiệm có thể bay qua các tinh cầu module, xem mật độ tri thức, và camera tự động zoom vào đúng bằng chứng khi hỏi đáp. |
 | **`octx_*` (Gói chuyển giao)** | Gói xuất/nhập tri thức tĩnh | **GIỮ CHUẨN ĐỂ MỞ RỘNG GIAI ĐOẠN 2** | Sẽ dùng làm định dạng export gói tri thức khi kỹ sư bàn giao rời dự án (Offline Handover Archive). |
 | **Multi-Tenancy (`organization_id`, `project_id`)** | SAG gốc **KHÔNG CÓ**, chỉ có `user_id` đơn lẻ | **BẮT BUỘC BỔ SUNG vào tất cả các bảng** | Đảm bảo tính cô lập dữ liệu tuyệt đối giữa các công ty và các dự án trong Continuum AI. Không để lộ tri thức chéo tenant. |
-| **Phân loại Nguồn Tri thức (`source_type`)** | SAG gốc chỉ coi mọi nguồn là Document tệp phẳng | **BỔ SUNG trường `source_type`**: `DOCUMENT`, `JIRA_ISSUE`, `WORK_NOTE`, `AUDIO_HANDOVER` | Tri thức dự án phần mềm đa dạng từ ghi chú hàng ngày (Work Note), task Jira, đến bóc băng phỏng vấn bàn giao (Audio STT). |
+| **Phân loại Nguồn Tri thức (`source_type`)** | SAG gốc chỉ coi mọi nguồn là Document tệp phẳng | **BỔ SUNG trường `source_type`**: `DOCUMENT_VERSION`, `WORK_NOTE`, `AUDIO_HANDOVER` | Evidence chỉ được index sau khi qua eligibility gate, xác nhận và ACL hiện hành; task là ngữ cảnh công việc, không phải source type SAG. |
 | **Bảo mật Trước Truy Vấn (Pre-retrieval ACL)** | SAG gốc **KHÔNG CÓ**, bất kỳ ai search cũng thấy toàn bộ | **BỔ SUNG `confidentiality_level` & `allowed_roles`** vào `kb_document`, `source_chunk`, `source_event` | Kỹ sư cấp `MEMBER` không được phép tìm thấy thông tin tài chính/hợp đồng dự án cấp `ADMIN` hoặc `TEAM_LEADER`. Phải lọc quyền ngay từ tầng SQL JOIN. |
 | **Liên kết Ngược MongoDB (`continuum_ref_id`)** | SAG gốc sinh UUID ngẫu nhiên không trace được | **BỔ SUNG `continuum_document_version_id`, `continuum_source_id`** | Cho phép frontend khi nhấp vào Citation link có thể đối chiếu tức thì về document gốc trong MongoDB mà không bị mất dấu. |
 | **Danh mục `entity_type`** | SAG gốc để rỗng hoặc generic | **CHUẨN HÓA DANH MỤC THỰC THỂ PHẦN MỀM** | Định nghĩa tập thực thể chuyên biệt: `TECH_STACK`, `MODULE_SERVICE`, `ARCHITECTURE_DECISION`, `API_CONTRACT`, `BUSINESS_RULE`, `ROLE_RESPONSIBILITY`. |
@@ -141,7 +141,7 @@ CREATE INDEX ix_data_source_tenant ON data_source(organization_id, project_id);
 ---
 
 ### 4.2. `kb_document` (Tài Liệu / Thực Thể Nguồn Sau Parser)
-Lưu vết các tài liệu, Jira issue, Work note, hoặc Audio bóc băng được đưa vào SAG.
+Lưu vết tài liệu/evidence được phép, Work Note đã xác nhận, hoặc Audio bóc băng đủ điều kiện được đưa vào SAG.
 
 ```sql
 CREATE TABLE kb_document (
@@ -151,7 +151,7 @@ CREATE TABLE kb_document (
     project_id VARCHAR(64) NOT NULL,            -- [CONTINUUM THÊM]
     
     -- [CONTINUUM THÊM] Ánh xạ ngược về MongoDB và phân loại nguồn
-    source_type VARCHAR(32) NOT NULL,           -- 'DOCUMENT_VERSION' | 'WORK_NOTE' | 'JIRA_ISSUE' | 'AUDIO_HANDOVER'
+    source_type VARCHAR(32) NOT NULL,           -- 'DOCUMENT_VERSION' | 'WORK_NOTE' | 'AUDIO_HANDOVER'
     continuum_ref_id VARCHAR(64) NOT NULL,      -- ID bản ghi trong MongoDB (VD: document_versions._id)
     
     filename VARCHAR(512) NOT NULL,             -- Tên hiển thị (Tên file, Issue Key, hoặc Tiêu đề Note)

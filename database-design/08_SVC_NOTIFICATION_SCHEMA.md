@@ -134,4 +134,4 @@ export interface IEmailDeliveryLog {
 - `lifecycle.verification.requested` ➔ Gửi mail & in-app cho SME / Team Leader.
 - `lifecycle.knowledge.published` ➔ Báo cho tác giả đề xuất tri thức đã được thông qua.
 - `handover.campaign.started` ➔ Gửi thông báo lộ trình bàn giao cho người kế nhiệm.
-- `jira.connection.status_changed` ➔ Cảnh báo Admin nếu webhook Jira bị ngắt kết nối.
+- Không có sự kiện kết nối/sync Jira trong MVP. Task assignment và handover notifications phải phát sinh từ sự kiện của Continuum Task API/Handover theo Use Case đã duyệt.

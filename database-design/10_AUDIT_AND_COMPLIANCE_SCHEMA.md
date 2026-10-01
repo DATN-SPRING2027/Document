@@ -39,6 +39,11 @@ export interface IAuditLog {
     | 'KNOWLEDGE_PROPOSAL_CREATED'
     | 'KNOWLEDGE_VERIFIED'
     | 'KNOWLEDGE_DEPRECATED'
+    | 'TASK_CREATED'
+    | 'TASK_UPDATED'
+    | 'TASK_ASSIGNED'
+    | 'TASK_STATUS_CHANGED'
+    | 'TASK_CANCELLED'
     | 'HANDOVER_INITIATED'
     | 'HANDOVER_ITEM_VERIFIED'
     | 'DOCUMENT_UPLOADED'
@@ -59,6 +64,7 @@ export interface IAuditLog {
   createdAt: Date;                   // Bất biến, KHÔNG CÓ updatedAt
 }
 ```
+Task domain history (`task_events`) phục vụ màn hình lịch sử trong cùng scope task; `audit_logs` chỉ ghi các hành động cần truy vết an ninh/trách nhiệm. Không ghi toàn bộ description hoặc task document vào `diffPayload`; chỉ ghi field names và before/after values an toàn theo ACL/retention policy.
 * **Chỉ mục:**
   - `(organizationId, projectId, createdAt)`: `{ index: true }`
   - `(actorUserId, createdAt)`: `{ index: true }`
@@ -97,7 +103,7 @@ export interface IDataRetentionPolicy {
   _id: Types.ObjectId;
   organizationId: Types.ObjectId;
   
-  resourceType: 'AUDIT_LOGS' | 'CHAT_MESSAGES' | 'TEMP_DRAFTS' | 'JIRA_EVENTS';
+  resourceType: 'AUDIT_LOGS' | 'CHAT_MESSAGES' | 'TEMP_DRAFTS';
   retentionDays: number;             // VD: audit_logs = 365, chat_messages = 90
   isAutoDeleteEnabled: boolean;
   

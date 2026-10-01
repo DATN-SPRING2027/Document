@@ -1,6 +1,6 @@
 # Master Strategic Research: Internal Work + Knowledge Management
 
-**Status:** Draft research for product/technical lead review. No decision, approved requirement, implementation task or architecture change is made here.  
+**Status:** Draft research for product/technical lead review. No decision, approved requirement, implementation task or architecture change is made here.
 **Evidence date:** Repository snapshot read during this research; official web sources checked 2026-09-25.  
 **Scope:** Assess whether DATN needs an internal work-management ecosystem or whether Jira/Atlassian plus configuration/operating-model changes suffice.
 

@@ -48,9 +48,9 @@
       --c-mongo-border: #16a34a;
       --c-mongo-text: #14532d;
 
-      --c-lancedb-bg: #f0fdfa;
-      --c-lancedb-border: #14b8a6;
-      --c-lancedb-text: #134e4a;
+      --c-sagindex-bg: #f0fdfa;
+      --c-sagindex-border: #14b8a6;
+      --c-sagindex-text: #134e4a;
 
       --c-s3-bg: #fefce8;
       --c-s3-border: #eab308;
@@ -736,7 +736,7 @@
             <span>🎨 Graph 1: Interactive Architecture Canvas Studio (VPC Microservices Highway)</span>
           </div>
           <div class="pane-intro-desc">
-            Sơ đồ tổng thể toàn bộ dịch vụ thực tế của Continuum AI: <strong>Client (Next.js TailAdmin) ➔ Nginx ➔ API Gateway ➔ 9 Domain Services trong VPC (Auth & IAM, Daily Capture, Jira Sync, Verification Lifecycle, Cited Chat, Handover, Ingestion, SAG AI Engine, Notifications & Mail) ➔ Redis Cluster, BullMQ, MongoDB Replica Set, LanceDB, Cloudflare R2, Transactional Mail SaaS & Jira Cloud</strong>. Có thể kéo thả tự do, thêm/sửa node và nối dây.
+            Sơ đồ tổng thể Continuum AI: <strong>Client (Next.js TailAdmin) ➔ Nginx ➔ API Gateway ➔ các NestJS service chạy độc lập (Task dùng chung source DATN_BE) và SAG AI Engine ➔ Redis/BullMQ, MongoDB Replica Set (logical DB continuum_task do Task sở hữu), retrieval index, Cloudflare R2 và mail provider</strong>. Không có Jira task sync trong MVP. Có thể kéo thả tự do, thêm/sửa node và nối dây.
           </div>
         </div>
         <span style="font-family:var(--font-mono); font-size:12px; color:#e11d48; font-weight:800;">TheSeniorDev VPC Master Architecture</span>
@@ -866,7 +866,7 @@
               <path d="M 3 12 V 19 C 3 20.6 7 22 12 22 C 17 22 21 20.6 21 19 V 12" fill="#16a34a" fill-opacity="0.25" stroke="#15803d" stroke-width="1.8"/>
             </g>
 
-            <!-- 9. Iconsax: Radar / Hypergraph (LanceDB Vector Store) -->
+            <!-- 9. Iconsax: Radar / Hypergraph (SAG Retrieval Index) -->
             <g id="isx-radar">
               <circle cx="12" cy="12" r="9.5" fill="#14b8a6" fill-opacity="0.2" stroke="#0d9488" stroke-width="1.8"/>
               <circle cx="12" cy="12" r="5" stroke="#0d9488" stroke-width="1.4" stroke-dasharray="2 2"/>
@@ -1074,11 +1074,11 @@
             <text x="857" y="570" font-size="8.5" fill="#0f766e" text-anchor="middle">SAG AI Pod (Py)</text>
           </g>
 
-          <g class="tree-node-box" onclick="openDrawer('svc_jira')">
+          <g class="tree-node-box" onclick="openDrawer('svc_task')">
             <rect x="935" y="450" width="115" height="140" rx="12" fill="#faf5ff" stroke="#a855f7" stroke-width="2"/>
             <use href="#isx-server" x="975" y="468" width="34" height="34"/>
             <text x="992" y="555" font-size="12" font-weight="800" fill="#581c87" text-anchor="middle">Server</text>
-            <text x="992" y="570" font-size="8.5" fill="#7e22ce" text-anchor="middle">Jira Sync Pod</text>
+            <text x="992" y="570" font-size="8.5" fill="#7e22ce" text-anchor="middle">Task Service</text>
           </g>
 
           <!-- Mũi tên từ Load Balancer vào Server Replicas -->
@@ -1123,7 +1123,7 @@
             <span>⚡ Graph 3: Đường Ống Nạp Tài Liệu & Hàng Đợi Bất Đồng Bộ (BullMQ + Cloudflare R2 + Worker Pool)</span>
           </div>
           <div class="pane-intro-desc">
-            Bypass BE Upload thẳng lên Cloudflare R2 ➔ Ingestion Coordinator phát Job vào BullMQ ➔ Cụm Worker tiêu thụ bất đồng bộ phân nhánh (MarkItDown vs MinerU OCR) ➔ Ghi nhận LanceDB & MongoDB Draft (PROPOSED).
+            Bypass BE Upload thẳng lên Cloudflare R2 ➔ Ingestion Coordinator phát Job vào BullMQ ➔ Cụm Worker xử lý MarkItDown/MinerU ➔ Gửi Work Note/evidence được phép vào SAG retrieval index và MongoDB Draft (PROPOSED).
           </div>
         </div>
         <span style="font-family:var(--font-mono); font-size:12px; color:#a855f7; font-weight:800;">Pattern: Producer-Consumer Decoupling</span>
@@ -1218,17 +1218,17 @@
             <text x="1080" y="432" font-size="8.5" fill="#b91c1c" text-anchor="middle">Table & Formula OCR Extraction</text>
           </g>
 
-          <!-- Hội tụ kết quả ra LanceDB và MongoDB -->
+          <!-- Hội tụ kết quả vào SAG retrieval index và MongoDB -->
           <path d="M 1180 160 L 1260 160 L 1260 250" class="tree-line" stroke="#0d9488" stroke-width="2.5"/>
           <path d="M 1180 420 L 1260 420 L 1260 250" class="tree-line" stroke="#0d9488" stroke-width="2.5"/>
           <path d="M 1260 250 L 1290 250" class="tree-line" stroke="#0d9488" stroke-width="2.5" marker-end="url(#arr-teal)"/>
 
-          <!-- LanceDB Target -->
-          <g class="tree-node-box" onclick="openDrawer('db_lancedb')">
+          <!-- SAG retrieval target: LanceDB selected; runtime implementation needs verification -->
+          <g class="tree-node-box" onclick="openDrawer('db_sag_index')">
             <rect x="1290" y="200" width="150" height="85" rx="10" fill="#f0fdfa" stroke="#14b8a6" stroke-width="2"/>
-            <text x="1365" y="235" font-size="12" font-weight="900" fill="#134e4a" text-anchor="middle">LanceDB Index</text>
-            <text x="1365" y="252" font-size="8.5" fill="#0f766e" text-anchor="middle">Store Vector Chunks</text>
-            <text x="1365" y="267" font-size="8" fill="#115e59" text-anchor="middle">Hyperedges for SAG</text>
+            <text x="1365" y="235" font-size="12" font-weight="900" fill="#134e4a" text-anchor="middle">SAG Retrieval Index</text>
+            <text x="1365" y="252" font-size="8.5" fill="#0f766e" text-anchor="middle">Authorized Evidence Only</text>
+            <text x="1365" y="267" font-size="8" fill="#115e59" text-anchor="middle">LanceDB target</text>
           </g>
 
           <!-- MongoDB Proposed Draft Target -->
@@ -1564,7 +1564,7 @@
           <path d="M 1190 280 L 1280 280" class="tree-line" stroke="#16a34a" stroke-width="3" marker-end="url(#arr-green)"/>
           <text x="1235" y="270" font-size="8.5" font-weight="800" fill="#16a34a" text-anchor="middle">4. Query DB</text>
 
-          <!-- 5. DATABASE SOURCE OF TRUTH (MONGODB & LANCEDB) -->
+          <!-- 5. DATABASE SOURCE OF TRUTH (MONGODB & SAG RETRIEVAL INDEX) -->
           <g class="tree-node-box" onclick="openDrawer('db_mongo')">
             <rect x="1280" y="210" width="200" height="150" rx="14" fill="#dcfce7" stroke="#16a34a" stroke-width="2.5"/>
             <use href="#isx-data" x="1363" y="225" width="34" height="34"/>
@@ -1693,7 +1693,7 @@
             <text x="630" y="224" font-size="11" font-weight="900" fill="#581c87" text-anchor="middle">BULLMQ MAIN QUEUES</text>
 
             <text x="620" y="260" font-size="13" font-weight="900" fill="#581c87" text-anchor="middle">Queue: 'ingestion-queue'</text>
-            <text x="620" y="278" font-size="9" font-weight="700" fill="#7e22ce" text-anchor="middle">Also: jira-sync, reminder-queue</text>
+            <text x="620" y="278" font-size="9" font-weight="700" fill="#7e22ce" text-anchor="middle">Also: reminder-queue, handover-queue</text>
             <text x="620" y="295" font-size="8.5" fill="#6b21a8" text-anchor="middle">Durable • Redis Streams Backend</text>
             <text x="620" y="312" font-size="8.5" fill="#581c87" text-anchor="middle">Prefetch: 5 jobs/worker</text>
 
@@ -1722,9 +1722,9 @@
             <text x="930" y="375" font-size="9" font-weight="800" fill="#dc2626" text-anchor="middle">❌ Crash / Timeout ➔ FAILED</text>
           </g>
 
-          <!-- Nhánh THÀNH CÔNG: Lưu trữ LanceDB & MongoDB -->
+          <!-- Nhánh THÀNH CÔNG: Lưu trữ SAG retrieval index & MongoDB -->
           <path d="M 1040 270 L 1260 270" class="tree-line" stroke="#16a34a" stroke-width="3" marker-end="url(#arr-green)"/>
-          <text x="1150" y="260" font-size="9.5" font-weight="900" fill="#16a34a" text-anchor="middle">✅ Lưu Chunks vào LanceDB & Draft Mongo</text>
+          <text x="1150" y="260" font-size="9.5" font-weight="900" fill="#16a34a" text-anchor="middle">✅ Lưu evidence index & Draft Mongo</text>
 
           <g class="tree-node-box" onclick="openDrawer('db_mongo')">
             <rect x="1260" y="235" width="220" height="85" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
@@ -2051,7 +2051,7 @@
             <text x="1175" y="130" font-size="8.5" fill="#0f766e" text-anchor="middle">OpenTelemetry Python SDK</text>
 
             <rect x="1090" y="145" width="170" height="60" rx="6" fill="#ffffff" stroke="#99f6e4"/>
-            <text x="1175" y="165" font-size="8" font-family="var(--font-mono)" fill="#134e4a" text-anchor="middle">Child: [LanceDB: ANN Search]</text>
+            <text x="1175" y="165" font-size="8" font-family="var(--font-mono)" fill="#134e4a" text-anchor="middle">Child: [SAG Retrieval: LanceDB target]</text>
             <text x="1175" y="180" font-size="8" font-family="var(--font-mono)" fill="#0f766e" text-anchor="middle">Child: [Hyperedge Expansion]</text>
             <text x="1175" y="195" font-size="8" font-family="var(--font-mono)" fill="#0d9488" text-anchor="middle">Child: [LLM Grounding]</text>
 
@@ -2097,7 +2097,7 @@
             <use href="#isx-bezier" x="95" y="565" width="24" height="24"/>
             <text x="195" y="585" font-size="13" font-weight="900" fill="#581c87">Traces: Grafana Tempo</text>
             <text x="95" y="610" font-size="8.5" fill="#7e22ce">• Lưu trữ Waterfalls Distributed Traces</text>
-            <text x="95" y="628" font-size="8.5" fill="#7e22ce">• Trace Timeline từ Client ➔ LanceDB</text>
+            <text x="95" y="628" font-size="8.5" fill="#7e22ce">• Trace Timeline từ Client ➔ SAG Retrieval</text>
             <text x="95" y="646" font-size="8.5" fill="#7e22ce">• Nhận diện ngay Span nghẽn mạng (&gt;500ms)</text>
             <text x="95" y="675" font-size="9" font-weight="900" fill="#9333ea">Thời gian truy vết lỗi: &lt; 30 giây!</text>
           </g>
@@ -2163,7 +2163,7 @@
             <option value="redis">Redis Distributed Cache [isx-flash]</option>
             <option value="rabbitmq">BullMQ Distributed Queue [isx-messages-3]</option>
             <option value="mongo">MongoDB Source of Truth [isx-data]</option>
-            <option value="lancedb">LanceDB Vector Store [isx-radar]</option>
+            <option value="sagindex">SAG Retrieval Index (LanceDB target) [isx-radar]</option>
             <option value="s3">Cloudflare R2 Storage [isx-folder-cloud]</option>
             <option value="ratelimit">Rate Limiter & Token Throttler [isx-timer]</option>
             <option value="circuitbreaker">Circuit Breaker & Fallback Guard [isx-security-safe]</option>
@@ -2236,22 +2236,6 @@
         border: "#38bdf8",
         textColor: "#0369a1"
       },
-      // 2. External Jira Cloud SaaS
-      {
-        id: "edge_jira_ext",
-        type: "nginx",
-        x: 30,
-        y: 110,
-        w: 140,
-        h: 140,
-        title: "Jira Cloud SaaS",
-        sub: "REST v3 & Webhooks",
-        file: "integrations/jira-cloud/",
-        icon: "isx-routing",
-        bg: "#fff7ed",
-        border: "#f97316",
-        textColor: "#9a3412"
-      },
       // 3. Nginx Ingress & Load Balancer
       {
         id: "nginx",
@@ -2285,7 +2269,7 @@
         textColor: "#9f1239"
       },
 
-      // ================= VPC DOMAIN SERVICES (8 SERVICES IN 2 BALANCED COLUMNS) =================
+      // ================= NESTJS CORE DOMAIN MODULES + SAG ENGINE =================
       // Column A (Left inside VPC)
       {
         id: "svc_iam",
@@ -2318,15 +2302,15 @@
         textColor: "#14532d"
       },
       {
-        id: "svc_jira",
+        id: "svc_task",
         type: "service",
         x: 620,
         y: 385,
         w: 250,
         h: 145,
-        title: "Jira Sync Connector",
-        sub: "Webhooks • Idempotent Sync",
-        file: "backend/src/modules/jira/",
+        title: "Continuum Task Service",
+        sub: "Canonical Tasks • Assignment • History",
+        file: "DATN_BE/src/services/task/",
         icon: "isx-server",
         bg: "#f0fdf4",
         border: "#22c55e",
@@ -2449,7 +2433,7 @@
         w: 430,
         h: 115,
         title: "BullMQ Distributed Queue (Redis)",
-        sub: "ingestion-queue • jira-sync • mail-queue • review-queue • DLQ",
+        sub: "ingestion-queue • handover-queue • mail-queue • review-queue • DLQ",
         file: "backend/src/queues/",
         icon: "isx-messages-3",
         bg: "#faf5ff",
@@ -2464,23 +2448,23 @@
         w: 430,
         h: 130,
         title: "MongoDB 3-Node Replica Set (rs0)",
-        sub: "Source of Truth • ACID Multi-Doc Transactions",
-        file: "backend/src/database.module.ts",
+        sub: "Source of Truth • logical DB per service (incl. continuum_task)",
+        file: "DATN_BE/src/services/task/",
         icon: "isx-data",
         bg: "#dcfce7",
         border: "#16a34a",
         textColor: "#14532d"
       },
       {
-        id: "db_lancedb",
-        type: "lancedb",
+        id: "db_sag_index",
+        type: "sagindex",
         x: 1300,
         y: 480,
         w: 430,
         h: 110,
-        title: "LanceDB Serverless Vector Store",
-        sub: "Event-Entity Hyperedges • Dense Retrieval Index",
-        file: "ai-service/app/vector_store.py",
+        title: "SAG Retrieval Index (LanceDB target)",
+        sub: "Derived index for permitted Work Notes/evidence",
+        file: "Tech.md + database-design/11_SAG_STORAGE_SCHEMA.md",
         icon: "isx-radar",
         bg: "#f0fdfa",
         border: "#14b8a6",
@@ -2537,22 +2521,23 @@
       // 1. Ingress & Client
       { id: "e_client_nginx", from: "client", to: "nginx", label: "🔒 HTTPS / WSS", color: "#dc2626", marker: "arr-red", width: 3 },
       { id: "e_client_r2", from: "client", to: "edge_r2", label: "Presigned Direct PUT", color: "#ca8a04", marker: "arr-yellow", width: 2.5, dash: "6 4" },
-      { id: "e_jira_sync", from: "edge_jira_ext", to: "svc_jira", label: "Webhooks & REST", color: "#0284c7", marker: "arr-dark", width: 2.5 },
       { id: "e_nginx_gateway", from: "nginx", to: "gateway", label: "SSL Offload HTTP", color: "#475569", marker: "arr-dark", width: 3 },
       { id: "e_gw_redis", from: "gateway", to: "edge_redis", label: "Blacklist <1ms", color: "#db2777", marker: "arr-pink", width: 2.2, dash: "5 3" },
 
       // 2. Gateway to Domain Services
       { id: "e_gw_iam", from: "gateway", to: "svc_iam", label: "Auth & Grants", color: "#475569", marker: "arr-dark", width: 2.2 },
       { id: "e_gw_capture", from: "gateway", to: "svc_capture", label: "Daily Notes", color: "#475569", marker: "arr-dark", width: 2.2 },
-      { id: "e_gw_jira", from: "gateway", to: "svc_jira", label: "Jira Webhooks", color: "#475569", marker: "arr-dark", width: 2.2 },
+      { id: "e_gw_task", from: "gateway", to: "svc_task", label: "Task API", color: "#475569", marker: "arr-dark", width: 2.2 },
       { id: "e_gw_life", from: "gateway", to: "svc_lifecycle", label: "Verify Inbox", color: "#475569", marker: "arr-dark", width: 2.2 },
       { id: "e_gw_chat", from: "gateway", to: "svc_chat", label: "Cited Search", color: "#475569", marker: "arr-dark", width: 2.2 },
       { id: "e_gw_handover", from: "gateway", to: "svc_handover", label: "WSS Handover", color: "#475569", marker: "arr-dark", width: 2.2 },
       { id: "e_gw_ingest", from: "gateway", to: "svc_ingestion", label: "Upload Init", color: "#475569", marker: "arr-dark", width: 2.2 },
 
       // 3. Domain Services to Queues & Storage
-      { id: "e_jira_bullmq", from: "svc_jira", to: "edge_bullmq", label: "Push jira.sync", color: "#9333ea", marker: "arr-purple", width: 2.2 },
-      { id: "e_jira_mongo", from: "svc_jira", to: "db_mongo", label: "Upsert jira_issues", color: "#16a34a", marker: "arr-green", width: 2.2 },
+      { id: "e_task_mongo", from: "svc_task", to: "db_mongo", label: "continuum_task: tasks + task_events", color: "#16a34a", marker: "arr-green", width: 2.2 },
+      { id: "e_capture_task", from: "svc_capture", to: "svc_task", label: "Internal API: read / taskId", color: "#475569", marker: "arr-dark", width: 2.0, dash: "4 3" },
+      { id: "e_handover_task", from: "svc_handover", to: "svc_task", label: "Internal API: select / assign", color: "#475569", marker: "arr-dark", width: 2.0, dash: "4 3" },
+      { id: "e_agent_task", from: "svc_ai_engine", to: "svc_task", label: "Authorized task context / proposal", color: "#0d9488", marker: "arr-teal", width: 2.0, dash: "4 3" },
       { id: "e_capture_mongo", from: "svc_capture", to: "db_mongo", label: "Save Work Notes", color: "#16a34a", marker: "arr-green", width: 2.2 },
       { id: "e_life_mongo", from: "svc_lifecycle", to: "db_mongo", label: "ACID Multi-Doc Publish", color: "#16a34a", marker: "arr-green", width: 2.5 },
       { id: "e_iam_mongo", from: "svc_iam", to: "db_mongo", label: "RBAC & Audit Trail", color: "#16a34a", marker: "arr-green", width: 2.2 },
@@ -2563,7 +2548,7 @@
       // 4. Ingestion to AI Service & AI Edges
       { id: "e_ingest_ai", from: "svc_ingestion", to: "svc_ai_engine", label: "mTLS Internal API", color: "#0d9488", marker: "arr-teal", width: 2.5 },
       { id: "e_ai_r2", from: "svc_ai_engine", to: "edge_r2", label: "Fetch Bytes for OCR", color: "#ca8a04", marker: "arr-yellow", width: 2, dash: "4 3" },
-      { id: "e_ai_lancedb", from: "svc_ai_engine", to: "db_lancedb", label: "Write Vector Chunks", color: "#0d9488", marker: "arr-teal", width: 2.5 },
+      { id: "e_ai_sag_index", from: "svc_ai_engine", to: "db_sag_index", label: "Write authorized evidence index", color: "#0d9488", marker: "arr-teal", width: 2.5 },
       { id: "e_ai_llm", from: "svc_ai_engine", to: "edge_llm", label: "Extract Claims", color: "#6366f1", marker: "arr-dark", width: 2.2 },
 
       // 5. Chat & Handover Realtime Flows
@@ -2612,7 +2597,7 @@
       redis: { bg: "#fdf2f8", border: "#ec4899", textColor: "#831843", icon: "isx-flash", w: 430, h: 105 },
       rabbitmq: { bg: "#faf5ff", border: "#a855f7", textColor: "#581c87", icon: "isx-messages-3", w: 430, h: 115 },
       mongo: { bg: "#dcfce7", border: "#16a34a", textColor: "#14532d", icon: "isx-data", w: 430, h: 130 },
-      lancedb: { bg: "#f0fdfa", border: "#14b8a6", textColor: "#134e4a", icon: "isx-radar", w: 430, h: 110 },
+      sagindex: { bg: "#f0fdfa", border: "#14b8a6", textColor: "#134e4a", icon: "isx-radar", w: 430, h: 110 },
       s3: { bg: "#fefce8", border: "#eab308", textColor: "#713f12", icon: "isx-folder-cloud", w: 430, h: 115 },
       ratelimit: { bg: "#fff7ed", border: "#f97316", textColor: "#9a3412", icon: "isx-timer", w: 220, h: 120 },
       circuitbreaker: { bg: "#fee2e2", border: "#ef4444", textColor: "#991b1b", icon: "isx-security-safe", w: 230, h: 120 },
@@ -3063,18 +3048,6 @@
         code: `// App Router with TailAdmin Shell\n<TailAdminProvider>\n  <QueryClientProvider client={queryClient}>\n    <AppLayout>\n      <Routes>\n        <Route path="/work-notes" element={<DailyNotesView />} />\n        <Route path="/verification" element={<VerificationCenter />} />\n        <Route path="/assistant" element={<CitedChatView />} />\n        <Route path="/handover" element={<HandoverStudio />} />\n      </Routes>\n    </AppLayout>\n  </QueryClientProvider>\n</TailAdminProvider>`,
         file: "frontend/src/app/layout.tsx"
       },
-      edge_jira_ext: {
-        title: "Jira Cloud External Integration",
-        sub: "Atlassian Jira Cloud REST API v3 & Webhooks",
-        category: "External Systems & Ingress",
-        rules: [
-          "Least-Privilege Scoped Credentials: Kết nối bằng OAuth2 / API Token lưu trong Secret Store, không lưu plaintext trong MongoDB.",
-          "Idempotent Webhook Processing: Nhận sự kiện issue/comment changes, đối soát HMAC signature và đẩy vào BullMQ jira-sync-queue.",
-          "Context Prefill Invariant: Dữ liệu Jira dùng để điền trước ngữ cảnh công việc cho Daily Work Note; nhân viên xác nhận What/How/Why trước khi lưu."
-        ],
-        code: `// Jira Cloud Webhook Payload Handler\nPOST /api/v1/integrations/jira/webhook\nHeaders: { X-Atlassian-Token: "no-check", X-Hub-Signature: "sha256=..." }\nBody: { webhookEvent: "jira:issue_updated", issue: { key: "CONT-104", fields: {...} } }`,
-        file: "integrations/jira-cloud/webhook.controller.ts"
-      },
       nginx: {
         title: "Nginx Reverse Proxy & Load Balancer",
         sub: "Cổng biên mạng xử lý TLS Termination, WebSocket Upgrade & Cân bằng tải",
@@ -3145,24 +3118,27 @@
         category: "Domain Microservice (NestJS Core)",
         rules: [
           "Capture While Work is Happening: Thành viên và Leader ghi nhận What/How/Why, blockers, next steps và bằng chứng (evidence).",
-          "Human-Confirmed Invariant: Dữ liệu Jira chỉ điền trước ngữ cảnh; con người bắt buộc xác nhận để tránh sai lệch.",
+          "Human-Confirmed Invariant: Task API có thể cung cấp context; tác giả phải xác nhận What/How/Why và Work Note draft không được index.",
           "Knowledge Requirements Tracking: Theo dõi yêu cầu tri thức theo module/process; scheduler nhắc nhở quá hạn (không chấm điểm nhân sự).",
           "Lưu trữ trong work_notes và work_note_versions với lịch sử chỉnh sửa bất biến."
         ],
         code: `// Create human-confirmed daily work note\nasync createWorkNote(dto: CreateWorkNoteDto, authorId: string): Promise<WorkNote> {\n  const note = await this.workNoteRepo.create({\n    ...dto, authorId, status: 'CONFIRMED', confirmedAt: new Date()\n  });\n  await this.auditService.log('WORK_NOTE_CONFIRMED', note._id, authorId);\n  return note;\n}`,
         file: "backend/src/modules/work-notes/work-notes.service.ts"
       },
-      svc_jira: {
-        title: "Jira Sync Connector & Reconciliation Service",
-        sub: "Đồng bộ tác vụ Jira Cloud có Idempotency và Đối soát định kỳ",
-        category: "Domain Microservice (NestJS Core)",
+      svc_task: {
+        title: "Continuum Task Service (NestJS)",
+        sub: "Canonical tasks • continuum_task • existing DATN_BE repository",
+        category: "Independently deployed service (shared backend source/build)",
         rules: [
-          "Triple-Layer Sync: Backfill ban đầu + Webhook thời gian thực + Scheduled Reconciliation chống sót sự kiện.",
-          "Idempotency & Deduplication: Lưu event key trong jira_events; unique constraint chống tạo trùng issue/note.",
-          "Source Revision Tracking: Cập nhật jira_issues khi có thay đổi trạng thái; thu hồi quyền truy cập retrieval ngay khi Jira ACL thay đổi."
+          "Task source: Task Service owns the canonical task record in logical database continuum_task.",
+          "Scoped authorization: Validate organization/project/team and resource scope on list, search, detail and every mutation.",
+          "Atomic history: Record task mutation and task_events/outbox together in a MongoDB transaction when event delivery is required.",
+          "Capture/Handover/Agent: Use authenticated API/event contracts; no other service accesses Task collections directly.",
+          "Agent writes are proposals only; a permitted human confirms before the Task Service updates canonical data.",
+          "The service has a separate process/port/health configuration but no new ManageWork repository or physical MongoDB cluster."
         ],
-        code: `// Enqueue Jira Webhook event\nasync handleWebhookEvent(eventPayload: JiraWebhookDto): Promise<void> {\n  const eventKey = \`jira:event:\${eventPayload.issue.id}:\${eventPayload.timestamp}\`;\n  const isNew = await this.redis.set(eventKey, '1', 'NX', 'EX', 86400);\n  if (!isNew) return;\n  await this.jiraQueue.add('sync-issue', eventPayload, { jobId: eventKey });\n}`,
-        file: "backend/src/modules/jira/jira-sync.service.ts"
+        code: `// Proposed application boundary; final routes/DTOs follow approved Use Cases\nawait taskService.assign(taskId, successorUserId, { operationId });\nawait taskService.recordEvent(taskId, actorId, changedFields);`,
+        file: "DATN_BE/src/services/task/"
       },
       svc_lifecycle: {
         title: "Verification Center & Knowledge Lifecycle Service",
@@ -3172,7 +3148,7 @@
           "Lifecycle State Machine: PROPOSED ➔ UNDER_REVIEW ➔ VERIFIED / ACTIVE ➔ SUPERSEDED / DEPRECATED.",
           "Multi-Document ACID Transactions: Tạo knowledge_versions mới, supersede bản cũ, ghi knowledge_evidence và audit_logs trong 1 transaction.",
           "Human Verification Inbox: AI chỉ sinh bản nháp PROPOSED; chỉ SME hoặc Knowledge Owner đúng scope mới được duyệt ACTIVE.",
-          "Knowledge Evidence Integrity: Mỗi tri thức bắt buộc trỏ tới version file, Jira issue hoặc work note cụ thể."
+          "Knowledge Evidence Integrity: Mỗi tri thức trỏ tới version nguồn/evidence được phép hoặc Work Note đã xác nhận."
         ],
         code: `// ACID Multi-document Verification\nconst session = await this.connection.startSession();\nsession.startTransaction();\ntry {\n  const version = await this.versionRepo.create([{ ...newVersionData }], { session });\n  await this.koRepo.updateOne({ _id: koId }, { currentVersionId: version[0]._id, status: 'ACTIVE' }, { session });\n  await this.verificationRepo.create([{ koId, reviewerId, decision: 'VERIFIED' }], { session });\n  await session.commitTransaction();\n} catch (e) { await session.abortTransaction(); throw e; }`,
         file: "backend/src/modules/knowledge/lifecycle.service.ts"
@@ -3218,12 +3194,12 @@
       },
       svc_ai_engine: {
         title: "SAG AI Engine & OCR Subsystem (FastAPI 8001)",
-        sub: "Tích hợp zleap-sag, Router OCR (MarkItDown/MinerU) & LanceDB",
+        sub: "Tích hợp zleap-sag, Router OCR (MarkItDown/MinerU) & retrieval engine đang chờ chốt",
         category: "AI Service (Python FastAPI)",
         rules: [
           "Internal Authenticated API: Chỉ nhận request từ NestJS Core qua mTLS / JWT Service Token, không mở public ra ngoài.",
           "OCR Routing Gate: Native DOCX & Text PDF định tuyến tới MarkItDown; Scanned PDF / Bảng biểu phức tạp định tuyến tới MinerU OCR.",
-          "SAG Event-Entity Retrieval: Xây dựng siêu cạnh kết nối Sự kiện và Thực thể tại thời điểm truy vấn trong LanceDB.",
+          "SAG Event-Entity Retrieval: Chỉ lập chỉ mục Work Note/evidence đã được phép; LanceDB là target MVP, còn runtime/source/deployment cần xác minh.",
           "AI Output là Untrusted: AI chỉ sinh Proposed Knowledge; không bao giờ được tự ý ghi đè MongoDB hay thay đổi quyền."
         ],
         code: `@router.post('/retrieve')\ndef retrieve_knowledge(dto: QueryDTO, filter: ScopeFilter):\n  return sag_engine.search_with_hyperedges(dto.query, filter.allowed_sources)`,
@@ -3243,11 +3219,11 @@
       },
       edge_bullmq: {
         title: "BullMQ Distributed Queue & Worker Pool (on Redis)",
-        sub: "ingestion-queue • jira-sync-queue • review-queue • DLQ",
+        sub: "ingestion-queue • handover-queue • review-queue • DLQ",
         category: "Trục Giao Tiếp Bất Đồng Bộ",
         rules: [
           "Owned by NestJS: Toàn bộ BullMQ Queues và Workers do NestJS quản lý và điều phối.",
-          "Idempotency Guarantee: Mỗi job mang jobId = SHA-256 hash của tài liệu hoặc event key của Jira.",
+          "Idempotency Guarantee: Mỗi ingestion job mang jobId từ source/version và checksum; task lifecycle không tạo sync queue.",
           "Exponential Backoff & Full Jitter: Tự động thử lại 3 lần với độ trễ ngẫu nhiên chống Thundering Herd.",
           "Poison Pill Isolation: Job lỗi sau 3 lần chuyển vào Dead-Letter Queue (DLQ) để điều tra và Replay thủ công."
         ],
@@ -3256,7 +3232,7 @@
       },
       db_mongo: {
         title: "MongoDB 3-Node Replica Set (rs0)",
-        sub: "Single Source of Truth cho toàn bộ dữ liệu tổ chức và tri thức",
+        sub: "Replica set dùng chung; mỗi service sở hữu logical database riêng",
         category: "Persistence (Cơ Sở Dữ Liệu Chính)",
         rules: [
           "Multi-Document ACID Transactions: Đảm bảo tính toàn vẹn khi duyệt tri thức, đổi trách nhiệm và cập nhật phiên bản.",
@@ -3267,17 +3243,17 @@
         code: `mongoose.connect(process.env.MONGO_URI, { replicaSet: 'rs0' });`,
         file: "backend/src/database.module.ts"
       },
-      db_lancedb: {
-        title: "LanceDB Serverless Vector Store",
-        sub: "Chỉ mục truy hồi vector cho SAG Event-Entity Hyperedges",
+      db_sag_index: {
+        title: "SAG Retrieval Index (LanceDB target)",
+        sub: "Derived index for Continuum-authorized Work Notes/evidence",
         category: "Vector Index (Chỉ Mục Truy Hồi)",
         rules: [
-          "Lưu trữ embeddings của các chunk văn bản và đồ thị siêu cạnh Sự kiện - Thực thể.",
+          "LanceDB is the accepted MVP retrieval target per DEC-015/SPEC-005; verify actual SAG source/deployment before claiming it is implemented.",
           "Chỉ mục truy hồi (Retrieval Infrastructure), không phải nguồn chân lý (Source of Truth).",
-          "Có thể tái tạo 100% từ MongoDB và Cloudflare R2 khi cần re-index."
+          "Task records/title/description/status/assignee are not index sources; source ACL is rechecked before retrieval."
         ],
-        code: `tbl = db.open_table('sag_chunks'); tbl.search(query_vec).limit(8).to_pandas()`,
-        file: "ai-service/app/vector_store.py"
+        code: `// MVP target: LanceDB; runtime integration requires verification`,
+        file: "research-tech/Tech.md; research-docs/Internal-Work-Management/06-work-knowledge-unification.md"
       },
       edge_r2: {
         title: "Cloudflare R2 Object Storage (S3 Adapter)",
@@ -3474,7 +3450,7 @@
         sub: "Đo lường thời gian trích xuất vector, duyệt đồ thị Hyperedges và LLM",
         category: "AI Service Observability (Python)",
         rules: [
-          "Bóc tách chi tiết: Embedding (45ms), LanceDB Search (8ms), Hyperedge Expansion (12ms), LLM (450ms)."
+          "Bóc tách chi tiết: Embedding, SAG retrieval, Hyperedge Expansion và LLM; latency baseline chờ đo trên engine đã chọn."
         ],
         code: `with tracer.start_as_current_span("sag.vector_search"): ...`,
         file: "ai-service/app/tracing.py"
@@ -3494,7 +3470,7 @@
         sub: "Kho lưu trữ biểu đồ thác nước Waterfall Trace Timeline của từng request",
         category: "Distributed Tracing Storage",
         rules: [
-          "Xem trọn vẹn vòng đời request từ Client tới LanceDB; phát hiện ngay điểm nghẽn mạng."
+          "Xem trọn vẹn vòng đời request từ Client tới SAG retrieval; phát hiện điểm nghẽn trên engine thực tế đã chọn."
         ],
         code: `curl http://localhost:3200/api/traces/4bf92f...`,
         file: "monitoring/tempo.yaml"

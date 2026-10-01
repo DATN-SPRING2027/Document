@@ -155,6 +155,5 @@ export interface ISagSearchResponseDTO {
 
 ## 4. Tóm Lược Tầng Lưu Trữ Sau Extract Của SAG (Post-Extraction Storage)
  
-- Chi tiết toàn bộ các bảng cơ sở dữ liệu quan hệ (`data_source`, `kb_document`, `source_chunk`, `entity_type`, `entity`, `source_event`, `event_entity`) và kho vector PostgreSQL 16 + pgvector được đặc tả đầy đủ tại:  
-  👉 **[11_SAG_STORAGE_SCHEMA.md](11_SAG_STORAGE_SCHEMA.md)**.
+- Mô hình quan hệ `data_source`, `kb_document`, `source_chunk`, `entity_type`, `entity`, `source_event`, `event_entity` và phương án vector PostgreSQL 16 + pgvector được phân tích (chưa phải engine MVP được duyệt) tại [11_SAG_STORAGE_SCHEMA.md](11_SAG_STORAGE_SCHEMA.md).
 - **Tính chất Stateless và Tái tạo được 100%:** Khi cần (ví dụ nâng cấp model embedding hoặc sự cố ổ đĩa), Continuum AI chỉ cần gửi lệnh re-ingest toàn bộ `document_versions` và `knowledge_versions` từ MongoDB + Cloudflare R2 vào SAG.

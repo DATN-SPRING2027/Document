@@ -18,7 +18,11 @@
 3. **Điều phối Hàng Đợi OCR & Bóc Tách (Parser Coordination):**
    - Tạo tác vụ xử lý bất đồng bộ (`ingestion_jobs`) đẩy vào BullMQ để Router gọi MarkItDown hoặc MinerU tùy thuộc độ phức tạp của định dạng tệp.
 4. **Cầu Nối Ánh Xạ SAG Engine (`sag_mappings`):**
-   - Lưu trữ bản đồ liên kết 1-1 giữa ID phiên bản tài liệu của Continuum với Document ID và Chunk ID do thư viện `zleap-sag` sinh ra.
+   - Lưu trữ bản đồ liên kết nguồn đủ điều kiện của Continuum với Document ID và Chunk ID do thư viện `zleap-sag` sinh ra.
+5. **Authorization gate trước khi index:**
+   - Chỉ source Work Note/evidence được Continuum cho phép theo organization/project/team và source ACL mới được gửi qua parser/worker sang SAG. Theo đề xuất sản phẩm, Work Note phải ở trạng thái `CONFIRMED`; draft không được index.
+   - Task record không phải source type để index; `taskId` chỉ có thể xuất hiện như logical reference trong Work Note.
+   - Worker không tự cấp quyền. Nếu không xác minh được quyền hoặc source eligibility, dừng job theo hướng fail-closed; SAG query tiếp tục dùng ACL/source filter hiện hành.
 
 ---
 
@@ -122,7 +126,7 @@ export interface ISagMapping {
   organizationId: Types.ObjectId;
   projectId: Types.ObjectId;
   
-  sourceType: 'KNOWLEDGE_VERSION' | 'DOCUMENT_VERSION' | 'WORK_NOTE';
+  sourceType: 'KNOWLEDGE_VERSION' | 'DOCUMENT_VERSION' | 'WORK_NOTE'; // Chỉ evidence/source được authorize; không có TASK/JIRA_ISSUE
   sourceRecordId: string;            // ID trong MongoDB của Continuum (dạng string/ObjectId)
   
   // Định danh nội bộ do zleap-sag sinh ra
@@ -172,4 +176,5 @@ export interface IFileUploadTicket {
 - **Sự kiện xuất bản:**
   - `ingestion.document.uploaded`: Kích hoạt BullMQ worker bóc tách tệp.
   - `ingestion.document.parsed`: Thông báo hoàn tất OCR, sẵn sàng đẩy sang SAG Engine.
+  - Chỉ tạo job SAG indexing sau bước kiểm tra ACL/eligibility của Continuum; Work Note/evidence dùng cùng authorization gate.
   - `ingestion.sag.mapped`: Đã lưu thành công ánh xạ chunk ID với SAG.

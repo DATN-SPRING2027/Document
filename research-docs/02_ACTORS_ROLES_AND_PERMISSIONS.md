@@ -68,7 +68,11 @@ Human review is required before AI-proposed knowledge becomes verified/active. T
 | Create project | Yes | **Grant: `project.create` at organization scope** | No | No |
 | Create team / add member in existing project | Yes | Grant by project policy, assigned project/team only | No | No |
 | Assign persistent roles or `project.create` | Yes | No | No | No |
-| Configure Jira/R2 connector or source ACL | Yes | Limited delegated project policy; no privilege escalation | No | No |
+| Configure approved storage/source ACL | Yes | Limited delegated project policy; no privilege escalation | No | No |
+| Create/view/update task | Not by ADMIN role alone | Assigned project/team scope | May create within scope; may edit own/currently assigned task fields within scope | SUCCESSOR reads only tasks explicitly handed over and allowed by ACL |
+| Assign/reassign task | Not by ADMIN role alone | Assigned project/team scope; may assign only a member of that same scope | May self-assign on create or leave unassigned; cannot assign another user | No; Team Leader performs handover assignment through Task API |
+| Change task status / reopen DONE | Not by ADMIN role alone | Assigned project/team scope | Current assignee; DONE→IN_PROGRESS requires a reason | Only after explicit assignment and within current task ACL |
+| Cancel task / read task history | Not by ADMIN role alone | Assigned project/team scope | No cancel by role alone; history within readable task scope | History only for tasks explicitly handed over and allowed by ACL |
 | Add manual work/task note; upload allowed source | Yes | Yes | Yes | No extra right |
 | View authorized knowledge / ask chat | Yes | Yes | Yes | No ACL bypass |
 | Propose knowledge or report gap | Yes | Yes | Yes | No extra right |
@@ -79,15 +83,17 @@ Human review is required before AI-proposed knowledge becomes verified/active. T
 
 ## 6. Permission codes and enforcement
 
-Minimum codes: `project.create`, `project.read`, `project.manage`, `team.create`, `team.member.add`, `role.assign`, `capability.grant`, `source.upload`, `source.manage_acl`, `integration.manage`, `jira.sync.read`, `work_note.create`, `work_note.edit_own`, `knowledge.read`, `knowledge.propose`, `knowledge.verify`, `knowledge.reject`, `knowledge.supersede`, `gap.report`, `handover.manage`, `audit.read`.
+Task action codes proposed for the Use Case review: `task.create`, `task.read`, `task.update_own`, `task.status.change`, `task.assign`, `task.cancel`, `task.history.read`. Here `task.update_own` means a MEMBER may edit a task they created or are currently assigned; a TEAM_LEADER acts within their granted scope. Final codes and matrix remain subject to approval; every read/write/search/history request must pass Continuum Task API organization/project/team scope and resource ACL. A task belongs to one project and at most one team in the proposed MVP model. There is no Jira sync permission in the MVP.
+
+The proposed task rule is deliberately narrower than project membership: a `MEMBER` may create a task, self-assign or leave it unassigned, and update fields only when they created or currently own the task; a `TEAM_LEADER` may manage and assign tasks in their granted scope. Only `TEAM_LEADER` may assign/reassign another user or cancel a task. The task’s current assignee or scoped Team Leader may update its status; a `DONE` task reopens to `IN_PROGRESS` with a reason. `CANCELLED` is terminal in the MVP. These are recommendations pending approval in [Task-management Use Cases](Internal-Work-Management/12-continuum-task-management-use-cases.md), not new persistent roles or blanket ADMIN access.
 
 The capability evaluator must check subject, issuing ADMIN, organization, expiry/revocation and explicit deny for `project.create`. No broad condition such as `role === "TEAM_LEADER"` may substitute for this check. Project/team operations must check scope plus resource ACL. Permission changes invalidate affected sessions/caches as policy requires.
 
 ## 7. System actors and audit
 
-The AI orchestrator, ingestion worker, Jira sync worker and scheduler use least-privilege service identities. They may parse, index, draft, suggest or remind, but may not grant access, verify organizational truth, or impersonate a human reviewer. Imported Jira text and files are untrusted input.
+The AI orchestrator, Task Agent integration, ingestion worker and scheduler use least-privilege service identities. A Task Agent can request only task context authorized for the initiating user, then return a draft/proposal through the Task API; it cannot read the Task database directly or commit a task mutation without a permitted human's confirmation. Agents may parse, index, draft, suggest or remind, but may not grant access, verify organizational truth, or impersonate a human reviewer. Any future external-source content is untrusted input and requires separately approved scope and ACL handling.
 
-Audit at least: membership/role/assignment changes; `project.create` grants, revocations and use; project/team creation; Jira connection and sync failures; upload/source ACL changes; note edits; knowledge review/version changes; sensitive retrieval/chat access; handover approvals and waivers. Logs must avoid tokens, full prompts and document bodies. Missing daily notes trigger a follow-up, **not employee performance scoring**.
+Audit at least: membership/role/assignment changes; `project.create` grants, revocations and use; project/team creation; approved source-connection failures; upload/source ACL changes; task ownership/status changes under the approved task scope; note edits; knowledge review/version changes; sensitive retrieval/chat access; handover approvals and waivers. Logs must avoid tokens, full prompts and document bodies. Missing daily notes trigger a follow-up, **not employee performance scoring**.
 
 ## 8. Scope exclusions
 

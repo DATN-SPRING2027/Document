@@ -27,9 +27,12 @@ frontend/
 │   │   │   ├── universe/                       # [WOW FACTOR] Vũ Trụ Tri Thức 3D (Knowledge Galaxy)
 │   │   │   │   ├── page.tsx                    # Canvas 3D toàn cảnh không gian tri thức (Three.js/R3F)
 │   │   │   │   └── [partitionId]/page.tsx      # Đi sâu vào chi tiết cụm tinh vân Module/Service
+│   │   │   ├── tasks/                          # Task list/detail/create/edit; Kanban là P1 đề xuất
+│   │   │   │   ├── page.tsx                    # Danh sách + tìm/lọc cơ bản qua BFF/Gateway → Task API
+│   │   │   │   └── [taskId]/page.tsx            # Chi tiết task, owner/status/history theo quyền
 │   │   │   ├── daily-notes/                    # Tính năng ghi nhận công việc hàng ngày
 │   │   │   │   ├── page.tsx                    # Danh sách notes + Lịch làm việc
-│   │   │   │   └── [date]/page.tsx             # Form nhập What/How/Why (Jira prefilled)
+│   │   │   │   └── [date]/page.tsx             # Form What/How/Why, liên kết task tùy chọn
 │   │   │   ├── verification/                   # Hộp thư kiểm chứng tri thức (Verification Inbox)
 │   │   │   │   └── page.tsx                    # Danh sách Proposed Knowledge cho SME/Leader
 │   │   │   ├── assistant/                      # Trợ lý thông minh (Cited Chatbot)
@@ -39,7 +42,7 @@ frontend/
 │   │   │   │   └── [id]/interview/page.tsx     # Phòng phỏng vấn Audio thời gian thực
 │   │   │   └── settings/                       # Quản lý Organization, Projects, Teams, Grants
 │   │   │
-│   │   ├── api/                                # Route Handlers (BFF Proxy & Webhook Receiver)
+│   │   ├── api/                                # Route Handlers (BFF Proxy)
 │   │   │   ├── auth/[...nextauth]/route.ts     # Xử lý set HttpOnly Cookies
 │   │   │   └── proxy/[...path]/route.ts        # Chuyển tiếp request an toàn vào NestJS VPC
 │   │   │
@@ -61,7 +64,8 @@ frontend/
 │   ├── features/                               # Business Logic & Components theo từng Module
 │   │   ├── auth/                               # Hooks, Services, Types của Auth
 │   │   ├── universe/                           # Store 3D Camera, Raycaster, Partition Nodes API
-│   │   ├── daily-notes/                        # Markdown editor, Jira issue selector
+│   │   ├── tasks/                              # UI/API client gọi BFF/Gateway, không gọi Task container trực tiếp
+│   │   ├── daily-notes/                        # Markdown editor, optional task selector
 │   │   ├── verification/                       # So sánh diff phiên bản, nút Approve/Reject
 │   │   ├── assistant/                          # SSE Stream Consumer, Citation Popover
 │   │   └── handover/                           # Web Audio API recorder, WebSocket clienter, Sidebar, Breadcrumb, NotificationBell
@@ -69,7 +73,7 @@ frontend/
 │   │
 │   ├── features/                               # Business Logic & Components theo từng Module
 │   │   ├── auth/                               # Hooks, Services, Types của Auth
-│   │   ├── daily-notes/                        # Markdown editor, Jira issue selector
+│   │   ├── daily-notes/                        # Markdown editor, optional task selector
 │   │   ├── verification/                       # So sánh diff phiên bản, nút Approve/Reject
 │   │   ├── assistant/                          # SSE Stream Consumer, Citation Popover
 │   │   └── handover/                           # Web Audio API recorder, WebSocket client
@@ -113,9 +117,10 @@ Dự án áp dụng nguyên tắc **phân tách triệt để giữa Server Cach
          Công nghệ: TanStack Query v5              Công nghệ: Zustand
                     │                                         │
      • Caching danh sách Daily Notes           • Thu gọn/Mở rộng Sidebar TailAdmin
-     • Hộp thư Verification Inbox              • Trạng thái Modal, Popup trích dẫn
-     • Lịch sử phiên hỏi đáp Chat              • Cờ bật/tắt Micro khi phỏng vấn Audio
-     • Tự động Invalidate Cache khi            • Draft ghi chú tạm thời trước khi gửi
+      • Task list/detail/filter và mutation      • Trạng thái Modal, Popup trích dẫn
+      • Hộp thư Verification Inbox              • Cờ bật/tắt Micro khi phỏng vấn Audio
+      • Lịch sử phiên hỏi đáp Chat              • Draft ghi chú tạm thời trước khi gửi
+      • Tự động Invalidate Cache khi            • Bộ lọc hiển thị task
        có Mutation (Thêm/Sửa/Xóa)
 ```
 

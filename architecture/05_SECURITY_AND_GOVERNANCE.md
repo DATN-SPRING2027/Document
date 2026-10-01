@@ -21,7 +21,7 @@ Continuum AI áp dụng mô hình phân quyền chặt chẽ kết hợp giữa 
 ```
 
 ### 1.1. 3 Persistent Roles cố định
-1. **`ADMIN`:** Quản lý tài khoản, tổ chức, cấu hình kết nối Jira và chính sách hệ thống. **Quy tắc bất biến:** `ADMIN` **không** có quyền mặc định đọc nội dung các tri thức bảo mật/mật của dự án nếu không được cấp quyền tham gia dự án đó.
+1. **`ADMIN`:** Quản lý tài khoản, tổ chức và chính sách hệ thống. Quyền quản trị không tự cấp quyền đọc/sửa task hoặc tri thức bảo mật của dự án.
 2. **`TEAM_LEADER`:** Quản lý các nhóm được phân công, duyệt tri thức trong Verification Inbox của nhóm, khởi tạo quy trình bàn giao (`HANDOVER`). **Quy tắc bất biến:** Team Leader **không** mặc định có quyền tạo Project mới.
 3. **`MEMBER`:** Đóng góp ghi chú công việc hàng ngày, upload tài liệu, tìm kiếm tri thức trong phạm vi nhóm và tham gia quy trình chuyển giao.
 
@@ -48,18 +48,24 @@ $$\mathbf{P_{\text{eff}}} = \left( P_{\text{user}} \cup P_{\text{teams}} \cup P_
 ┌──────────────────────────────────────────────────────────────┐
 │ NestJS Pre-Retrieval Scoped ACL Resolver                     │
 │ 1. Giải mã JWT lấy userId, teamIds, roles                    │
-│ 2. Truy vấn MongoDB lấy danh sách Document IDs được phép xem │
-│ 3. Tạo mệnh đề lọc: { document_id: { $in: [doc1, doc2] } }   │
+│ 2. Truy vấn MongoDB lấy source/evidence được phép xem         │
+│ 3. Tạo filter theo source + tenant/project + ACL             │
 └─────────────────────┬────────────────────────────────────────┘
                       │ (Gửi kèm truy vấn có Scoped Filter)
                       ▼
 ┌──────────────────────────────────────────────────────────────┐
-│ FastAPI SAG Engine + LanceDB Vector Store                    │
-│ Chỉ tìm kiếm vector trong tập Document IDs đã được phép!     │
+│ FastAPI SAG Engine + retrieval index                          │
+│ Chỉ tìm trong tập Work Note/evidence được phép!               │
 └──────────────────────────────────────────────────────────────┘
 ```
 
 * **Lợi ích an ninh:** Loại bỏ 100% rủi ro LLM đọc phải ngữ cảnh nhạy cảm vượt quyền của người dùng.
+
+Task API dùng nguồn quyền Continuum/MongoDB cho mọi thao tác task. Đề xuất quyền task chi tiết nằm tại [permission baseline](../research-docs/02_ACTORS_ROLES_AND_PERMISSIONS.md): Member không tự giao task cho người khác; Team Leader giao/chuyển owner trong scope; Admin không có quyền đọc task chỉ vì là Admin; Successor chỉ đọc task được chọn/ủy quyền.
+
+Task Service là process độc lập trong mạng nội bộ. Gateway/service caller phải được xác thực; Task Service tự kiểm tra tenant/project/team scope và quyền resource trên mỗi request, không tin actor ID hoặc quyền do browser/Agent tự gửi. Agent chỉ nhận context theo user được ủy quyền, rồi trả proposal qua API; người có quyền xác nhận mới được ghi mutation. Cơ chế service credential, identity propagation và secret rotation phải được đưa vào OpenAPI/deployment contract trước khi code Task được triển khai.
+
+SAG chỉ nhận author-confirmed Work Note/evidence sau khi được phép lập chỉ mục và phải lọc theo quyền hiện hành trước retrieval; role allowlist đơn lẻ không thay thế organization/project/team scope hoặc source ACL. Khi nguồn bị thu hồi quyền, request retrieval kế tiếp phải bị chặn ngay; de-index/refresh chạy nền có thể retry nhưng không được cấp quyền dựa trên index cũ.
 
 ---
 
@@ -122,7 +128,7 @@ Hệ thống triển khai cơ chế giới hạn lưu lượng 3 lớp độc l�
 │ • POST /api/v1/auth/login: 5 lần sai / 15 phút (Chống Brute-Force)    │
 │ • POST /api/v1/chat/.../messages: 15 câu hỏi / phút (Bảo vệ LLM Quota) │
 │ • POST /api/v1/ingestion/upload: 10 files / giờ (Chống cạn dung lượng) │
-│ • POST /api/v1/integrations/jira/webhook: 1000 req/phút (Burst Jira)   │
+│ • Task create/update/assign routes: quota theo user + project scope    │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -181,11 +187,9 @@ Trong một hệ thống tri thức đa người dùng, nhiều kịch bản tư
     }
     ```
 
-### 5.3. Kịch bản 3: Webhook Jira bắn dồn dập hàng chục sự kiện cho 1 Issue trong 1 giây
-* **Rủi ro:** Jira bắn dồn dập các event `issue_updated` khi có người kéo thả trạng thái, đổi assignee, thêm label cùng lúc khiến backend bị quá tải và database ghi đè trạng thái cũ lên trạng thái mới.
-* **Giải pháp:** **Khử trùng lặp đa lớp (Idempotency Key & Job Deduplication)**.
-  - **Lớp 1 (Redis `SETNX`):** Khóa `jira:event:{eventId}` (TTL 86,400s) loại bỏ ngay các request webhook trùng ID do Jira retry.
-  - **Lớp 2 (BullMQ Job Deduplication):** Đặt `jobId = "jira-" + issueKey + "-" + Math.floor(Date.now() / 2000)`. Toàn bộ event của cùng 1 issue trong cửa sổ 2 giây được gộp thành **1 job duy nhất**, giảm 80% áp lực ghi vào MongoDB.
+### 5.3. Kịch bản 3: Hai người cập nhật cùng một task
+* **Rủi ro:** Cập nhật đồng thời trạng thái/assignee có thể ghi đè một thay đổi khác hoặc tạo lịch sử không đúng thứ tự.
+* **Kiểm soát cần có trong Task API:** Kiểm tra quyền và tenant/project scope ở mỗi mutation; xác định cơ chế chống lost update (ví dụ version check/optimistic concurrency) và idempotency cho retry trước khi chốt API contract. Đây là yêu cầu thiết kế còn cần đặc tả, không có Jira sync trong MVP.
 
 ### 5.4. Kịch bản 4: Hai người cùng tải lên cùng 1 tệp lớn (PDF/DOCX)
 * **Rủi ro:** Lãng phí tài nguyên lưu trữ Cloudflare R2 và tốn tài nguyên worker OCR phân tách lại tài liệu đã tồn tại.
@@ -211,7 +215,7 @@ Trong một hệ thống tri thức đa người dùng, nhiều kịch bản tư
 │   │ (L1 Memory + L2 Redis) │  │ Locks (Redlock)│  │ Breaker (SaaS) │   │
 │   ├────────────────────────┤  ├────────────────┤  ├────────────────┤   │
 │   │ • L1 LRU (< 0.1ms)     │  │ • Fencing      │  │ • Bảo vệ gọi   │   │
-│   │ • L2 Redis (< 2ms)     │  │   Tokens       │  │   Jira Cloud   │   │
+│   │ • L2 Redis (< 2ms)     │  │   Tokens       │  │   SAG / Mail   │   │
 │   │ • SingleFlight Mutex   │  │ • Chống Race   │  │ • Bảo vệ gọi   │   │
 │   │   chống sập cache      │  │   Conditions   │  │   LLM Gateway  │   │
 │   └────────────────────────┘  └────────────────┘  └────────────────┘   │
@@ -223,7 +227,7 @@ Trong một hệ thống tri thức đa người dùng, nhiều kịch bản tư
 * **L2 Cache (Redis Cluster 7.2):** Lưu kết quả Scoped Claims, kết quả tìm kiếm ngữ nghĩa tương tự.
 
 ### 6.2. Circuit Breaker 3 trạng thái (Bảo vệ tích hợp dịch vụ ngoài)
-* Đặt tại cổng gọi sang **Atlassian Jira API** và **LLM Gateway (Gemini/OpenAI)**:
+* Đặt tại cổng gọi sang **SAG, object storage, mail provider** và **LLM Gateway (Gemini/OpenAI)**:
   - **Trạng thái CLOSED:** Hoạt động bình thường.
   - **Trạng thái OPEN:** Khi tỷ lệ gọi lỗi vượt quá **50% trong 10 giây**, Circuit Breaker ngắt kết nối ngay lập tức, trả về thông báo lỗi thân thiện thay vì để hệ thống chờ timeout khiến toàn bộ worker bị treo.
   - **Trạng thái HALF-OPEN:** Sau 30 giây hồi phục, cho phép 10% lưu lượng thử nghiệm đi qua; nếu thành công thì đóng mạch về lại CLOSED.

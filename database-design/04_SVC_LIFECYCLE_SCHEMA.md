@@ -12,7 +12,7 @@
 `svc_lifecycle` là **"Trái tim nghiệp vụ"** của Continuum AI, chịu trách nhiệm quản lý vòng đời tri thức từ khi còn là đề xuất nháp đến khi trở thành chân lý được kiểm chứng:
 1. **Đối tượng Tri thức Có Định Danh Ổn Định (`knowledge_objects`):** ID không đổi, quản lý trạng thái hiện tại (`DRAFT`, `IN_REVIEW`, `VERIFIED`, `DEPRECATED`, `OBSOLETE`).
 2. **Nội dung Công bố Bất Biến (`knowledge_versions`):** Mọi sự thay đổi đều tạo ra một version mới tuần tự (`v1 → v2`), tuyệt đối không UPDATE đè lên version cũ đã kiểm chứng.
-3. **Truy nguyên Bằng chứng Tuyệt đối (`knowledge_evidence`):** Mỗi khẳng định tri thức đều liên kết trực tiếp với đoạn trích từ file PDF tài liệu, ghi chú tác giả hoặc issue Jira.
+3. **Truy nguyên Bằng chứng Tuyệt đối (`knowledge_evidence`):** Mỗi khẳng định tri thức đều liên kết trực tiếp với đoạn trích từ Work Note hoặc evidence/source được Continuum cho phép trong đúng phạm vi quyền.
 4. **Hộp thư Kiểm chứng (Verification Inbox):** Nơi Team Leader / SME duyệt đề xuất tri thức bằng giao dịch ACID đa tài liệu.
 5. **Giám sát Khoảng trống & Mâu thuẫn:** Tự động ghi nhận `knowledge_gaps` và `knowledge_conflicts`.
 
@@ -72,7 +72,7 @@ export interface IKnowledgeProposal {
   tags: string[];
   
   // Nguồn gốc đề xuất (Provenance)
-  sourceType: 'WORK_NOTE' | 'JIRA_ISSUE' | 'DOCUMENT' | 'AUDIO_INTERVIEW' | 'HUMAN_DIRECT';
+  sourceType: 'WORK_NOTE' | 'DOCUMENT' | 'AUDIO_INTERVIEW' | 'HUMAN_DIRECT';
   sourceRefId: string;               // ID từ service nguồn (workNoteId, documentVersionId...)
   suggestedByUserId?: string;        // Null nếu do Trợ lý AI tự động trích xuất
   
@@ -130,7 +130,7 @@ export interface IKnowledgeEvidence {
   knowledgeObjectId: Types.ObjectId;
   knowledgeVersionId?: Types.ObjectId;
   
-  evidenceType: 'DOCUMENT_VERSION' | 'WORK_NOTE' | 'JIRA_ISSUE' | 'AUDIO_TRANSCRIPT' | 'GIT_COMMIT';
+  evidenceType: 'DOCUMENT_VERSION' | 'WORK_NOTE' | 'AUDIO_TRANSCRIPT' | 'GIT_COMMIT';
   sourceRefId: string;               // ID liên kết logic
   sourceUri?: string;                // URL hoặc R2 S3 Key
   
@@ -142,6 +142,7 @@ export interface IKnowledgeEvidence {
   createdAt: Date;
 }
 ```
+Task metadata or status alone is not evidence for a verified knowledge claim. Before Work Note/evidence content is sent to SAG or used to assemble a proposal, Continuum must verify that the source is eligible and permitted for the requesting/indexing scope. Per the current proposal, a Work Note must be author-confirmed before indexing; drafts remain in Continuum and task fields are never indexed as independent evidence.
 * **Chỉ mục:**
   - `(knowledgeObjectId, knowledgeVersionId)`: `{ index: true }`
   - `(evidenceType, sourceRefId)`: `{ index: true }`
