@@ -6,13 +6,13 @@
 
 **Mục tiêu sản phẩm:** ghi nhận công việc → đề xuất tri thức → con người kiểm chứng → hỏi đáp có dẫn chứng → bàn giao cho người kế nhiệm.
 
-**Nguồn đầu vào:** danh sách Jira 299 use case do người dùng cung cấp; `research-docs/01_MVP_SCOPE.md`; `research-docs/02_ACTORS_ROLES_AND_PERMISSIONS.md`; `research-docs/Internal-Work-Management/09-internal-platform-mvp.md`, `10-master-strategic-research.md`, và `11-managework-codebase-assessment.md`.
+**Nguồn đầu vào:** danh sách 299 use case Jira do người dùng cung cấp để tham khảo; `research-docs/01_MVP_SCOPE.md`; `research-docs/02_ACTORS_ROLES_AND_PERMISSIONS.md`; `research-docs/03_DAILY_WORKFLOW_AND_JIRA_SYNC.md`; ADR-009 và ADR-010.
 
 ## 1. Quyết định nguồn task đã chốt
 
 Danh sách 299 use case trong tài liệu tham khảo mô tả một hệ thống quản lý dự án rộng như Jira. Continuum AI cần quản lý công việc để giữ lại ngữ cảnh, bằng chứng, trách nhiệm và trạng thái cho tri thức/bàn giao; không cần tái tạo toàn bộ Jira.
 
-`[DECIDED — 2026-10-01]` Người dùng xác nhận nhóm **không dùng Jira làm nguồn task** và sẽ tự xây chức năng quản lý task. Vì vậy, **Continuum Task API là nguồn chính và duy nhất cho vòng đời task DATN trong phạm vi MVP; bản ghi chuẩn được lưu trong MongoDB**. Jira không phải actor, nguồn đồng bộ, hay nguồn dự phòng của các Use Case dưới đây. Nếu sau này cần import/link Jira như nguồn tham khảo, phải duyệt thành phạm vi riêng; không tạo đồng bộ ghi hai chiều. Chi tiết ranh giới quyết định ở [ADR-009](../../research-tech/ADR-009-internal-task-source-and-mongodb.md).
+`[DECIDED — 2026-10-01]` Người dùng xác nhận nhóm **không dùng Jira làm nguồn task** và sẽ tự xây chức năng quản lý task. Vì vậy, **Continuum Task API là nguồn chính và duy nhất cho vòng đời task DATN trong phạm vi MVP; bản ghi chuẩn được lưu trong MongoDB**. Jira không phải actor, nguồn đồng bộ, hay nguồn dự phòng của các Use Case dưới đây. Nếu sau này cần import/link Jira như nguồn tham khảo, phải duyệt thành phạm vi riêng; không tạo đồng bộ ghi hai chiều. Nguồn task/MongoDB xem [ADR-009](../../research-tech/ADR-009-internal-task-source-and-mongodb.md); ranh giới repository/service/deployment xem [ADR-010](../../research-tech/ADR-010-task-service-in-existing-repositories.md).
 
 `[PROPOSAL]` Xây một **task tracker nội bộ tối giản**, giới hạn trong một software project có nhiều team và gắn trực tiếp với Work Note/Handover. Không đặt mục tiêu parity với Jira. Hướng nguồn task này đã chốt; danh sách P0/P1, trạng thái, field và luồng cụ thể bên dưới vẫn cần bạn duyệt trước khi trở thành requirement chi tiết.
 
@@ -27,7 +27,7 @@ Danh sách 299 use case trong tài liệu tham khảo mô tả một hệ thốn
 - Work Note có thể không liên kết task; nếu có, liên kết tối đa một task qua `taskId`. Một task có thể được tham chiếu từ nhiều Work Note. API phải kiểm tra task tồn tại và caller được phép truy cập task.
 - Chỉ Work Note/evidence đã qua kiểm tra quyền và đủ điều kiện nguồn mới được đưa vào SAG retrieval/index. Task, status và assignee không phải nguồn SAG độc lập.
 - Handover đọc task từ Task API; Team Leader có quyền chọn task và giao cho successor. Handover giữ workflow/tham chiếu bàn giao, không trở thành nguồn ghi task thứ hai.
-- Task collections dùng MongoDB vận hành hiện có (`continuum_db` theo DEC-011/SPEC-001); không tạo database task riêng. SAG retrieval target MVP đã được chấp nhận là LanceDB theo DEC-015/SPEC-005. Tài liệu PostgreSQL + pgvector/Qdrant là phương án thay thế/mở rộng, không phải lựa chọn MVP; việc triển khai thực tế cần được xác minh trong source/deployment.
+- Task Service là microservice NestJS triển khai độc lập nhưng mã nguồn thuộc DATN_BE hiện có; task UI/client thuộc DATN_FE hiện có. Service sở hữu database logic `continuum_task` trên MongoDB replica set hiện có; không tạo repository ManageWork hay MongoDB cluster vật lý mới. FE gọi qua BFF/Gateway; các service/Agent truy cập bằng API hoặc event contract, không đọc/ghi database trực tiếp. Task Service không quyết định công nghệ lưu SAG.
 
 ## 3. Use case đề xuất — P0 của task nội bộ
 
@@ -45,6 +45,14 @@ Các mã Jira trong cột cuối là nguồn gợi ý từ danh sách bạn gử
 | UC-TM-08 | Liên kết Work Note với task | MEMBER | Khi ghi Work Note, người dùng có thể chọn task nội bộ liên quan. Work Note vẫn là phần giải thích “đã làm gì, làm thế nào/vì sao, vướng mắc gì”; task chỉ cung cấp context. | Mới; phù hợp mục 4 và 6.2 của `01_MVP_SCOPE.md` |
 | UC-TM-09 | Rà soát và bàn giao task còn mở | TEAM_LEADER; SUCCESSOR xem phần được giao | Trong quy trình handover, Continuum lấy task còn mở qua Task API; Team Leader chọn task và giao successor. Task API cập nhật assignee canonical; Handover lưu `taskId` và trạng thái tiếp nhận, không tạo bản task thứ hai. Successor chỉ xem task được giao và evidence được phép. | Mới; nối với 6.5 `01_MVP_SCOPE.md` |
 | UC-TM-10 | Xem lịch sử thay đổi quan trọng của task | MEMBER/TEAM_LEADER theo scope; SUCCESSOR với task được giao | Xem tối thiểu lịch sử đổi trạng thái, owner, hạn và ưu tiên (người thực hiện + thời điểm), hữu ích khi cần biết trách nhiệm/tiến độ đã đổi ra sao. Không phải trang audit toàn hệ thống. | #54–55, #293, #298–299 ở mức giới hạn |
+
+### Agent contract — bắt buộc về ranh giới, giới hạn triển khai đề xuất
+
+Task API phải cho phép các tính năng AI/Agent được tích hợp qua authenticated API/event contract, không qua truy cập database. Với task thuộc scope người dùng, Agent chỉ tạo bản đề xuất (ví dụ rewrite title/description hoặc gợi ý cập nhật); người có quyền xem diff và xác nhận trước khi Task Service ghi thay đổi canonical. API lưu được danh tính người khởi tạo, Agent/proposal ID và quyết định xác nhận vào lịch sử.
+
+| ID | Use case | Actor chính | Giới hạn |
+|---|---|---|---|
+| UC-TM-11 | Agent đề xuất chỉnh sửa nội dung task | Task Agent; người có quyền xác nhận | Lấy task context theo quyền của người khởi tạo, trả draft/diff và lý do; không tự ghi task, đổi assignee/status hay cấp quyền. Đề xuất thực hiện sau P0 CRUD/ACL/API; nếu tích hợp Agent trong MVP, chỉ triển khai luồng draft → human approve. |
 
 ### Trạng thái và thao tác đề xuất
 
@@ -91,7 +99,7 @@ Authentication, profile, project/member lifecycle và cấp quyền ở cấp t�
 - **SUCCESSOR assignment:** chỉ xem task/context đã được bàn giao hoặc tài nguyên mà ACL cho phép; đây là assignment scope, không phải role mới.
 - **ADMIN:** duy trì user/project/integration/policy theo baseline; `ADMIN` không tự động được đọc nội dung task/tri thức mật.
 - Không có actor hệ thống task bên ngoài trong Use Case MVP: Continuum tự quản lý task và toàn bộ vòng đời task DATN.
-- **Continuum AI:** có thể tạo Proposed Knowledge từ nguồn hợp lệ theo luồng hiện tại; không tự xác minh knowledge, tự đổi quyền, hoặc tự tạo/gán task ngoài use case đã được duyệt.
+- **Task Agent / AI Engine:** chỉ đọc task context được Task API cấp theo người dùng và đề xuất thay đổi qua contract. Không gọi DB trực tiếp, không tự commit, đổi assignee/status hay thay đổi ACL; mọi mutation cần người có quyền xác nhận và được ghi audit. Agent integration phải dùng ranh giới API/event của Task Service, nhưng mức tính năng rewrite còn tùy scope MVP.
 
 Quan hệ UML đề xuất:
 
@@ -136,17 +144,18 @@ Các mục dưới đây là **đề xuất để người dùng duyệt**, khô
 | 16 | Comment/file/mention/watcher/notification? | Không đưa comment, attachment, mention, watcher hay task notification riêng vào P0. Dùng Work Note/evidence và Handover hiện có; đánh giá thông báo assignment ở P1. | MVP scope, notification boundary |
 | 17 | Task history lưu gì? | `task_events` append-only ghi actor/time và field thay đổi cho status, assignee, due date, priority, team, title/description, cancel/reopen; không lưu snapshot toàn bộ task trong event. Hiển thị theo cùng quyền task; successor chỉ xem event của task được giao. | DB schema, audit, security |
 | 18 | Task key? | Dùng Mongo `ObjectId` canonical trong P0; chưa tạo sequence/key theo kiểu Jira. UI có thể rút gọn ID khi cần. | API/data contract |
-| 19 | Import task từ ManageWork/Jira? | Không bulk import trong MVP. ManageWork là tham khảo hành vi/UI và hiện dùng PostgreSQL; dữ liệu task không được tự nhập sang Continuum Mongo. Nếu cần dữ liệu thật, làm mapping/import riêng và duyệt migration trước. | Codebase assessment, migration plan |
-| 20 | SAG retrieval dùng engine nào? | Mục tiêu kiến trúc MVP đã chốt là LanceDB (DEC-015/SPEC-005). PostgreSQL + pgvector/Qdrant trong database-design chỉ là phương án thay thế/mở rộng. Đây là quyết định target, không phải bằng chứng engine đã chạy; cần xác minh source/deployment SAG riêng. Không suy luận từ PostgreSQL của ManageWork. | Tech, SAG storage, architecture diagram |
+| 19 | Import task từ ManageWork/Jira? | Không bulk import trong MVP. ManageWork là tham khảo hành vi/UI; dữ liệu task không được tự nhập sang Continuum Mongo. Nếu cần dữ liệu thật, làm mapping/import riêng và duyệt migration trước. | ADR-010, migration plan |
+| 20 | Task quyết định SAG retrieval engine nào? | Không. Task Service giữ task trong MongoDB; chỉ Work Note/evidence đủ điều kiện đi vào SAG. Công nghệ SAG thuộc ADR riêng. Nếu chọn PostgreSQL và Qdrant cùng lúc, ADR đó cần nói rõ PostgreSQL giữ relational metadata còn Qdrant giữ vector, hay PostgreSQL + pgvector là lựa chọn thay Qdrant. Quyết định Task không thay đổi engine. | SAG storage ADR and architecture |
 | 21 | Task nào được chép/index nếu có hai DB? | Không chép/index task. Continuum kiểm tra ACL nguồn hiện hành; thu hồi thì chặn retrieval ngay và xếp việc de-index, không phụ thuộc index cũ. | Security, ingestion, SAG storage |
-| 22 | Task module riêng hay trong NestJS Core? | Là module trong NestJS Core API, cùng runtime theo stack đã duyệt; không dựng microservice/deployment riêng cho MVP. Task API sở hữu collection `tasks`/`task_events` trong MongoDB vận hành hiện có (`continuum_db`); module/API boundary tách ownership, không tạo database task mới. | Architecture, topology, Task API |
-| 23 | Transaction task/history/handover? | Transaction Mongo replica set bảo đảm `tasks` + `task_events` nguyên tử. Handover gọi Task API bằng `operationId` idempotent và retry/compensation rõ ràng; không cho phép Handover ghi trực tiếp collection `tasks`. | Task schema, Handover schema, architecture |
-| 24 | Dashboard/report hay capture/handover? | File câu hỏi bị cắt sau “handover”. Theo phạm vi còn lại, đề xuất không làm task dashboard/report trong MVP; tập trung task lifecycle hỗ trợ capture và handover. | MVP scope, 6-week plan |
+| 22 | Tách Task thành repo mới hay tích hợp vào repo hiện tại? | Giữ mã nguồn service trong DATN_BE, UI/API client trong DATN_FE; triển khai Task thành NestJS service/process riêng, route qua Gateway và sở hữu database logic `continuum_task`. Không tạo ManageWork repo mới. Trade-off và cách setup xem ADR-010. | ADR-010, BE topology, FE architecture |
+| 23 | Transaction task/history/handover? | Transaction trên Mongo replica set bảo đảm task mutation + `task_events` (và outbox khi cần) nguyên tử trong `continuum_task`. Handover gọi Task API bằng `operationId` idempotent và retry/compensation rõ ràng; không truy cập database Task trực tiếp. | Task schema, Handover schema, architecture |
+| 24 | Dashboard/report hay capture/handover? | Không làm dashboard/report trong MVP; ưu tiên task lifecycle, capture và handover. Chỉ mở lại khi có persona, quyết định cần hỗ trợ và nguồn metric cụ thể. | MVP scope |
 
 ### Ranh giới cập nhật tài liệu
 
-- **ADR-009** sở hữu quyết định đã chốt: Continuum Task API là nguồn task và MongoDB là nơi lưu bản canonical; không dùng Jira làm nguồn trong MVP.
+- **ADR-009** sở hữu quyết định đã chốt: Continuum là nguồn task và MongoDB lưu bản canonical; không dùng Jira làm nguồn trong MVP.
+- **ADR-010** sở hữu ranh giới repo/service/deployment, giao tiếp Gateway/API/event và vị trí database logic của Task; ưu nhược điểm được ghi trong ADR để review.
 - **Tài liệu này** sở hữu Use Case/P0/P1 và các đề xuất sản phẩm còn chờ duyệt.
 - **`12_TASK_MANAGEMENT_SCHEMA.md`** sở hữu field/cardinality/index/history đề xuất; **`02_ACTORS_ROLES_AND_PERMISSIONS.md`** sở hữu ma trận quyền; **`03_DAILY_WORKFLOW_AND_JIRA_SYNC.md`** sở hữu luồng Capture/Handover.
 - Kiến trúc, Capture/Handover/ingestion schema và diagram chỉ mô tả các boundary trên; chúng không được tự đưa task thành nguồn SAG hay mở rộng P0.
-- Engine target SAG MVP đã được chốt là LanceDB theo DEC-015/SPEC-005; runtime/deployment cần xác minh trước khi triển khai. Phần 24 trong attachment đã bị cắt; câu trả lời dashboard ở trên là khuyến nghị suy ra từ ngữ cảnh, cần người dùng duyệt.
+- Quyết định vector engine, SAG schema và runtime không nằm trong ADR-010; phải được chốt/ghi riêng để không làm sai lệch phạm vi Task.

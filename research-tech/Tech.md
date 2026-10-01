@@ -5,7 +5,7 @@
 - Status: Accepted baseline
 - Date: 2026-09-18
 - Scope: Continuum AI graduation project MVP
-- Purpose: Record the approved technology stack, service boundaries, frontend UI foundation, and implementation constraints before implementation planning and coding.
+- Purpose: Record the approved technology stack, service boundaries, frontend UI foundation, and implementation constraints before implementation and backlog planning.
 
 This document supplements the Continuum AI Graduation Project Specification v1.0. If a future implementation requires a conflicting technology or architectural pattern, the change must be recorded in a new Architecture Decision Record before adoption.
 
@@ -19,13 +19,13 @@ This document supplements the Continuum AI Graduation Project Specification v1.0
 | Local UI state | Zustand | Small client-only state that does not belong to the server cache |
 | Core backend | Node.js, NestJS, TypeScript | Continuum domain logic, API, validation, permissions, workflows, and audit orchestration |
 | Primary database | MongoDB with Mongoose | Organizational knowledge, users, permissions, versions, workflows, and audit records |
-| Task management | Task module in NestJS Core; proposed `tasks` and `task_events` collections in the existing MongoDB operational store (`continuum_db`) | Canonical DATN task lifecycle inside Continuum; no external task source in the MVP |
 | Authentication | JWT access token, rotating refresh token, RBAC and resource ACL | Authentication, tenant scope, and authorization |
 | Background jobs | Redis and BullMQ | Ingestion, OCR, extraction, indexing, retry, and scheduled review jobs |
 | AI service | Python and FastAPI | SAG integration and AI pipeline execution |
 | Retrieval engine | Pinned version of zleap-sag | Event and entity retrieval, semantic search, and source tracing |
 | Initial vector storage | LanceDB through SAG | Retrieval index for the MVP |
 | File storage | Cloudflare R2 first; S3-compatible adapter/fallback | Private originals (PDF, DOCX, Markdown, TXT, images), OCR output, and derived artifacts |
+| Task management | Continuum Task Service (NestJS) in existing DATN_BE; task UI/API client in existing DATN_FE | Independent service process, Gateway/API contract, and MongoDB logical database `continuum_task`; Continuum owns task lifecycle |
 | LLM access | Provider-agnostic LLM Gateway | Extraction, interview planning, conflict analysis, and evidence-grounded answers |
 | Embedding | Embedding provider configured through SAG | Semantic representation for retrieval |
 | Parsing and OCR | SAG pipeline with explicitly selected MarkItDown or MinerU paths | Document normalization, parsing, and OCR |
@@ -121,7 +121,9 @@ MongoDB is approved for the MVP with the following conditions:
 8. Treat denormalized dashboard and read models as derived data that can be rebuilt.
 9. Add idempotent migration or backfill scripts when a Mongoose schema change affects existing documents.
 
-Expected primary collections include:
+The following is an inventory across the MongoDB-backed service databases, not one shared database. Task collections belong to logical database `continuum_task` per ADR-010; other services own their documented databases.
+
+Expected collections include:
 
 ```text
 organizations
@@ -176,16 +178,17 @@ ingestion_jobs
 - The backend is authoritative. Frontend route guards are only a user-experience layer.
 - `project.create` requires a separately granted, revocable, audited organization capability; TEAM_LEADER alone is insufficient.
 
-## Task, Work Note, chat, and object-storage constraints
+## Task, daily note, chat, and object-storage constraints
 
-- Continuum Task API is the only canonical source for DATN task lifecycle in the MVP. Task create/read/update/assignment/status operations go through the Continuum API and persist to MongoDB; SAG does not own or mirror task lifecycle state.
+- Continuum Task Service is the canonical source for DATN task lifecycle. It runs as a separate NestJS process built from the existing DATN_BE repository; task screens/client stay in DATN_FE and call through the BFF/Gateway. It owns MongoDB logical database `continuum_task` on the existing replica set.
 - A Work Note may hold an optional logical `taskId` reference. The API validates that the referenced task exists and is within the caller's authorized organization/project/team scope. Work Notes remain usable without a task link.
-- Only author-confirmed Work Notes and evidence that pass Continuum authorization and source-eligibility checks may be sent to SAG for retrieval/indexing. Task records and task fields are not indexed as standalone SAG sources. Retrieval must apply current ACL before content enters the answer context; revoked access is blocked immediately and index cleanup is asynchronous.
-- In handover, the authorized Team Leader reads open tasks from the Continuum Task API, selects tasks, and assigns them to the scoped successor. The Task API updates canonical assignee; Handover stores references and acknowledgement state. No successor inherits project-wide permission.
+- Only author-confirmed Work Notes and eligible evidence that pass Continuum authorization and source-policy checks may be sent to SAG for retrieval/indexing. Task records and fields are not standalone SAG sources; current ACL is checked before evidence enters answer context.
+- In handover, the authorized Team Leader reads open tasks through the Task API, selects tasks and assigns them to the scoped successor. The Task API updates canonical assignee; Handover stores references and acknowledgement state. No successor inherits project-wide permission.
+- Capture, Handover and Agents use authenticated Task API/event contracts; none access Task collections directly. Agents may return a task-change proposal, but a permitted human confirms before the Task Service commits it. Jira import, webhook sync and reconciliation are outside the MVP.
 - Manual note entry is always available. The author confirms what/how/why and may correct the draft; task metadata is context, not verified organizational knowledge.
 - Store original uploads in private Cloudflare R2 with a storage adapter so an S3-compatible alternative remains possible. MongoDB stores metadata, object key, checksum and ACL. Signed upload/download paths must be short-lived and permission-checked.
 - Chat is the core successor interface. Every answer must be cited and permission-aware; an insufficient-evidence outcome must be explicit. Chat history cannot become a bypass after source access changes.
-- See [Daily workflow and internal task management](../research-docs/03_DAILY_WORKFLOW_AND_JIRA_SYNC.md).
+- See [Daily workflow and internal task management](../research-docs/03_DAILY_WORKFLOW_AND_JIRA_SYNC.md) and [ADR-010](ADR-010-task-service-in-existing-repositories.md).
 
 ## Queue and AI processing constraints
 
@@ -231,24 +234,24 @@ Do not leave `SAG pipeline / MarkItDown / MinerU` as an unresolved runtime choic
 - API contracts between React, NestJS, and FastAPI are defined through OpenAPI.
 - The LLM Gateway and SAG adapter interfaces are agreed before provider-specific implementation.
 - Security tests confirm that unauthorized evidence never enters retrieval results or LLM context.
-- End-to-end tests cover task create/update/assignment, optional task-linked and unlinked Work Notes, authorized evidence indexing, extraction, verification, cited answer, insufficient evidence, handover task selection/assignment, and permission denial.
+- End-to-end acceptance must cover task create/update/assignment, optional task-linked and unlinked Work Notes, authorized evidence indexing, extraction, verification, cited answer, insufficient evidence, handover task selection/assignment, and permission denial.
 - Docker Compose starts MongoDB as a replica set and preserves MongoDB, Redis, and SAG data across restarts; R2 is accessed through testable object-storage configuration.
 
 ## Decision record — 2026-09-18
 
 - Replaced four legacy role codes with `ADMIN`, `TEAM_LEADER`, and `MEMBER`; SME and Knowledge Owner remain scoped assignments.
 - New project creation by a Team Leader requires an Admin-issued organization `project.create` grant.
-- The original 2026-09-18 vertical slice included Jira-linked capture; that task-source decision was superseded by the 2026-10-01 Task API/MongoDB amendment above. Evidence-grounded chat remains in scope; other connectors and automated interview are deferred.
+- The original vertical slice assumed Jira-linked capture; the task-source decision was superseded by the 2026-10-01 ADR-009 amendment below.
 - Selected Cloudflare R2 as the first object store, retaining an S3-compatible abstraction.
 
 ## Decision amendment — 2026-10-01
 
-- Continuum owns the canonical task lifecycle through its Task API; task records are stored in MongoDB. Jira task import, webhooks, reconciliation, and two-way sync are outside the current MVP. See [ADR-009](ADR-009-internal-task-source-and-mongodb.md).
-- Work Notes may optionally reference a task through `taskId`. Only authorized Work Notes/evidence are eligible for SAG retrieval/indexing; task records remain in MongoDB and are not standalone SAG sources.
-- Handover reads tasks through the Continuum Task API. An authorized human selects tasks and assigns them to a scoped successor; Handover does not become a second writable task store.
-- Product details for project/team cardinality, status set, field list, task permissions, history, and P0/P1 scope remain proposals in [Task-management Use Cases](../research-docs/Internal-Work-Management/12-continuum-task-management-use-cases.md). Task collections use the existing approved MongoDB operational store; this amendment does not introduce a separate logical database or deployment.
-- The accepted MVP target for SAG retrieval is LanceDB (DEC-015/SPEC-005). PostgreSQL + pgvector/Qdrant material in database-design is an alternative/future-scale design, not the selected MVP engine. The target decision does not prove that LanceDB is implemented or running; verify the SAG source and deployment separately.
+- Continuum owns the canonical task lifecycle; Jira task import, webhooks, reconciliation and two-way sync are outside the MVP. See [ADR-009](ADR-009-internal-task-source-and-mongodb.md).
+- Task runs as an independently deployed NestJS service but source remains in DATN_BE; task UI/API client remains in DATN_FE. See [ADR-010](ADR-010-task-service-in-existing-repositories.md).
+- Task Service owns `tasks`, `task_events` and an optional transactional outbox in logical MongoDB database `continuum_task`, using the existing replica set. This supersedes the earlier shared-database placement; it does not provision a new physical cluster.
+- Work Notes may optionally reference a task; only authorized Work Notes/evidence are eligible for SAG indexing. Handover uses the Task API and does not become another writable task store.
+- The Task decision does not change the SAG retrieval engine decision.
 
 ## Documentation consistency rule
 
-All new Continuum AI tasks, UI specifications, and implementation plans must identify TailAdmin as the approved frontend UI foundation. References to shadcn/ui, Material UI, Ant Design, Chakra UI, Mantine, or another UI system are not authoritative for Continuum AI unless an accepted ADR explicitly introduces them.
+All new Continuum AI task work items, UI specifications, and implementation plans must identify TailAdmin as the approved frontend UI foundation. References to shadcn/ui, Material UI, Ant Design, Chakra UI, Mantine, or another UI system are not authoritative for Continuum AI unless an accepted ADR explicitly introduces them.

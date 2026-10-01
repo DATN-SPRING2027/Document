@@ -91,7 +91,7 @@ The capability evaluator must check subject, issuing ADMIN, organization, expiry
 
 ## 7. System actors and audit
 
-The AI orchestrator, ingestion worker and scheduler use least-privilege service identities. They may parse, index, draft, suggest or remind, but may not grant access, verify organizational truth, or impersonate a human reviewer. Any future external-source content is untrusted input and requires separately approved scope and ACL handling.
+The AI orchestrator, Task Agent integration, ingestion worker and scheduler use least-privilege service identities. A Task Agent can request only task context authorized for the initiating user, then return a draft/proposal through the Task API; it cannot read the Task database directly or commit a task mutation without a permitted human's confirmation. Agents may parse, index, draft, suggest or remind, but may not grant access, verify organizational truth, or impersonate a human reviewer. Any future external-source content is untrusted input and requires separately approved scope and ACL handling.
 
 Audit at least: membership/role/assignment changes; `project.create` grants, revocations and use; project/team creation; approved source-connection failures; upload/source ACL changes; task ownership/status changes under the approved task scope; note edits; knowledge review/version changes; sensitive retrieval/chat access; handover approvals and waivers. Logs must avoid tokens, full prompts and document bodies. Missing daily notes trigger a follow-up, **not employee performance scoring**.
 

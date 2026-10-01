@@ -736,7 +736,7 @@
             <span>🎨 Graph 1: Interactive Architecture Canvas Studio (VPC Microservices Highway)</span>
           </div>
           <div class="pane-intro-desc">
-            Sơ đồ tổng thể Continuum AI: <strong>Client (Next.js TailAdmin) ➔ Nginx ➔ API Gateway ➔ domain modules trong NestJS Core và SAG AI Engine ➔ Redis/BullMQ, MongoDB Replica Set (Task API là nguồn chuẩn), LanceDB retrieval target (runtime cần xác minh), Cloudflare R2 và mail provider</strong>. Không có Jira task sync trong MVP. Có thể kéo thả tự do, thêm/sửa node và nối dây.
+            Sơ đồ tổng thể Continuum AI: <strong>Client (Next.js TailAdmin) ➔ Nginx ➔ API Gateway ➔ các NestJS service chạy độc lập (Task dùng chung source DATN_BE) và SAG AI Engine ➔ Redis/BullMQ, MongoDB Replica Set (logical DB continuum_task do Task sở hữu), retrieval index, Cloudflare R2 và mail provider</strong>. Không có Jira task sync trong MVP. Có thể kéo thả tự do, thêm/sửa node và nối dây.
           </div>
         </div>
         <span style="font-family:var(--font-mono); font-size:12px; color:#e11d48; font-weight:800;">TheSeniorDev VPC Master Architecture</span>
@@ -1078,7 +1078,7 @@
             <rect x="935" y="450" width="115" height="140" rx="12" fill="#faf5ff" stroke="#a855f7" stroke-width="2"/>
             <use href="#isx-server" x="975" y="468" width="34" height="34"/>
             <text x="992" y="555" font-size="12" font-weight="800" fill="#581c87" text-anchor="middle">Server</text>
-            <text x="992" y="570" font-size="8.5" fill="#7e22ce" text-anchor="middle">Task API Module</text>
+            <text x="992" y="570" font-size="8.5" fill="#7e22ce" text-anchor="middle">Task Service</text>
           </g>
 
           <!-- Mũi tên từ Load Balancer vào Server Replicas -->
@@ -2308,9 +2308,9 @@
         y: 385,
         w: 250,
         h: 145,
-        title: "Continuum Task API",
+        title: "Continuum Task Service",
         sub: "Canonical Tasks • Assignment • History",
-        file: "backend/src/modules/tasks/",
+        file: "DATN_BE/src/services/task/",
         icon: "isx-server",
         bg: "#f0fdf4",
         border: "#22c55e",
@@ -2448,8 +2448,8 @@
         w: 430,
         h: 130,
         title: "MongoDB 3-Node Replica Set (rs0)",
-        sub: "Source of Truth • ACID Multi-Doc Transactions",
-        file: "backend/src/database.module.ts",
+        sub: "Source of Truth • logical DB per service (incl. continuum_task)",
+        file: "DATN_BE/src/services/task/",
         icon: "isx-data",
         bg: "#dcfce7",
         border: "#16a34a",
@@ -2534,9 +2534,10 @@
       { id: "e_gw_ingest", from: "gateway", to: "svc_ingestion", label: "Upload Init", color: "#475569", marker: "arr-dark", width: 2.2 },
 
       // 3. Domain Services to Queues & Storage
-      { id: "e_task_mongo", from: "svc_task", to: "db_mongo", label: "Canonical tasks + task_events", color: "#16a34a", marker: "arr-green", width: 2.2 },
-      { id: "e_capture_task", from: "svc_capture", to: "svc_task", label: "Read task / optional taskId", color: "#475569", marker: "arr-dark", width: 2.0, dash: "4 3" },
-      { id: "e_handover_task", from: "svc_handover", to: "svc_task", label: "Select / assign via Task API", color: "#475569", marker: "arr-dark", width: 2.0, dash: "4 3" },
+      { id: "e_task_mongo", from: "svc_task", to: "db_mongo", label: "continuum_task: tasks + task_events", color: "#16a34a", marker: "arr-green", width: 2.2 },
+      { id: "e_capture_task", from: "svc_capture", to: "svc_task", label: "Internal API: read / taskId", color: "#475569", marker: "arr-dark", width: 2.0, dash: "4 3" },
+      { id: "e_handover_task", from: "svc_handover", to: "svc_task", label: "Internal API: select / assign", color: "#475569", marker: "arr-dark", width: 2.0, dash: "4 3" },
+      { id: "e_agent_task", from: "svc_ai_engine", to: "svc_task", label: "Authorized task context / proposal", color: "#0d9488", marker: "arr-teal", width: 2.0, dash: "4 3" },
       { id: "e_capture_mongo", from: "svc_capture", to: "db_mongo", label: "Save Work Notes", color: "#16a34a", marker: "arr-green", width: 2.2 },
       { id: "e_life_mongo", from: "svc_lifecycle", to: "db_mongo", label: "ACID Multi-Doc Publish", color: "#16a34a", marker: "arr-green", width: 2.5 },
       { id: "e_iam_mongo", from: "svc_iam", to: "db_mongo", label: "RBAC & Audit Trail", color: "#16a34a", marker: "arr-green", width: 2.2 },
@@ -3125,17 +3126,19 @@
         file: "backend/src/modules/work-notes/work-notes.service.ts"
       },
       svc_task: {
-        title: "Continuum Task API (NestJS Core Module)",
-        sub: "Canonical task lifecycle in MongoDB; no external task source",
-        category: "Domain Module (NestJS Core)",
+        title: "Continuum Task Service (NestJS)",
+        sub: "Canonical tasks • continuum_task • existing DATN_BE repository",
+        category: "Independently deployed service (shared backend source/build)",
         rules: [
-          "Task source: `tasks` is the canonical record; reads/writes go through the Continuum Task API.",
+          "Task source: Task Service owns the canonical task record in logical database continuum_task.",
           "Scoped authorization: Validate organization/project/team and resource scope on list, search, detail and every mutation.",
-          "Atomic history: Record a task mutation and its task_events entry together in a MongoDB transaction.",
-          "Capture/Handover: Work Notes hold optional taskId; Team Leader assigns selected open tasks through this API. No task indexing in SAG."
+          "Atomic history: Record task mutation and task_events/outbox together in a MongoDB transaction when event delivery is required.",
+          "Capture/Handover/Agent: Use authenticated API/event contracts; no other service accesses Task collections directly.",
+          "Agent writes are proposals only; a permitted human confirms before the Task Service updates canonical data.",
+          "The service has a separate process/port/health configuration but no new ManageWork repository or physical MongoDB cluster."
         ],
         code: `// Proposed application boundary; final routes/DTOs follow approved Use Cases\nawait taskService.assign(taskId, successorUserId, { operationId });\nawait taskService.recordEvent(taskId, actorId, changedFields);`,
-        file: "backend/src/modules/tasks/"
+        file: "DATN_BE/src/services/task/"
       },
       svc_lifecycle: {
         title: "Verification Center & Knowledge Lifecycle Service",
@@ -3229,7 +3232,7 @@
       },
       db_mongo: {
         title: "MongoDB 3-Node Replica Set (rs0)",
-        sub: "Single Source of Truth cho toàn bộ dữ liệu tổ chức và tri thức",
+        sub: "Replica set dùng chung; mỗi service sở hữu logical database riêng",
         category: "Persistence (Cơ Sở Dữ Liệu Chính)",
         rules: [
           "Multi-Document ACID Transactions: Đảm bảo tính toàn vẹn khi duyệt tri thức, đổi trách nhiệm và cập nhật phiên bản.",

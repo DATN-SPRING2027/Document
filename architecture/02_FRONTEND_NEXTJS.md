@@ -28,7 +28,7 @@ frontend/
 │   │   │   │   ├── page.tsx                    # Canvas 3D toàn cảnh không gian tri thức (Three.js/R3F)
 │   │   │   │   └── [partitionId]/page.tsx      # Đi sâu vào chi tiết cụm tinh vân Module/Service
 │   │   │   ├── tasks/                          # Task list/detail/create/edit; Kanban là P1 đề xuất
-│   │   │   │   ├── page.tsx                    # Danh sách + tìm/lọc cơ bản qua Continuum Task API
+│   │   │   │   ├── page.tsx                    # Danh sách + tìm/lọc cơ bản qua BFF/Gateway → Task API
 │   │   │   │   └── [taskId]/page.tsx            # Chi tiết task, owner/status/history theo quyền
 │   │   │   ├── daily-notes/                    # Tính năng ghi nhận công việc hàng ngày
 │   │   │   │   ├── page.tsx                    # Danh sách notes + Lịch làm việc
@@ -64,7 +64,7 @@ frontend/
 │   ├── features/                               # Business Logic & Components theo từng Module
 │   │   ├── auth/                               # Hooks, Services, Types của Auth
 │   │   ├── universe/                           # Store 3D Camera, Raycaster, Partition Nodes API
-│   │   ├── tasks/                              # UI/API client cho Continuum Task API
+│   │   ├── tasks/                              # UI/API client gọi BFF/Gateway, không gọi Task container trực tiếp
 │   │   ├── daily-notes/                        # Markdown editor, optional task selector
 │   │   ├── verification/                       # So sánh diff phiên bản, nút Approve/Reject
 │   │   ├── assistant/                          # SSE Stream Consumer, Citation Popover

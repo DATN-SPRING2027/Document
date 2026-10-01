@@ -9,7 +9,7 @@
 
 Trong đồ án tốt nghiệp hoặc giai đoạn MVP khởi nghiệp, hệ thống thường được triển khai trên **1–2 máy chủ VPS** (ví dụ: VPS 4 vCPU, 8GB hoặc 16GB RAM) hoặc một cụm Node K3s tối giản.
 
-Khi triển khai **9 Bounded Microservices** cùng MongoDB Replica Set, Redis Cluster, BullMQ Workers và FastAPI AI Engine trên tài nguyên phần cứng giới hạn, hai nguy cơ lớn nhất là:
+Khi triển khai các Bounded Services độc lập (Task cũng chạy process/container riêng trong source DATN_BE hiện tại) cùng MongoDB Replica Set, Redis, BullMQ Workers và FastAPI AI Engine trên tài nguyên phần cứng giới hạn, hai nguy cơ lớn nhất là:
 1. **Hiện tượng OOM-Kill (Out of Memory):** Một tiến trình nặng (như OCR tài liệu hoặc Embeddings) nuốt trọn RAM khiến Linux Kernel tự động kill các container cốt lõi như MongoDB hoặc API Gateway.
 2. **Nghẽn dây chuyền (Cascading Failure):** Khi CPU chạm ngưỡng 100%, hàng loạt request bị timeout dồn ứ khiến toàn bộ API ngừng phản hồi.
 
@@ -26,7 +26,7 @@ Bảng phân bổ tài nguyên nghiêm ngặt cho một máy chủ **16GB RAM (h
 | **`ingress-nginx`** | `nginx:alpine` | 0.1 / 0.5 core | 64MB / 128MB | Worker processes: auto, keepalive: 64 |
 | **`frontend-nextjs`** | `node:20-alpine` (Next.js) | 0.2 / 1.0 core | 256MB / 512MB | Node option: `--max-old-space-size=384` |
 | **`api-gateway`** | `node:20-alpine` (NestJS) | 0.2 / 0.8 core | 256MB / 512MB | Stateless routing, Rate Limiting proxy |
-| **`8 domain-services`** | `node:20-alpine` (NestJS Modular)| 0.8 / 2.0 cores | 1024MB / 2048MB | Chạy chung instance Modular Monolith tối ưu |
+| **`8 NestJS domain services`** | `node:20-alpine` (NestJS; shared BE source/build, separate service processes)| 0.8 / 2.0 cores aggregate | 1024MB / 2048MB aggregate | Mỗi service có entrypoint/config/health riêng; Task dùng chung build nhưng chạy process riêng. Tách ngân sách theo đo đạc khi triển khai |
 | **`ai-engine`** | `python:3.11-slim` (FastAPI) | 0.5 / 2.0 cores | 1536MB / 3072MB | PyTorch CPU-only, LanceDB embedded |
 | **`mongodb-rs0`** | `mongo:7.0` (Replica Set) | 0.5 / 1.5 cores | 1024MB / 2048MB | **`wiredTigerCacheSizeGB: 1.0`** (bắt buộc) |
 | **`redis-cluster`** | `redis:7.2-alpine` | 0.1 / 0.5 core | 256MB / 512MB | **`maxmemory 400mb`** + `allkeys-lru` |
@@ -82,7 +82,7 @@ Nếu hệ thống được triển khai trên **1 máy chủ VPS chỉ có 4GB 
 
 ## 4. Tinh chỉnh Connection Pooling (MongoDB & Redis Sizing)
 
-Khi có 9 microservices, việc mở connection bừa bãi sẽ nhanh chóng làm cạn kiệt giới hạn File Descriptors (`ulimit`) của hệ điều hành.
+Khi có nhiều service process kết nối cùng MongoDB/Redis, việc mở connection bừa bãi sẽ nhanh chóng làm cạn kiệt giới hạn File Descriptors (`ulimit`) của hệ điều hành.
 
 ```typescript
 // Cấu hình chuẩn Connection Pool trong NestJS Mongoose Module
@@ -107,7 +107,7 @@ MongooseModule.forRootAsync({
 Để tìm ra nguyên nhân lỗi khi một thao tác người dùng đi qua nhiều service (Client ➔ Gateway ➔ Chat ➔ AI Engine ➔ LanceDB), hệ thống áp dụng chuẩn **W3C Traceparent / Correlation ID**:
 
 ```
-[ User Request ] ──► [ Ingress / Gateway ]
+[ User Request ] ──► [ Ingress / Gateway ] ──► [ Task Service / MongoDB ]
                             │ Sinh mã: X-Correlation-ID = "c9d8a-7b3f-4e21"
                             ▼
                      [ svc_chat ] (Ghi log kèm Correlation ID)

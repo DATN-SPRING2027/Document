@@ -109,7 +109,7 @@ Successor asks evidence-grounded questions and reports gaps
 
 ### 6.2. Continuous knowledge capture
 
-- Continuum's internal Task API is the canonical source for DATN task lifecycle, with task records stored in MongoDB; Jira is not a task source or MVP task-sync connector. See [ADR-009](../research-tech/ADR-009-internal-task-source-and-mongodb.md).
+- Continuum's internal Task Service is the canonical source for DATN task lifecycle. It has an independent process/deployment built from the existing DATN_BE source and owns logical MongoDB database `continuum_task`; Jira is not a task source or MVP task-sync connector. See [ADR-009](../research-tech/ADR-009-internal-task-source-and-mongodb.md) and [ADR-010](../research-tech/ADR-010-task-service-in-existing-repositories.md).
 - Task MVP proposal: create/list/detail/edit, assign by Team Leader, fixed status transition, basic search/filter, limited history, optional Work Note link, and open-task handover. A task belongs to one project and at most one team; Kanban is P1. Field/status/permission details remain proposed, pending user review in [Task-management Use Cases](Internal-Work-Management/12-continuum-task-management-use-cases.md).
 - Manual structured knowledge entry and short daily/task notes remain available. A Work Note may optionally reference an internal task by `taskId`; task metadata can prefill context, but the member confirms the note and supplies what/how/why, blockers, next steps and evidence.
 - File upload (PDF, DOCX, Markdown, TXT, image) and source management; Cloudflare R2 stores originals, MongoDB stores metadata.

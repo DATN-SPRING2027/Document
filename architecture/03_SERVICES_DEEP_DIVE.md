@@ -6,7 +6,7 @@
 
 ## 1. Tổng quan phân rã Domain Services
 
-Kiến trúc backend của Continuum AI được phân tách thành **9 Bounded Services** (8 dịch vụ trên nền tảng **NestJS / TypeScript** và 1 dịch vụ AI Engine độc lập bằng **FastAPI / Python**).
+Kiến trúc backend của Continuum AI có **9 Bounded Services** (8 dịch vụ NestJS/TypeScript và 1 AI Engine FastAPI/Python). Task đã là một bounded context trong danh sách này; quyết định mới tách nó thành process/container NestJS độc lập nhưng giữ source code trong repository DATN_BE hiện tại.
 
 Mỗi dịch vụ tuân thủ nguyên tắc **Đơn trách nhiệm (Single Responsibility Principle - SRP)** và được tổ chức theo cấu trúc Clean Architecture 4 tầng.
 
@@ -47,16 +47,18 @@ Mỗi dịch vụ tuân thủ nguyên tắc **Đơn trách nhiệm (Single Respo
 
 ---
 
-### 2.3. Task API (Continuum-owned task lifecycle)
-* **Vị trí:** Module trong Continuum Core API (NestJS); không phải deployment/microservice riêng hay connector tới hệ thống task bên ngoài trong MVP.
+### 2.3. `svc_task` (Continuum-owned task lifecycle)
+* **Vị trí:** Microservice NestJS độc lập, source tại `DATN_BE/src/services/task/`; chạy bằng entrypoint riêng trong deployment hiện có. Không tạo repository ManageWork mới. Chi tiết quyết định xem [ADR-010](../research-tech/ADR-010-task-service-in-existing-repositories.md).
 * **Trách nhiệm:**
   - Xử lý create/list/detail/update/assignment/status/basic search-filter trong phạm vi quyền đã duyệt.
   - Lưu bản ghi task chuẩn trong MongoDB; API là đường đọc/ghi duy nhất cho task lifecycle.
   - Kiểm tra organization/project/team scope và quyền trên từng thao tác; đề xuất mỗi task thuộc một project và tối đa một team.
   - Ghi `task_events` append-only cùng mutation task bằng MongoDB transaction; task events không thay thế compliance audit.
   - Cấp danh sách task được phép xem để Work Note chọn liên kết tùy chọn qua `taskId`.
-* **Collection sở hữu:** `tasks`, `task_events` trong operational database MongoDB hiện có (`continuum_db` theo DEC-011/SPEC-001), không tạo database/deployment riêng. Chi tiết field/status proposal xem [Task management persistence design](../database-design/12_TASK_MANAGEMENT_SCHEMA.md); cần duyệt trước implementation.
-* **API contract:** Route/DTO chính thức chốt sau khi duyệt Use Case; task operations synchronous, không có Jira webhook/import/sync hoặc task queue trong MVP.
+* **Database sở hữu:** `continuum_task` trên MongoDB replica set hiện có; chỉ Task service đọc/ghi collections của mình. Không tạo MongoDB cluster vật lý mới.
+* **Giao tiếp:** CRUD, tìm kiếm và assignment là internal HTTP API qua Gateway/service contract; Agent và các service khác không gọi Mongo trực tiếp. Dùng Redis transport/BullMQ đã có cho event hoặc công việc nền cần thiết, không thay HTTP command bằng event bất đồng bộ.
+* **Triển khai:** Dùng chung build/image của DATN_BE, riêng process, port nội bộ, env, health/readiness, logs và resource configuration. Port `3009` cùng `TASK_SERVICE_URL` là đề xuất chờ chốt trong implementation, chưa phải cấu hình hiện tại.
+* **API contract:** Route/DTO chính thức chốt sau khi duyệt Use Case; không có Jira webhook/import/sync trong MVP. Chi tiết field/status proposal xem [Task management persistence design](../database-design/12_TASK_MANAGEMENT_SCHEMA.md).
 
 ---
 
@@ -97,6 +99,7 @@ Mỗi dịch vụ tuân thủ nguyên tắc **Đơn trách nhiệm (Single Respo
   - Khởi tạo quy trình bàn giao khi một thành viên hoặc Team Leader rời dự án / đổi nhóm.
   - Tìm task chưa kết thúc (`TODO`, `IN_PROGRESS`, `BLOCKED`) qua Task API theo project/team/người phụ trách; Team Leader chọn task cho gói bàn giao.
   - Lệnh giao task gọi Task API để chuyển assignee canonical sang successor; Handover lưu `taskId`, recipient và trạng thái tiếp nhận riêng. Successor không kế thừa quyền đọc toàn project.
+  - Gọi Task service qua contract nội bộ; `operationId` chống lặp cho giao owner. Không đọc/ghi trực tiếp database `continuum_task`.
   - Do Task và Handover sở hữu persistence riêng, thao tác dùng `operationId` idempotent cùng retry/compensation; Handover không ghi trực tiếp collection `tasks`.
   - **Host phiên phỏng vấn Audio:** Mở kết nối WebSocket tại `/ws/handover`, nhận luồng âm thanh từ microphone client, đẩy lên Cloudflare R2 và đưa vào `handover-queue` để gọi Whisper API trích xuất transcript.
   - Tự động tổng hợp lộ trình học việc (**Successor Learning Path**) cho nhân sự mới.

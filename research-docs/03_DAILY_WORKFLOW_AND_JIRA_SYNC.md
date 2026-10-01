@@ -2,7 +2,7 @@
 
 ## Status and scope
 
-- Status: Continuum Task API with MongoDB persistence is the canonical source for DATN task lifecycle, per user direction on 2026-10-01. Detailed task Use Cases and status/field values are in `Internal-Work-Management/12-continuum-task-management-use-cases.md` and remain under review.
+- Status: Continuum Task Service is the canonical source for DATN task lifecycle. Its source code stays in the existing DATN_BE repository and its UI stays in DATN_FE; it is deployed as an independent NestJS service with its own logical MongoDB database `continuum_task`. Detailed task Use Cases and status/field values are in `Internal-Work-Management/12-continuum-task-management-use-cases.md` and remain under review.
 - Date: 2026-10-01
 - Scope: MVP for one software project with multiple teams.
 - Authority: [MVP scope](01_MVP_SCOPE.md), [actors and permissions](02_ACTORS_ROLES_AND_PERMISSIONS.md).
@@ -25,7 +25,7 @@ Work Notes remain available without a task link. A reminder follows up on missin
 
 ## 2. Internal task-management direction
 
-1. Continuum Task API stores and owns the DATN task lifecycle; canonical task records are persisted in MongoDB. Jira is not the task source, task-sync connector, or actor in the current task-management Use Cases.
+1. Continuum Task Service stores and owns the DATN task lifecycle. It runs independently from the other NestJS services but is implemented in the existing DATN_BE repository; the browser UI remains in DATN_FE and calls through its BFF/Gateway. Jira is not the task source, task-sync connector, or actor in the current task-management Use Cases.
 2. Proposed relationship: each task belongs to one project and optionally one team within that project; multi-project and multi-team tasks are outside the MVP. Role/assignment checks are applied on each Task API operation.
 3. The proposed P0 slice includes create/list/detail/edit, Team Leader assignment, fixed status changes, basic search/filter, optional Work Note link, limited history and open-task context for handover. Kanban, task comments/files and dashboard/reporting are P1 or out of MVP. See `Internal-Work-Management/12-continuum-task-management-use-cases.md` for the decision proposals.
 4. Users confirm Work Note content. Task status alone does not prove a procedure, root cause or decision is correct.
@@ -43,7 +43,7 @@ Work Notes remain available without a task link. A reminder follows up on missin
 
 Only `TODO`, `IN_PROGRESS` and `BLOCKED` tasks are assignment candidates by default. Completed tasks can be referenced as read-only context through eligible Work Notes/evidence but are not reassigned. The successor acknowledges the handover package; this does not create a second assignee field that can diverge from the Task API. Assignment/retry coordination uses an idempotent operation ID because Task and Handover own separate persistence boundaries.
 
-The existing handover workflow remains the owner of readiness, successor questions and completion approval. The task module supplies work state and ownership; it does not replace the handover lifecycle.
+The existing handover workflow remains the owner of readiness, successor questions and completion approval. The Task Service supplies work state and ownership; it does not replace the handover lifecycle.
 
 ## 4. Document and chat path
 

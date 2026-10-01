@@ -1,6 +1,6 @@
 # Build vs Buy vs Hybrid Research
 
-**Trạng thái:** Comparative analysis; current DATN task-source direction is recorded below. Cost, feature breadth and organization-wide product strategy remain open research questions.
+**Trạng thái:** Comparative analysis, no ranking or selection. Options are not mutually exclusive across time.
 
 ## Options in scope
 
@@ -10,9 +10,7 @@
 - **D — Internal above Jira:** Jira remains task source; internal layer aggregates context, decisions/verified knowledge or management views.
 - **E — Internal + multiple external systems:** integration layer connects Jira/GitHub/docs/chat/calendar and internal knowledge capabilities.
 
-`[HISTORICAL FRAMING]` Earlier Continuum product documents described Option D (Jira task context + knowledge continuity). That framing is superseded for DATN task lifecycle by the decision below; it remains only as a market comparison, not the current product direction.
-
-`[DECIDED — 2026-10-01]` For the DATN MVP, Continuum owns the internal task lifecycle; Jira is not the task source or an MVP sync dependency. This is a narrow product decision, not approval for full Jira parity or organization-wide migration. Options A, B and D remain comparative market scenarios only, not the selected task direction.
+`[DOCUMENTED]` Option D is conceptually closest to the existing Continuum framing (Jira task context + knowledge continuity), but that is not a decision to build an enterprise work platform or expand MVP.
 
 ## Qualitative trade-off matrix
 
@@ -25,7 +23,7 @@
 | Governance | Jira project/issue/role controls, plan dependent | Cross-product permission design | Fully custom responsibility and risk | Must preserve source ACL and internal ACL | Complex multi-provider ACL equivalence problem |
 | Knowledge | Issue context; Confluence adds content system | Stronger document link ecosystem | Can own knowledge but requires lifecycle/search quality | Continuum knowledge continuity aligns conceptually | Can connect diverse sources but content rights/ACL hard |
 | Migration/lock-in | Low change | Moderate content/project coupling | High migration and user retraining | Lower if mostly links/read-only | Medium-high mapping/reconciliation |
-| DATN MVP fit | Not the selected task direction | Not the selected task direction | Internal task lifecycle is selected; full Jira parity/migration is not implied | Not the selected task direction because Jira is not task source | Future hypothesis; broad scope unproven |
+| DATN MVP fit | `[UNKNOWN]` until actual pain/config audit | `[UNKNOWN]`; test if document pain is proven | Not supported by current Continuum scope | Consistent with current research framing, not enterprise expansion | Future hypothesis; broad scope unproven |
 
 No column is universally superior. Scores are intentionally not assigned because there is no agreed use-case weighting or observed baseline.
 
@@ -67,9 +65,9 @@ This is a feature-area scan, not an apples-to-apples pricing, security, usabilit
 
 - `[DOCUMENTED]` Accepted target: NestJS Modular Monolith, Next.js BFF, MongoDB 7.0 shared `continuum_db`, LanceDB auxiliary SAG store, PostgreSQL/pgvector only future SAG scaling option.
 - `[FACT]` Current source has domain schemas/scaffolding and health controllers, but workspace research states no end-to-end Project/Team CRUD or FE workflows; source search did not find completed Jira integration or LanceDB runtime implementation.
-- `[INFERENCE]` A narrow project-scoped internal tracker is materially smaller than full Jira parity. Engineering capacity, quality/security bar and operations ownership still constrain scope; the current task-source decision does not establish long-term TCO or approve a broad product replacement.
+- `[INFERENCE]` Extending current architecture is technically plausible but engineering capacity, quality/security bar, operations ownership, and full lifecycle scope make a Jira replacement a major product/operational commitment. Plausible does not mean economical or approved.
 - `[DOCUMENTED]` Historical `.sage` inventory/current-state contains drift on accepted decisions; current decision register and SPEC are controlling evidence for accepted target. This report does not reconcile/edit those files.
 
 ## Decision conditions (not decisions)
 
-To assess long-term economics and broader product strategy, collect SaaS invoice/plan, real user journeys, quantified friction, capability gap, data/ACL needs, internal staffing/cost and migration/exit constraints. The DATN MVP task source is already selected; these items do not reopen Jira as its source. `[DECISION REQUIRED]` Product owner decides whether to expand beyond the narrow internal task MVP and over what time horizon.
+Before selecting option, collect tenant invoice/plan, real user task journeys, quantified friction, capability gap by plan/config, data/ACL needs, internal staffing/cost, migration/exit constraints, and an evaluated narrow pilot. `[DECISION REQUIRED]` Product owner chooses option and time horizon.

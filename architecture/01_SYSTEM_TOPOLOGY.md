@@ -40,7 +40,7 @@ Dữ liệu đi một chiều từ ngoài Internet vào Client ➔ Biên mạng 
 │   [CỘT A: QUẢN TRỊ & THU THẬP]       [CỘT B: TRUY XUẤT & BÀN GIAO]     │
 │   ├── svc_iam (Auth & 3 Roles)       ├── svc_chat (Assistant & RAG)    │
 │   ├── svc_capture (Work Notes)       ├── svc_handover (Audio & Roadmaps)│
-│   ├── svc_task (Core API module / MongoDB) ├── svc_ingestion (Upload)  │
+│   ├── svc_task (NestJS service)        ├── svc_ingestion (Upload)        │
 │   ├── svc_lifecycle (Verify Inbox)   └── svc_ai_engine (SAG - FastAPI) │
 │   └── svc_notification (Mail & WSS)                                   │
 └───────────────────────────────────┬────────────────────────────────────┘
@@ -68,7 +68,7 @@ Dữ liệu đi một chiều từ ngoài Internet vào Client ➔ Biên mạng 
 * **TLS Termination & SSL Offloading:** Nginx giải mã SSL/TLS tại biên, truyền tải gói tin HTTP không mã hóa vào mạng Docker nội bộ (`continuum-vpc`), giúp giảm hơn **30% tải CPU** cho các backend container.
 * **Gzip & Brotli Compression:** Nén tự động các tệp JavaScript, CSS và JSON phản hồi từ Next.js.
 * **WebSocket Reverse Proxy:** Nâng cấp HTTP sang `Upgrade: websocket` để phục vụ phiên ghi âm phỏng vấn bàn giao trực tiếp tại `/ws/handover` và chuông thông báo realtime `/ws/notifications`.
-* **Task API boundary:** Task read/write đi qua module Task của NestJS Core API; bản ghi canonical nằm trong MongoDB. Không có webhook hoặc đường ghi task từ bên ngoài trong MVP. Task API chỉ trực tiếp sở hữu `tasks`/`task_events`; Work Note và Handover giữ logical reference.
+* **Task service boundary:** Task là NestJS service chạy process/container riêng, với mã nguồn nằm trong repository DATN_BE hiện tại. Task đọc/ghi task canonical qua API nội bộ; chỉ Task sở hữu `tasks`/`task_events` trong logical database `continuum_task`. Không có Jira import/sync trong MVP. Work Note và Handover chỉ giữ logical `taskId` và gọi contract của Task service.
 
 ### 2.2. API Gateway & Kiểm soát truy hồi
 * Nằm giữa Nginx và các Domain Services.
@@ -77,7 +77,7 @@ Dữ liệu đi một chiều từ ngoài Internet vào Client ➔ Biên mạng 
 * **Pre-Retrieval Guard:** Kiểm tra quyền sơ bộ trước khi luồng dữ liệu tiến vào các service chuyên biệt, đảm bảo các request không hợp lệ bị ngắt ngay tại cửa sổ gateway với mã HTTP `401 Unauthorized` hoặc `403 Forbidden`.
 
 ### 2.3. Mạng nội bộ biệt lập (Isolated VPC Docker Network)
-* Các domain modules, Redis, MongoDB và SAG retrieval store cùng nằm trong mạng nội bộ riêng; task data chỉ được truy cập qua Task API. Task module sở hữu collection `tasks`/`task_events` trong MongoDB operational database hiện có (`continuum_db` theo DEC-011/SPEC-001); không tạo database hoặc service deployment riêng cho task.
+* Các domain services, Redis, MongoDB và SAG retrieval store cùng nằm trong mạng nội bộ riêng; task data chỉ được truy cập qua Task API. Task service sở hữu database logic `continuum_task` trên MongoDB replica set hiện có; không tạo repository hay MongoDB cluster vật lý mới. FE gọi BFF/Gateway; Gateway route nội bộ tới Task service. Capture, Handover và AI Engine dùng API/event contract, không truy cập trực tiếp database Task.
 * **Không expose port bừa bãi ra Host:** Chỉ duy nhất port `80/443` của Nginx và port `3000` của Next.js (cho local dev) được publish ra ngoài máy chủ. Cổng MongoDB (`27017`), Redis (`6379`), BullMQ và FastAPI SAG (`8001`) hoàn toàn đóng kín, chỉ giao tiếp nội bộ qua DNS service name của Docker Compose (`http://svc_ai_engine:8001`, `mongodb://db_mongo:27017`).
 
 ---
@@ -110,13 +110,26 @@ services:
     networks:
       - continuum-vpc
 
-  # NestJS Core Backend (Chứa các Domain Services)
-  backend:
+  # NestJS API Gateway — cùng backend image/source repository
+  api-gateway:
     build: ./backend
     environment:
-      - MONGODB_URI=mongodb://mongo1:27017,mongo2:27017,mongo3:27017/continuum_db?replicaSet=rs0
+      - TASK_SERVICE_URL=http://task:3009
       - REDIS_HOST=redis
-      - SAG_AI_URL=http://ai-engine:8001
+    networks:
+      - continuum-vpc
+
+  # Task microservice — source và build dùng chung repository DATN_BE
+  task:
+    build: ./backend
+    command: node dist/services/task/main.js
+    environment:
+      - SERVICE_PORT=3009
+      - MONGODB_URI=mongodb://mongo1:27017,mongo2:27017,mongo3:27017/?replicaSet=rs0
+      - MONGODB_DATABASE=continuum_task
+      - REDIS_HOST=redis
+    expose:
+      - "3009"
     networks:
       - continuum-vpc
 
@@ -124,7 +137,6 @@ services:
   ai-engine:
     build: ./ai-service
     volumes:
-      - lancedb-data:/app/data/lancedb
     networks:
       - continuum-vpc
 
@@ -144,6 +156,8 @@ services:
 ```
 
 ---
+
+> Đây là sơ đồ đích cho Task, không phải cấu hình đã triển khai. Nó theo mẫu hiện có của DATN_BE/docker-compose.microservices.yml: dùng chung image/build từ repository BE, chạy entrypoint riêng (dist/services/task/main.js), cấp SERVICE_PORT và MONGODB_DATABASE, chỉ expose trong mạng nội bộ. Gateway route qua TASK_SERVICE_URL tới HTTP prefix /internal; tên biến/port phải được chốt trong implementation PR.
 
 ## 4. Topo Kubernetes (K8s Production Topology)
 

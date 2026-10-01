@@ -63,6 +63,8 @@ $$\mathbf{P_{\text{eff}}} = \left( P_{\text{user}} \cup P_{\text{teams}} \cup P_
 
 Task API dùng nguồn quyền Continuum/MongoDB cho mọi thao tác task. Đề xuất quyền task chi tiết nằm tại [permission baseline](../research-docs/02_ACTORS_ROLES_AND_PERMISSIONS.md): Member không tự giao task cho người khác; Team Leader giao/chuyển owner trong scope; Admin không có quyền đọc task chỉ vì là Admin; Successor chỉ đọc task được chọn/ủy quyền.
 
+Task Service là process độc lập trong mạng nội bộ. Gateway/service caller phải được xác thực; Task Service tự kiểm tra tenant/project/team scope và quyền resource trên mỗi request, không tin actor ID hoặc quyền do browser/Agent tự gửi. Agent chỉ nhận context theo user được ủy quyền, rồi trả proposal qua API; người có quyền xác nhận mới được ghi mutation. Cơ chế service credential, identity propagation và secret rotation phải được đưa vào OpenAPI/deployment contract trước khi code Task được triển khai.
+
 SAG chỉ nhận author-confirmed Work Note/evidence sau khi được phép lập chỉ mục và phải lọc theo quyền hiện hành trước retrieval; role allowlist đơn lẻ không thay thế organization/project/team scope hoặc source ACL. Khi nguồn bị thu hồi quyền, request retrieval kế tiếp phải bị chặn ngay; de-index/refresh chạy nền có thể retry nhưng không được cấp quyền dựa trên index cũ.
 
 ---
@@ -187,7 +189,7 @@ Trong một hệ thống tri thức đa người dùng, nhiều kịch bản tư
 
 ### 5.3. Kịch bản 3: Hai người cập nhật cùng một task
 * **Rủi ro:** Cập nhật đồng thời trạng thái/assignee có thể ghi đè một thay đổi khác hoặc tạo lịch sử không đúng thứ tự.
-* **Kiểm soát cần có trong Task API:** Kiểm tra quyền và tenant/project scope ở mỗi mutation; xác định cơ chế chống lost update (ví dụ version check/optimistic concurrency) và idempotency cho retry trước khi chốt API contract. Đây là yêu cầu thiết kế còn cần đặc tả, không phải Jira sync.
+* **Kiểm soát cần có trong Task API:** Kiểm tra quyền và tenant/project scope ở mỗi mutation; xác định cơ chế chống lost update (ví dụ version check/optimistic concurrency) và idempotency cho retry trước khi chốt API contract. Đây là yêu cầu thiết kế còn cần đặc tả, không có Jira sync trong MVP.
 
 ### 5.4. Kịch bản 4: Hai người cùng tải lên cùng 1 tệp lớn (PDF/DOCX)
 * **Rủi ro:** Lãng phí tài nguyên lưu trữ Cloudflare R2 và tốn tài nguyên worker OCR phân tách lại tài liệu đã tồn tại.
