@@ -5,17 +5,17 @@
 
 ## Câu hỏi nghiên cứu
 
-DATN có thực sự cần tự xây một hệ thống work + knowledge, hay Jira/Atlassian đã đáp ứng đủ và trở ngại (nếu có) nằm ở plan, cấu hình, operating model hoặc cách tổ chức thông tin?
+Continuum cần giới hạn task management nội bộ thế nào để phục vụ vòng đời work + knowledge? Jira/Atlassian và các sản phẩm khác vẫn được nghiên cứu để tham khảo năng lực/thị trường, không còn là lựa chọn nguồn task cho MVP DATN.
 
 Các nhãn trong tài liệu: `[FACT]` là sự kiện quan sát/đo được; `[DOCUMENTED]` là nội dung đã ghi trong tài liệu DATN; `[WEB RESEARCH]` là thông tin từ nguồn ngoài có link; `[INFERENCE]` là kết luận suy ra; `[ASSUMPTION]` là giả định tạm; `[PROPOSAL]` là phương án để xem xét; `[UNKNOWN]` là thiếu evidence; `[DECISION REQUIRED]` là lựa chọn cần người có thẩm quyền.
 
 ## Kết luận tạm thời
 
 - `[DOCUMENTED]` Continuum MVP hiện được mô tả là knowledge-continuity system cho **một software project có nhiều team**, tập trung giữ lại tri thức khi thành viên đổi team/rời dự án/bàn giao. Nguồn: `product_docs/research-docs/01_MVP_SCOPE.md`, `03_DAILY_WORKFLOW_AND_JIRA_SYNC.md`.
-- `[DOCUMENTED]` Jira task context được đồng bộ để hỗ trợ quy trình capture/knowledge; ghi chú vẫn do con người xác nhận. Đây không phải tài liệu phê duyệt việc thay thế Jira bằng một task manager nội bộ.
+- `[DECIDED — 2026-10-01]` Nhóm tự xây task management trong Continuum; Task nội bộ là nguồn chính cho vòng đời task DATN. Jira không phải nguồn task hay connector đồng bộ trong MVP. Phạm vi chi tiết của task tracker được đề xuất riêng trong `12-continuum-task-management-use-cases.md`.
 - `[UNKNOWN]` Chưa có evidence trong repository về Jira plan/license hiện DATN đang dùng, số billable seats, invoice, Marketplace apps, workflow/configuration, mức độ sử dụng Confluence, Jira friction đo được, hay phỏng vấn người dùng. Vì vậy không thể xác nhận “Jira quá đắt”, “Jira thiếu Department”, hoặc pain point thực tế là Jira.
 - `[WEB RESEARCH]` Jira Cloud có Free plan tối đa 10 người và các plan trả phí có những khác biệt về permissions, automation, storage, planning; Premium có cross-team/project planning. Do đó khẳng định chung rằng Jira không thể hỗ trợ cross-team là không chính xác; giới hạn có thể là plan hoặc cấu hình. Xem [Jira pricing](https://www.atlassian.com/software/jira/pricing) và [Plans in Jira Premium](https://support.atlassian.com/jira-software-cloud/docs/what-is-advanced-roadmaps/).
-- `[INFERENCE]` Hiện hypothesis “xây internal ecosystem để tiết kiệm tiền và hợp governance hơn” chưa được chứng minh. Nó cần được kiểm thử độc lập với mục tiêu Continuum đã được ghi nhận.
+- `[INFERENCE]` Việc chọn nguồn task nội bộ không chứng minh rằng xây một hệ sinh thái thay thế Jira sẽ tiết kiệm tiền hoặc hợp governance hơn. Các kết luận về TCO, năng lực cần có và vận hành vẫn cần evidence độc lập.
 
 ## Pain point và giả thuyết nguyên nhân
 
@@ -24,7 +24,7 @@ Các nhãn trong tài liệu: `[FACT]` là sự kiện quan sát/đo được; `
 | Chi phí SaaS | Chỉ có hypothesis; không có invoice, plan, user count | SaaS cost; plan limitation; seat provisioning/billing; Marketplace apps; admin overhead | `[UNKNOWN]` | Chỉ đánh giá sau khi biết TCO thực tế và nhu cầu tính năng |
 | Giới hạn plan/user | Tài liệu public cho biết tier/seat limits | Product/plan limitation; có thể giải quyết bằng cấu hình hoặc đổi plan | Có thể một phần; phải xác định feature cụ thể | Không tự build cho tới khi so sánh nâng plan, tối ưu seat, giải pháp thay thế |
 | Friction trong cách tổ chức công việc | Chưa có user research/workflow observation | Operating model; configuration; information architecture; product limitation | `[UNKNOWN]` | Một lớp điều phối có thể hữu ích nhưng cũng làm phát sinh thao tác mới |
-| Task và knowledge phân mảnh | Continuum research xác định task context khác với tri thức xác nhận | Knowledge fragmentation; thiếu liên kết/provenance; integration problem | Không chỉ do Jira; nhiều nguồn có chủ đích khác nhau | Có liên quan trực tiếp tới mục tiêu Continuum; không chứng minh cần thay task manager |
+| Task và knowledge phân mảnh | Continuum phân biệt task nội bộ với tri thức đã xác minh | Thiếu liên kết/provenance; capture không đủ context; knowledge fragmentation | Không đặt Jira làm nguyên nhân hay nguồn task của MVP | Liên kết task nội bộ với Work Note, evidence, knowledge và handover |
 | Governance theo Department | Tài liệu accepted hiện tập trung Organization/Project/Team scope, không có Department role/domain đã chốt | Governance model; hierarchy/configuration; plan permission boundary | Chưa thể kết luận Jira thiếu Department | Cần xác minh cardinality và policy; không tạo Department entity theo giả định |
 | Executive visibility | Chưa có decision questions, báo cáo hay đối tượng lãnh đạo được xác nhận | Reporting/configuration; portfolio planning; data quality; governance | Jira cung cấp dashboard/planning ở mức khác nhau theo plan/product | Xây view chỉ khi biết quyết định quản lý cụ thể và quyền drill-down |
 
@@ -40,7 +40,7 @@ Một pain point có thể có nhiều nguyên nhân cùng lúc. Không gán t�
 - `[UNKNOWN]` Danh sách top workflow và cấu hình Jira hiện tại; project/issue hierarchy, permission schemes, automation rules, integrations, dashboards và mức sử dụng.
 - `[UNKNOWN]` Phỏng vấn đại diện member, team leader, người quản trị và người ra quyết định; ví dụ gần đây về blocker, handover, tìm knowledge, report.
 - `[UNKNOWN]` Định nghĩa “organization”, Department, team và project thực tế của nhóm DATN; số lượng hiện tại/dự kiến và quan hệ nhiều-nhiều.
-- `[UNKNOWN]` So sánh Jira-only/Jira+Confluence/Continuum-hybrid dựa trên cùng một bộ use case.
+- `[UNKNOWN]` Chi phí và công sức vận hành dài hạn của task tracker nội bộ so với các lựa chọn sản phẩm; đây là phân tích TCO/thị trường, không phải câu hỏi chọn Jira làm nguồn task cho MVP.
 
 ## Cách xác minh hypothesis (đề xuất nghiên cứu)
 

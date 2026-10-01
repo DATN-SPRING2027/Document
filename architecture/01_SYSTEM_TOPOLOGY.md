@@ -10,9 +10,9 @@ Kiến trúc Continuum AI tuân thủ nghiêm ngặt mô hình luồng giao thô
 Dữ liệu đi một chiều từ ngoài Internet vào Client ➔ Biên mạng Ingress ➔ API Gateway ➔ Mạng nội bộ khép kín (VPC Subnet) chứa các Domain Microservices ➔ Tầng lưu trữ phân tán, hàng đợi và AI Engine.
 
 ```
-[ INTERNET CLIENTS ]           [ EXTERNAL SAAS ]
-  - Web Browser (Next.js)        - Atlassian Jira Cloud Webhook
-  - WebSocket Audio Stream       - Cloudflare R2 Presigned Upload
+[ INTERNET CLIENTS ]           [ EXTERNAL SERVICES ]
+  - Web Browser (Next.js)        - Cloudflare R2 Presigned Upload
+  - WebSocket Audio Stream
            │                                    │
            ▼                                    ▼
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -20,7 +20,7 @@ Dữ liệu đi một chiều từ ngoài Internet vào Client ➔ Biên mạng 
 │   ├── Nginx Ingress Reverse Proxy (Port 80/443, SSL/TLS Termination)   │
 │   ├── Origin Cloaking: Giấu toàn bộ IP thật của các container nội bộ   │
 │   ├── WebSocket Upgrade Handler: Chuyển tiếp kết nối WSS cho Handover  │
-│   └── Webhook Endpoint: Tiếp nhận Jira Webhooks có đối soát chữ ký     │
+│   └── File-transfer endpoints: Chỉ cấp URL R2 có thời hạn, theo ACL    │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │ (SSL Offloaded - HTTP / gRPC)
                                     ▼
@@ -39,8 +39,8 @@ Dữ liệu đi một chiều từ ngoài Internet vào Client ➔ Biên mạng 
 │                                                                        │
 │   [CỘT A: QUẢN TRỊ & THU THẬP]       [CỘT B: TRUY XUẤT & BÀN GIAO]     │
 │   ├── svc_iam (Auth & 3 Roles)       ├── svc_chat (Assistant & RAG)    │
-│   ├── svc_capture (Daily Worklogs)   ├── svc_handover (Audio & Roadmaps)│
-│   ├── svc_jira (Jira Sync Connector) ├── svc_ingestion (Upload Coord)  │
+│   ├── svc_capture (Work Notes)       ├── svc_handover (Audio & Roadmaps)│
+│   ├── svc_task (Core API module / MongoDB) ├── svc_ingestion (Upload)  │
 │   ├── svc_lifecycle (Verify Inbox)   └── svc_ai_engine (SAG - FastAPI) │
 │   └── svc_notification (Mail & WSS)                                   │
 └───────────────────────────────────┬────────────────────────────────────┘
@@ -52,9 +52,9 @@ Dữ liệu đi một chiều từ ngoài Internet vào Client ➔ Biên mạng 
 │   ├── Redis 7.2 Cluster              │  │   ├── MongoDB 7.0 (rs0)      │
 │   │   • L2 Cache & SingleFlight Lock │  │   │   (3-Node Replica Set)   │
 │   │   • Realtime Pub/Sub Channels    │  │   │   (Primary Data Truth)   │
-│   └── BullMQ Distributed Queue       │  │   ├── LanceDB Vector Store   │
-│       • ingestion-queue              │  │   │   (Disk-backed Index)    │
-│       • jira-sync-queue              │  │   └── Cloudflare R2          │
+│   └── BullMQ Distributed Queue       │  │   ├── LanceDB retrieval target│
+│       • ingestion-queue              │  │   │   (Runtime verify)        │
+│       • handover-queue               │  │   └── Cloudflare R2          │
 │       • mail-queue                   │  │       (Private Object Store) │
 │       • dlq-failed-jobs (DLQ)        │  └──────────────────────────────┘
 └──────────────────────────────────────┘
@@ -68,7 +68,7 @@ Dữ liệu đi một chiều từ ngoài Internet vào Client ➔ Biên mạng 
 * **TLS Termination & SSL Offloading:** Nginx giải mã SSL/TLS tại biên, truyền tải gói tin HTTP không mã hóa vào mạng Docker nội bộ (`continuum-vpc`), giúp giảm hơn **30% tải CPU** cho các backend container.
 * **Gzip & Brotli Compression:** Nén tự động các tệp JavaScript, CSS và JSON phản hồi từ Next.js.
 * **WebSocket Reverse Proxy:** Nâng cấp HTTP sang `Upgrade: websocket` để phục vụ phiên ghi âm phỏng vấn bàn giao trực tiếp tại `/ws/handover` và chuông thông báo realtime `/ws/notifications`.
-* **Webhook Signature Verification:** Kiểm tra chữ ký HMAC `X-Hub-Signature-256` trước khi định tuyến request webhook của Jira vào hệ thống.
+* **Task API boundary:** Task read/write đi qua module Task của NestJS Core API; bản ghi canonical nằm trong MongoDB. Không có webhook hoặc đường ghi task từ bên ngoài trong MVP. Task API chỉ trực tiếp sở hữu `tasks`/`task_events`; Work Note và Handover giữ logical reference.
 
 ### 2.2. API Gateway & Kiểm soát truy hồi
 * Nằm giữa Nginx và các Domain Services.
@@ -77,7 +77,7 @@ Dữ liệu đi một chiều từ ngoài Internet vào Client ➔ Biên mạng 
 * **Pre-Retrieval Guard:** Kiểm tra quyền sơ bộ trước khi luồng dữ liệu tiến vào các service chuyên biệt, đảm bảo các request không hợp lệ bị ngắt ngay tại cửa sổ gateway với mã HTTP `401 Unauthorized` hoặc `403 Forbidden`.
 
 ### 2.3. Mạng nội bộ biệt lập (Isolated VPC Docker Network)
-* Toàn bộ 9 microservices, Redis, MongoDB và LanceDB cùng nằm trong một mạng bridge riêng biệt: `continuum-net` (Subnet: `172.28.0.0/16`).
+* Các domain modules, Redis, MongoDB và SAG retrieval store cùng nằm trong mạng nội bộ riêng; task data chỉ được truy cập qua Task API. Task module sở hữu collection `tasks`/`task_events` trong MongoDB operational database hiện có (`continuum_db` theo DEC-011/SPEC-001); không tạo database hoặc service deployment riêng cho task.
 * **Không expose port bừa bãi ra Host:** Chỉ duy nhất port `80/443` của Nginx và port `3000` của Next.js (cho local dev) được publish ra ngoài máy chủ. Cổng MongoDB (`27017`), Redis (`6379`), BullMQ và FastAPI SAG (`8001`) hoàn toàn đóng kín, chỉ giao tiếp nội bộ qua DNS service name của Docker Compose (`http://svc_ai_engine:8001`, `mongodb://db_mongo:27017`).
 
 ---
@@ -114,7 +114,7 @@ services:
   backend:
     build: ./backend
     environment:
-      - MONGODB_URI=mongodb://mongo1:27017,mongo2:27017,mongo3:27017/continuum?replicaSet=rs0
+      - MONGODB_URI=mongodb://mongo1:27017,mongo2:27017,mongo3:27017/continuum_db?replicaSet=rs0
       - REDIS_HOST=redis
       - SAG_AI_URL=http://ai-engine:8001
     networks:

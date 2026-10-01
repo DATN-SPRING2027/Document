@@ -1,24 +1,24 @@
 # Internal Platform MVP Hypothesis
 
-**Status:** Entire scope in this document is `[PROPOSAL]` for validation, not approved Continuum MVP scope.
+**Status:** Organization-wide work-management scope remains `[PROPOSAL]`. Internal Continuum Task as DATN's task source was explicitly selected by the user on 2026-10-01; detailed task Use Cases remain pending review.
 
 ## Guardrail: two different product questions
 
-- `[DOCUMENTED] CURRENT CONTINUUM MVP`: knowledge continuity within one software project that has multiple teams; Jira task context, user-confirmed capture, evidence-backed knowledge, permission-aware retrieval, handover and evaluation.
-- `[HYPOTHESIS] POSSIBLE INTERNAL WORK-MANAGEMENT PLATFORM`: organization-wide Department/team/project/task/executive model, potentially replacing or sitting above Jira. Not approved and not a rewrite of Continuum architecture/spec.
+- `[DECIDED] CURRENT TASK DIRECTION`: Continuum's internal Task module is canonical for DATN task lifecycle; Jira is not a task source. Work Notes remain human-confirmed, knowledge remains evidence-backed and human-verified, retrieval remains permission-aware, and handover/evaluation remain core.
+- `[HYPOTHESIS] POSSIBLE BROADER WORK-MANAGEMENT PLATFORM`: organization-wide Department/portfolio/executive model. This broader expansion is not approved and is separate from the selected project-scoped task module.
 
 The MVP candidate below tests whether a narrow additional layer creates measurable value; it is not a Jira clone blueprint.
 
 ## Candidate validation slice
 
-`[PROPOSAL]` Choose one representative project/team cohort; link to canonical work items (do not duplicate task ownership by default); capture context/decision with source evidence; show scoped knowledge/handover; test a narrowly defined management question only if interviews establish a real decision need. Department entity, portfolio planning and generic workflow engine are excluded until validated.
+`[PROPOSAL]` Choose one representative project/team cohort; manage DATN tasks internally as the canonical work records; link confirmed Work Notes and evidence; show scoped knowledge/handover; test a narrowly defined management question only if interviews establish a real decision need. Jira sync, Department entity, portfolio planning and generic workflow engine are excluded from the current task slice unless separately approved.
 
 | Candidate level | Hypothesis contents | Why / what must be validated |
 |---|---|---|
-| MUST HAVE — proposed only | One selected cohort; authentication/access inherited from accepted Continuum model; task link/reference; human-confirmed capture; provenance/evidence; verified-vs-proposed state; permission-filtered retrieval; handover scenario; audit of sensitive actions | Matches Continuum continuity objective; do not interpret as approval of task manager replacement |
+| MUST HAVE — proposed only | One selected cohort; internal project-scoped Task source; task lifecycle detailed in `12-continuum-task-management-use-cases.md` after review; task-linked or manual Work Notes; provenance/evidence; verified-vs-proposed state; permission-filtered retrieval; handover scenario; audit of sensitive actions | Matches Continuum continuity objective; detailed task fields/statuses and exact boundaries still need review |
 | SHOULD HAVE — proposed only | Basic project/team context, source freshness/status, minimal operational view for a named persona | Only after required fields/decision question and access boundary are known |
-| LATER — proposed only | Additional connectors, multi-project portfolio, Department hierarchy, leadership roll-ups, rich work item/task lifecycle, advanced dashboards | Broad scope; needs evidence and owner; many items exceed current Continuum scope |
-| OUT OF SCOPE for this validation hypothesis | Full Jira clone, generic workflow builder, employee performance score, autonomous approval/policy changes, enterprise HR/LMS, unrestricted director access, mass migration | Prevent hypothesis from silently expanding current MVP; revisit only with explicit product decision |
+| LATER — proposed only | Additional external connectors, multi-project portfolio, Department hierarchy, leadership roll-ups, advanced task lifecycle, advanced dashboards | Broad scope; needs evidence and owner; many items exceed current Continuum scope |
+| OUT OF SCOPE for this validation hypothesis | Full Jira parity, generic workflow builder, employee performance score, autonomous approval/policy changes, enterprise HR/LMS, unrestricted director access, Jira task migration/synchronization | Prevent the selected internal task source from expanding into a broad management suite; revisit integrations only with explicit product decision |
 
 ## Validation protocol
 
@@ -43,16 +43,15 @@ The MVP candidate below tests whether a narrow additional layer creates measurab
 
 ## Risks and stop signals
 
-- Duplicating Jira and creating conflicting task sources.
+- Scope creep toward full Jira parity or adding Jira as a second writable task source later.
 - More data surfaces without reliable ACL propagation.
 - Reports create false certainty from stale/missing data.
 - Capture overhead exceeds value of retained context.
 - Integrations/LLM/security/maintenance consume team capacity beyond available runway.
-- A user can get same outcome by changing Jira configuration or operating process at lower cost.
-- Existing Continuum scope is silently rewritten to organization-wide work management.
+- Existing Continuum scope is silently expanded to organization-wide work management.
 
-`[PROPOSAL]` Stop or narrow the hypothesis if pain is not reproducible, user count/plan makes SaaS cost immaterial, configuration addresses the issue, no owner for internal operations exists, or security semantics cannot be preserved.
+`[PROPOSAL]` Keep the selected task slice narrow; revisit it if no operational owner exists, required authorization semantics cannot be preserved, or the six-week delivery window cannot support core knowledge/handover outcomes.
 
 ## Open decisions
 
-`[DECISION REQUIRED]` Whether to conduct pilot; cohort; task SoT; management persona; Department scope; integrations; data classes; success thresholds; staffing and run-cost; relationship to accepted Continuum MVP. No decision is made by this research document.
+`[DECISION REQUIRED]` Cohort; detailed task requirements; Department scope; management persona; future integrations; data classes; success thresholds; staffing and run-cost; relationship of any broader platform to accepted Continuum MVP. Task source is already decided as internal Continuum Task for DATN.

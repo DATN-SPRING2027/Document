@@ -1,21 +1,27 @@
-# Continuum AI — Thiết Kế Tầng Lưu Trữ Tri Thức Sau Trích Xuất (SAG Storage)
-## (Bản Đối Chiếu Schema Gốc Zleap-AI/SAG & Bản Tinh Chỉnh Áp Dụng Cho Continuum AI)
+# Continuum AI — Nghiên Cứu Phương Án Lưu Trữ Tri Thức Sau Trích Xuất (SAG Storage)
+## (Phương án PostgreSQL + pgvector/Qdrant; không phải lựa chọn MVP đã duyệt)
 
-> **Tài liệu:** Đặc tả kỹ thuật Cơ sở dữ liệu Tri thức sau Trích xuất (Post-Extraction Knowledge Store)  
-> **Hệ quản trị CSDL quan hệ:** **PostgreSQL 16** (Database: `continuum_sag_storage`)  
-> **Kho Vector Lưu Trữ:** **PostgreSQL 16 pgvector** (Mặc định hợp nhất) hoặc **Qdrant** (Lựa chọn chuyên dụng phân tán)  
+> **Trạng thái:** Nghiên cứu phương án thay thế/mở rộng; không phải schema hoặc storage contract MVP được duyệt.
+>
+> **SAG retrieval target MVP:** LanceDB theo DEC-015/SPEC-005; cần xác minh runtime/source/deployment riêng.
+>
+> **Phương án trong tài liệu này:** **PostgreSQL 16** + **pgvector** hoặc Qdrant (chỉ xem xét lại qua ADR riêng).
 > **Service sở hữu & điều phối:** `svc_ai_engine` (Orchestrator) & `svc_ingestion` (Feeder)  
 > Nằm trong bộ tài liệu thiết kế Database Microservices Continuum AI. Xem [Mục lục](README.md).
+
+> **Ranh giới cập nhật — 2026-10-01:** Task canonical thuộc Continuum Task API và MongoDB. SAG chỉ lập chỉ mục Work Note/evidence đã qua kiểm tra quyền và policy nguồn; task/status/assignee không phải nguồn SAG. Phần SQL bên dưới là phương án thay thế/mở rộng để tham khảo, không được hiểu là chọn PostgreSQL/Qdrant cho MVP.
+
+**Authorization contract:** Các cột allowed_roles chỉ là coarse restriction. Continuum phải resolve current source ACL từ MongoDB và gửi danh sách SAG source IDs được phép trong từng request trước khi tìm kiếm; query không có danh sách hợp lệ thì phải fail-closed. Worker cũng phải kiểm tra nguồn Work Note/evidence được phép trước khi index.
 
 ---
 
 ## 1. Ranh Giới Nghiệp Vụ & Vai Trò Trong Dự Án
 
-Trong Continuum AI, **MongoDB 7.0 là Source of Truth** cho toàn bộ dữ liệu nghiệp vụ: tài khoản, phân quyền (IAM), ghi chú công việc (Capture), liên kết Jira, vòng đời tri thức bất biến (Lifecycle), gói bàn giao (Handover) và kiểm toán (Audit).
+Trong Continuum AI, **MongoDB 7.0 là Source of Truth** cho toàn bộ dữ liệu nghiệp vụ: tài khoản, phân quyền (IAM), task nội bộ, ghi chú công việc (Capture), vòng đời tri thức bất biến (Lifecycle), gói bàn giao (Handover) và kiểm toán (Audit).
 
 Tuy nhiên, đối với bài toán **Truy vấn Tri thức Chuyên sâu (Semantic Search, Multi-hop Reasoning & Graph Retrieval)**:
-- Dữ liệu văn bản kỹ thuật (SRS, Architecture, API Specs, Meeting STT, Jira Issues) sau khi bóc tách cần một **Bộ lưu trữ dữ liệu sau extract chuyên dụng (Post-Extraction Store)**.
-- Dự án chuẩn hóa trên **PostgreSQL 16 kết hợp extension pgvector** dựa trên nguyên lý kiến trúc của **Zleap-AI/SAG (SQL-Retrieval Augmented Generation)**: Thay vì tách biệt 2 hệ thống lưu trữ rời rạc (Relational DB và Vector DB riêng) dễ gây lệch pha dữ liệu khi xóa/sửa, hệ thống hợp nhất toàn bộ thực thể quan hệ (Chunk, Event, Entity, Hyperedge) và các Vector Embeddings vào **duy nhất một Database PostgreSQL 16 + pgvector**.
+- Nội dung nguồn được Continuum cho phép (Work Note/evidence, tài liệu và transcript đủ điều kiện) sau khi bóc tách cần một **Bộ lưu trữ/index retrieval chuyên dụng**; task lifecycle không thuộc tầng này.
+- Phương án nghiên cứu này chuẩn hóa trên **PostgreSQL 16 kết hợp extension pgvector** theo nguyên lý **Zleap-AI/SAG (SQL-Retrieval Augmented Generation)**. Đây chỉ là phương án thay thế/mở rộng; target MVP vẫn là LanceDB. Không triển khai schema SQL này cho đến khi có quyết định ADR cập nhật.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -99,7 +105,7 @@ Tầng này chịu trách nhiệm trích xuất và lưu trữ cấu trúc tri t
 | **`universe_*` & `exploration_*` (3D Knowledge Galaxy)** | Lưu tọa độ `x, y, z`, `radius`, cụm module và camera | **CHÍNH THỨC SỬ DỤNG & NÂNG CẤP THÀNH ĐIỂM NHẤN CỐT LÕI (WOW-FACTOR)** | Trực quan hóa toàn cảnh tri thức dự án thành một **"Vũ Trụ / Thiên Hà Tri Thức 3D"** (Interactive 3D Knowledge Galaxy trên Three.js). Người kế nhiệm có thể bay qua các tinh cầu module, xem mật độ tri thức, và camera tự động zoom vào đúng bằng chứng khi hỏi đáp. |
 | **`octx_*` (Gói chuyển giao)** | Gói xuất/nhập tri thức tĩnh | **GIỮ CHUẨN ĐỂ MỞ RỘNG GIAI ĐOẠN 2** | Sẽ dùng làm định dạng export gói tri thức khi kỹ sư bàn giao rời dự án (Offline Handover Archive). |
 | **Multi-Tenancy (`organization_id`, `project_id`)** | SAG gốc **KHÔNG CÓ**, chỉ có `user_id` đơn lẻ | **BẮT BUỘC BỔ SUNG vào tất cả các bảng** | Đảm bảo tính cô lập dữ liệu tuyệt đối giữa các công ty và các dự án trong Continuum AI. Không để lộ tri thức chéo tenant. |
-| **Phân loại Nguồn Tri thức (`source_type`)** | SAG gốc chỉ coi mọi nguồn là Document tệp phẳng | **BỔ SUNG trường `source_type`**: `DOCUMENT`, `JIRA_ISSUE`, `WORK_NOTE`, `AUDIO_HANDOVER` | Tri thức dự án phần mềm đa dạng từ ghi chú hàng ngày (Work Note), task Jira, đến bóc băng phỏng vấn bàn giao (Audio STT). |
+| **Phân loại Nguồn Tri thức (`source_type`)** | SAG gốc chỉ coi mọi nguồn là Document tệp phẳng | **BỔ SUNG trường `source_type`**: `DOCUMENT_VERSION`, `WORK_NOTE`, `AUDIO_HANDOVER` | Chỉ lập chỉ mục nội dung nguồn được Continuum cho phép; Task không phải nguồn SAG độc lập. |
 | **Bảo mật Trước Truy Vấn (Pre-retrieval ACL)** | SAG gốc **KHÔNG CÓ**, bất kỳ ai search cũng thấy toàn bộ | **BỔ SUNG `confidentiality_level` & `allowed_roles`** vào `kb_document`, `source_chunk`, `source_event` | Kỹ sư cấp `MEMBER` không được phép tìm thấy thông tin tài chính/hợp đồng dự án cấp `ADMIN` hoặc `TEAM_LEADER`. Phải lọc quyền ngay từ tầng SQL JOIN. |
 | **Liên kết Ngược MongoDB (`continuum_ref_id`)** | SAG gốc sinh UUID ngẫu nhiên không trace được | **BỔ SUNG `continuum_document_version_id`, `continuum_source_id`** | Cho phép frontend khi nhấp vào Citation link có thể đối chiếu tức thì về document gốc trong MongoDB mà không bị mất dấu. |
 | **Danh mục `entity_type`** | SAG gốc để rỗng hoặc generic | **CHUẨN HÓA DANH MỤC THỰC THỂ PHẦN MỀM** | Định nghĩa tập thực thể chuyên biệt: `TECH_STACK`, `MODULE_SERVICE`, `ARCHITECTURE_DECISION`, `API_CONTRACT`, `BUSINESS_RULE`, `ROLE_RESPONSIBILITY`. |
@@ -141,7 +147,7 @@ CREATE INDEX ix_data_source_tenant ON data_source(organization_id, project_id);
 ---
 
 ### 4.2. `kb_document` (Tài Liệu / Thực Thể Nguồn Sau Parser)
-Lưu vết các tài liệu, Jira issue, Work note, hoặc Audio bóc băng được đưa vào SAG.
+Lưu vết các phiên bản tài liệu, Work Note, hoặc Audio bóc băng được Continuum cho phép đưa vào SAG.
 
 ```sql
 CREATE TABLE kb_document (
@@ -151,17 +157,17 @@ CREATE TABLE kb_document (
     project_id VARCHAR(64) NOT NULL,            -- [CONTINUUM THÊM]
     
     -- [CONTINUUM THÊM] Ánh xạ ngược về MongoDB và phân loại nguồn
-    source_type VARCHAR(32) NOT NULL,           -- 'DOCUMENT_VERSION' | 'WORK_NOTE' | 'JIRA_ISSUE' | 'AUDIO_HANDOVER'
+    source_type VARCHAR(32) NOT NULL,           -- 'DOCUMENT_VERSION' | 'WORK_NOTE' | 'AUDIO_HANDOVER'; TASK không hợp lệ
     continuum_ref_id VARCHAR(64) NOT NULL,      -- ID bản ghi trong MongoDB (VD: document_versions._id)
     
-    filename VARCHAR(512) NOT NULL,             -- Tên hiển thị (Tên file, Issue Key, hoặc Tiêu đề Note)
+    filename VARCHAR(512) NOT NULL,             -- Tên hiển thị (Tên file, audio, hoặc Tiêu đề Work Note)
     content_type VARCHAR(128),                  -- MIME type
     size_bytes BIGINT DEFAULT 0,
     storage_path VARCHAR(1024),                 -- Đường dẫn tệp Cloudflare R2
     
     -- [CONTINUUM THÊM] Bảo mật phân quyền Pre-retrieval ACL
     confidentiality_level VARCHAR(32) DEFAULT 'INTERNAL', -- 'INTERNAL' | 'CONFIDENTIAL' | 'RESTRICTED'
-    allowed_roles JSON DEFAULT '["ADMIN", "TEAM_LEADER", "MEMBER"]', -- Danh sách roles được phép đọc
+    allowed_roles JSON NOT NULL,                -- Coarse restriction; không thay thế current source ACL
     
     status VARCHAR(32) DEFAULT 'PENDING',       -- PENDING, EXTRACTING, EXTRACTED, FAILED
     token_usage BIGINT DEFAULT 0,               -- Số token tiêu thụ để LLM extract tài liệu này
@@ -197,7 +203,7 @@ CREATE TABLE source_chunk (
     rank INTEGER DEFAULT 0,                     -- Thứ tự đoạn trong văn bản gốc
     
     -- [CONTINUUM THÊM] ACL kế thừa từ tài liệu cha để lọc vector siêu tốc
-    allowed_roles JSON DEFAULT '["ADMIN", "TEAM_LEADER", "MEMBER"]',
+    allowed_roles JSON NOT NULL,               -- Query còn phải giới hạn source IDs được Continuum authorize
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     
@@ -285,7 +291,7 @@ CREATE TABLE source_event (
     score FLOAT DEFAULT 1.0,                    -- Độ tin cậy trích xuất LLM
     
     -- [CONTINUUM THÊM] Kế thừa ACL
-    allowed_roles JSON DEFAULT '["ADMIN", "TEAM_LEADER", "MEMBER"]',
+    allowed_roles JSON NOT NULL,               -- Query còn phải giới hạn source IDs được Continuum authorize
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     
@@ -324,8 +330,8 @@ CREATE INDEX ix_event_entity_query ON event_entity(organization_id, project_id, 
 
 ---
 
-### 4.8. Cấu Trúc Bảng Vector Trên PostgreSQL 16 (`pgvector` Extension)
-Dự án chuẩn hóa lưu trữ trực tiếp các Vector Embeddings vào cùng cơ sở dữ liệu PostgreSQL 16 thông qua extension **`pgvector`** (thay vì tách riêng LanceDB file). Điều này đảm bảo tính nhất quán giao dịch ACID 100% khi thêm/sửa/xóa tài liệu:
+### 4.8. Phương Án Bảng Vector Trên PostgreSQL 16 (`pgvector` Extension)
+Trong phương án thay thế này, Vector Embeddings được lưu trong PostgreSQL 16 thông qua extension **`pgvector`** thay vì LanceDB. Đây là ví dụ thiết kế để so sánh, không phải cấu hình MVP được chấp nhận:
 
 ```sql
 -- Kích hoạt extension pgvector (đã có sẵn trong image pgvector/pgvector:pg16)
@@ -343,7 +349,7 @@ CREATE TABLE chunk_vectors (
     embedding vector(1024) NOT NULL,
     
     -- Pre-retrieval ACL kế thừa từ Document
-    allowed_roles JSONB DEFAULT '["ADMIN", "TEAM_LEADER", "MEMBER"]'::jsonb,
+    allowed_roles JSONB NOT NULL,              -- Không cấp quyền đọc mặc định khi thiếu ACL projection
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     
     CONSTRAINT fk_chunk_vector_chunk FOREIGN KEY (chunk_id) 
@@ -452,7 +458,8 @@ curl -X PUT "http://localhost:6333/collections/continuum_chunks/index" \
     "must": [
       { "key": "organization_id", "match": { "value": "org_continuum_corp" } },
       { "key": "project_id", "match": { "value": "proj_continuum_core" } },
-      { "key": "allowed_roles", "match": { "any": ["MEMBER"] } }
+      { "key": "allowed_roles", "match": { "any": ["MEMBER"] } },
+      { "key": "source_id", "match": { "any": ["source_id_1", "source_id_2"] } }
     ]
   },
   "limit": 10,
@@ -618,7 +625,7 @@ CREATE INDEX ix_explor_step_created ON exploration_steps(session_id, created_at 
 
 ## 5. PHẦN IV: Quy Trình Truy Vấn Dynamic SQL Hyperedges Kèm Pre-retrieval ACL
 
-Tùy thuộc vào việc lựa chọn **PostgreSQL + pgvector (Hợp nhất)** hay **PostgreSQL + Qdrant (Tách rời)**, quy trình truy vấn siêu cạnh động được thực hiện như sau:
+Trong phương án PostgreSQL/Qdrant được nghiên cứu tại tài liệu này (không phải MVP target), quy trình truy vấn siêu cạnh động có thể được thực hiện như sau:
 
 ### 5.1. Phương Án 1: Hợp Nhất Trên PostgreSQL 16 + pgvector (Single-Query Dynamic Retrieval)
 Hệ thống thực hiện tìm kiếm vector (`<=>`), kết nối Dynamic Hyperedges (`JOIN`), và lọc phân quyền Pre-retrieval ACL (`allowed_roles`) gói gọn trong **1 câu SQL duy nhất**:
@@ -634,6 +641,7 @@ WITH top_similar_chunks AS (
     WHERE cv.organization_id = :currentOrgId
       AND cv.project_id = :currentProjectId
       AND cv.allowed_roles ? :currentUserRole
+      AND cv.source_id = ANY(:authorizedSAGSourceIds)
     ORDER BY cv.embedding <=> :queryEmbedding ASC
     LIMIT 10
 )
@@ -706,4 +714,4 @@ ORDER BY ee.weight DESC NULLS LAST;
 | **Độ trễ truy vấn** | Siêu thấp nhờ cơ chế **Single-Query CTE** (không tốn network hop trung gian). | Cần **2 network hops** (App ➔ Qdrant ➔ App ➔ PostgreSQL). |
 | **Khả năng Scale độc lập** | Phụ thuộc vào tài nguyên của cụm PostgreSQL. | Scale Pod Qdrant độc lập (CPU/RAM riêng cho vector search mà không ảnh hưởng DB giao dịch). |
 | **Vận hành & Triển khai** | **Cực kỳ đơn giản:** Chỉ duy nhất 1 container `pgvector/pgvector:pg16`, backup bằng `pg_dump`. | Cần vận hành thêm 1 cụm Qdrant riêng biệt kèm cơ chế snapshot riêng. |
-| **Khuyến nghị áp dụng** | **LỰA CHỌN MẶC ĐỊNH CHO continuum_sag_storage**. | **LỰA CHỌN MỞ RỘNG** khi hệ thống đạt ngưỡng scale tải hàng chục triệu chunks. |
+| **Vị trí trong quyết định MVP** | Không được chọn cho MVP; chỉ là phương án thay thế cần ADR nếu đổi target. | Không được chọn cho MVP; chỉ là phương án mở rộng cần ADR nếu đổi target. |

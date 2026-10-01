@@ -36,29 +36,27 @@ Mỗi dịch vụ tuân thủ nguyên tắc **Đơn trách nhiệm (Single Respo
 * **Thư mục:** `backend/src/modules/work-notes/`
 * **Trách nhiệm:**
   - Thu thập ghi chú công việc hàng ngày của dev: What/How/Why, blockers, next steps, evidence.
-  - Tự động lấy các issue Jira mà dev vừa làm trong ngày để điền sẵn vào form (Prefill).
-  - **Quy tắc bất biến:** Ghi chú chỉ trở thành nguồn tri thức hợp lệ khi **chính tác giả tự tay bấm xác nhận (Author-confirmed)**.
+  - Gọi Continuum Task API để người dùng chọn tối đa một task trong scope làm ngữ cảnh cho Work Note; Work Note vẫn có thể không liên kết task.
+  - **Quy tắc bất biến:** Ghi chú chỉ trở thành nguồn tri thức hợp lệ khi chính tác giả xác nhận. Theo đề xuất Use Case, draft không được index SAG; ghi chú phải `CONFIRMED` và qua source ACL/eligibility gate.
   - Lưu trữ lịch sử chỉnh sửa bất biến vào `work_note_versions`.
 * **Collections sở hữu:** `work_notes`, `work_note_versions`, `knowledge_requirements`.
 * **API Endpoints chính:**
-  - `GET /api/v1/capture/daily/prefill?date=YYYY-MM-DD`: Lấy task Jira điền sẵn.
+  - Hợp đồng prefill phải lấy task qua API nội bộ và không sao chép task thành nguồn độc lập trong capture.
   - `POST /api/v1/capture/daily`: Tạo bản nháp ghi chú ngày.
   - `PUT /api/v1/capture/daily/:id/confirm`: Tác giả xác nhận nội dung.
 
 ---
 
-### 2.3. `svc_jira` (Jira Cloud Connector & Reconciliation)
-* **Thư mục:** `backend/src/modules/jira/`
+### 2.3. Task API (Continuum-owned task lifecycle)
+* **Vị trí:** Module trong Continuum Core API (NestJS); không phải deployment/microservice riêng hay connector tới hệ thống task bên ngoài trong MVP.
 * **Trách nhiệm:**
-  - Tiếp nhận Webhook từ Atlassian Jira Cloud (Issue Created, Updated, Comment Added).
-  - **Khử trùng lặp (Idempotency):** Dùng Redis `SETNX` với key `jira:event:{eventId}` (TTL 86,400s). Nếu nhận trùng event thì drop ngay lập tức.
-  - Đẩy payload hợp lệ vào hàng đợi BullMQ `jira-sync-queue`.
-  - Chạy Reconciliation Cronjob quét đối soát lúc 02:00 AM để phát hiện và đồng bộ bù các event bị lỡ do mạng.
-* **Collections sở hữu:** `jira_connections`, `jira_account_links`, `jira_issues`, `jira_events`, `jira_sync_jobs`.
-* **API Endpoints chính:**
-  - `POST /api/v1/integrations/jira/webhook`: Tiếp nhận webhook Jira.
-  - `POST /api/v1/integrations/jira/connect`: Thiết lập kết nối OAuth2/Token với Jira Site.
-  - `POST /api/v1/integrations/jira/sync-now`: Kích hoạt đồng bộ thủ công.
+  - Xử lý create/list/detail/update/assignment/status/basic search-filter trong phạm vi quyền đã duyệt.
+  - Lưu bản ghi task chuẩn trong MongoDB; API là đường đọc/ghi duy nhất cho task lifecycle.
+  - Kiểm tra organization/project/team scope và quyền trên từng thao tác; đề xuất mỗi task thuộc một project và tối đa một team.
+  - Ghi `task_events` append-only cùng mutation task bằng MongoDB transaction; task events không thay thế compliance audit.
+  - Cấp danh sách task được phép xem để Work Note chọn liên kết tùy chọn qua `taskId`.
+* **Collection sở hữu:** `tasks`, `task_events` trong operational database MongoDB hiện có (`continuum_db` theo DEC-011/SPEC-001), không tạo database/deployment riêng. Chi tiết field/status proposal xem [Task management persistence design](../database-design/12_TASK_MANAGEMENT_SCHEMA.md); cần duyệt trước implementation.
+* **API contract:** Route/DTO chính thức chốt sau khi duyệt Use Case; task operations synchronous, không có Jira webhook/import/sync hoặc task queue trong MVP.
 
 ---
 
@@ -97,8 +95,9 @@ Mỗi dịch vụ tuân thủ nguyên tắc **Đơn trách nhiệm (Single Respo
 * **Thư mục:** `backend/src/modules/handover/`
 * **Trách nhiệm:**
   - Khởi tạo quy trình bàn giao khi một thành viên hoặc Team Leader rời dự án / đổi nhóm.
-  - Tự động phân tích trách nhiệm (`responsibilities`): module sở hữu, tài liệu đứng tên, task còn dang dở.
-  - Gán người kế nhiệm (`SUCCESSOR`) và sinh gói bàn giao (**Handover Package**) có checklist ưu tiên.
+  - Tìm task chưa kết thúc (`TODO`, `IN_PROGRESS`, `BLOCKED`) qua Task API theo project/team/người phụ trách; Team Leader chọn task cho gói bàn giao.
+  - Lệnh giao task gọi Task API để chuyển assignee canonical sang successor; Handover lưu `taskId`, recipient và trạng thái tiếp nhận riêng. Successor không kế thừa quyền đọc toàn project.
+  - Do Task và Handover sở hữu persistence riêng, thao tác dùng `operationId` idempotent cùng retry/compensation; Handover không ghi trực tiếp collection `tasks`.
   - **Host phiên phỏng vấn Audio:** Mở kết nối WebSocket tại `/ws/handover`, nhận luồng âm thanh từ microphone client, đẩy lên Cloudflare R2 và đưa vào `handover-queue` để gọi Whisper API trích xuất transcript.
   - Tự động tổng hợp lộ trình học việc (**Successor Learning Path**) cho nhân sự mới.
 * **Collections sở hữu:** `handovers`, `handover_items`, `handover_assignments`, `responsibilities`, `responsibility_assignments`, `interviews`, `interview_sessions`, `learning_paths`.
@@ -116,6 +115,7 @@ Mỗi dịch vụ tuân thủ nguyên tắc **Đơn trách nhiệm (Single Respo
   - Tiếp nhận yêu cầu upload tài liệu (PDF, DOCX, Markdown, TXT, Ảnh).
   - Cấp **Presigned PUT URL** để Client tải trực tiếp file lên Cloudflare R2 (không qua backend để bảo toàn CPU).
   - Xác thực mã băm SHA-256 của file để chống upload trùng lặp.
+  - Trước khi index, chỉ gửi author-confirmed Work Note/evidence đã qua kiểm tra quyền và policy nguồn của Continuum; task record, title/description/status/assignee không phải nguồn SAG độc lập.
   - Tạo bản ghi trong `ingestion_jobs` và đẩy job vào BullMQ `ingestion-queue` để kích hoạt worker phân tách tài liệu.
   - Lưu trữ ánh xạ chunk vector vào `sag_mappings`.
 * **Collections sở hữu:** `sources`, `source_acls`, `documents`, `document_versions`, `ingestion_jobs`, `sag_mappings`.
@@ -148,11 +148,11 @@ Mỗi dịch vụ tuân thủ nguyên tắc **Đơn trách nhiệm (Single Respo
     * File văn bản chuẩn (PDF text, DOCX, MD): Xử lý bằng **MarkItDown** để giữ cấu trúc bảng biểu và header.
     * File scan hoặc ảnh chụp: Định tuyến qua **MinerU OCR** để bóc tách chữ và công thức.
   - **Chunking & Embedding:** Chia văn bản theo Markdown headers (kích thước 512 tokens, overlap 10%), sinh vector nhúng.
-  - **Quản lý Vector Store:** Đọc/ghi bảng vector trên **LanceDB** cục bộ với chỉ mục disk-backed IVF-PQ / HNSW.
+  - **Vector Store target:** Thiết kế MVP dùng **LanceDB** cục bộ với chỉ mục disk-backed IVF-PQ / HNSW; đây là target được chấp nhận, không chứng minh runtime hiện tại đã tích hợp (cần xác minh source/deployment).
   - **Hybrid Search & Reranker:** Kết hợp tìm kiếm từ khóa (BM25) và tìm kiếm ngữ nghĩa vector theo bộ lọc Scoped ACL.
   - **LLM Gateway:** Tích hợp đa mô hình (Gemini 2.5 Flash/Pro, Whisper API, OpenAI fallback).
 * **API Endpoints nội bộ (mTLS / Internal HTTP):**
-  - `POST /api/v1/sag/parse-and-index`: Bóc tách file từ R2 và lập chỉ mục vào LanceDB.
+  - `POST /api/v1/sag/parse-and-index`: API mục tiêu bóc tách file từ R2 và lập chỉ mục qua SAG/LanceDB adapter.
   - `POST /api/v1/sag/hybrid-search`: Tìm kiếm đoạn trích kèm Scoped ACL filter.
   - `POST /api/v1/sag/llm/generate-proposal`: Trích xuất đề xuất tri thức từ evidence.
   - `POST /api/v1/sag/audio/transcribe`: Chuyển giọng nói phỏng vấn thành văn bản qua Whisper.

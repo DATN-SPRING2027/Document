@@ -5,7 +5,7 @@
 ## Bối cảnh hiện hành
 
 - `[DOCUMENTED]` Continuum được mô tả nhằm duy trì tri thức dự án phần mềm qua capture, ingestion/retrieval, đề xuất knowledge có evidence, human review, gap monitoring và handover. Xem `product_docs/research-docs/01_MVP_SCOPE.md` và `03_DAILY_WORKFLOW_AND_JIRA_SYNC.md`.
-- `[DOCUMENTED]` Jira là nguồn task context cho MVP; capture/Work Note được người dùng xác nhận và không bị thay bằng dữ liệu issue một cách ngầm định.
+- `[DECIDED — 2026-10-01]` Continuum tự quản lý vòng đời task DATN. Task nội bộ là nguồn chính; Work Note vẫn do người dùng xác nhận và không bị task content thay thế một cách ngầm định.
 - `[UNKNOWN]` Operating model thực tế của tổ chức (cách lập kế hoạch, phân bổ việc, review, quản lý thay đổi, weekly reporting và quyết định) chưa được chứng minh bằng telemetry hay phỏng vấn trong repo.
 
 ## Các luồng vận hành cần quan sát
@@ -27,13 +27,13 @@ Loop này tương thích về ý tưởng với Continuum MVP đã ghi nhận; p
 
 ## Operating-model questions
 
-1. Ai là người chịu trách nhiệm tạo, cập nhật và đóng task? Nơi nào là canonical?
+1. Ai là người chịu trách nhiệm tạo, cập nhật và đóng task nội bộ? Quy tắc ownership cụ thể trong project/team là gì?
 2. “Done” là hoàn tất deliverable, được review, hay đã có knowledge evidence?
 3. Những gì cần ghi lại ngoài task? Ai xác nhận sự thật và nguồn?
 4. Khi owner rời team, ai nhận trách nhiệm và ai chấp thuận handover?
 5. Ai được phép xem work/knowledge theo project/team? Có confidential class nào không?
 6. Reporting nào đang làm thủ công? Bao lâu, ai dùng, quyết định gì dựa trên report?
-7. Bất đồng giữa Jira, tài liệu, code/PR và knowledge được xử lý ở đâu?
+7. Bất đồng giữa task nội bộ, tài liệu, code/PR và knowledge được xử lý ở đâu; ai là người có quyền xác nhận từng loại thông tin?
 
 ## Friction diagnosis protocol
 

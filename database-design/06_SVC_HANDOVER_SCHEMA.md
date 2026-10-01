@@ -16,6 +16,8 @@
    - Bảng `responsibility_assignments` theo dõi lịch sử *"Ai nắm giữ module nào trong khoảng thời gian nào (`effectiveFrom` - `effectiveTo`)"*.
 2. **Chiến dịch Chuyển giao Đa giai đoạn (`handovers` & `handover_items`):**
    - Không chuyển giao theo kiểu "bàn giao miệng". Mọi trách nhiệm đều được bẻ nhỏ thành danh sách công việc (`handover_items`).
+   - Hạng mục task được truy vấn qua Continuum Task API. Đề xuất chỉ task chưa kết thúc (`TODO`, `IN_PROGRESS`, `BLOCKED`) là giao việc; task `DONE` chỉ có thể làm ngữ cảnh read-only qua Work Note/evidence. Khi giao successor, Task API cập nhật assignee canonical; Handover lưu `taskId`, recipient và trạng thái nhận/bàn giao.
+   - Do Task và Handover sở hữu persistence riêng, giao dịch dùng `operationId` idempotent để retry/compensate; `svc_handover` không ghi trực tiếp `tasks` hoặc `task_events`.
    - **Xác nhận từ người kế nhiệm (`VERIFIED_BY_SUCCESSOR`):** Mục bàn giao chỉ được tính là hoàn tất khi người tiếp quản xác nhận đã nắm vững và chạy thử thành công.
 3. **Phỏng vấn Bóc tách Tri thức Âm thanh (`interviews` & `interview_sessions`):**
    - Thu âm phỏng vấn bóc tách kinh nghiệm thực chiến của nhân sự sắp nghỉ việc, tải lên Cloudflare R2 và kích hoạt STT (Whisper) để chuyển hóa thành đề xuất tri thức.
@@ -109,12 +111,14 @@ export interface IHandoverItem {
   
   responsibilityId?: Types.ObjectId;
   knowledgeObjectId?: string;        // Logical Ref sang svc_lifecycle
+  taskId?: string;                   // Logical Ref tới task canonical; bắt buộc với itemType TASK
+  operationId?: string;              // Idempotency key cho bước giao assignee qua Task API
   
-  title: string;
-  description: string;
-  itemType: 'DOCUMENT' | 'CREDENTIAL_TRANSFER' | 'RUNBOOK_DEMO' | 'CODE_WALKTHROUGH';
+  title: string;                     // Tiêu đề mục handover; TASK title hiển thị từ Task API, không lưu bản mutable
+  description: string;                  // Hướng dẫn bàn giao riêng, không phải bản sao mutable của task description
+  itemType: 'TASK' | 'DOCUMENT' | 'CREDENTIAL_TRANSFER' | 'RUNBOOK_DEMO' | 'CODE_WALKTHROUGH';
   
-  successorUserId: string;           // Người kế nhiệm tiếp nhận
+  successorUserId: string;           // Người nhận; tại thời điểm giao phải trùng assignee canonical trong Task API
   
   status: 'PENDING' | 'IN_PROGRESS' | 'SUBMITTED' | 'VERIFIED_BY_SUCCESSOR' | 'REJECTED';
   successorVerifiedAt?: Date;        // Xác nhận "Đã nắm vững"

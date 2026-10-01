@@ -26,6 +26,8 @@ Scope: Enterprise Knowledge Management · RAG · SAG Retrieval · Knowledge Grap
 | Repository tham chiếu | https://github.com/Zleap-AI/SAG |
 | Trạng thái | Baseline specification – dùng làm nền cho Proposal, SRS, SDD, backlog và demo plan. |
 
+> **Scope amendment — 2026-10-01:** This v1.0 document is an earlier baseline. For DATN task lifecycle, it is superseded by [`01_MVP_SCOPE.md`](01_MVP_SCOPE.md), [`12-continuum-task-management-use-cases.md`](Internal-Work-Management/12-continuum-task-management-use-cases.md), and [ADR-009](../research-tech/ADR-009-internal-task-source-and-mongodb.md): Continuum Task API is the canonical source and stores task records in MongoDB; Jira task import, sync, webhooks, reconciliation and Jira-specific actors are outside the current MVP. Work Notes may optionally hold `taskId`; only authorized Work Notes/evidence may be sent to SAG retrieval/indexing. Handover reads tasks from the Task API and an authorized human chooses and assigns them to the successor. References below to Jira task context, Jira-linked notes, FR-24 Jira Task Sync, Jira API endpoints, and Jira collections describe the historical baseline only and are not active implementation requirements. Exact internal task fields/statuses remain subject to Use Case approval.
+
 &nbsp;
 
 ## **Quy ước và nguyên tắc tài liệu**
@@ -150,7 +152,7 @@ Continuum AI không cạnh tranh với document storage ở khả năng lưu fil
 ## **3.1. Phạm vi MVP bắt buộc**
 
 * Project, Team, Membership, scoped Role, assignment và resource ACL cơ bản.  
-* Manual daily/task note (làm gì, làm thế nào, vì sao, blocker, bước tiếp theo) và Jira Cloud sync để giảm nhập báo cáo; người viết xác nhận note.
+* Continuum task management and manual task notes (làm gì, làm thế nào, vì sao, blocker, bước tiếp theo); người viết xác nhận Work Note.
 * Document upload / source management / parsing / OCR khi cần.  
 * Tích hợp SAG cho chunking, event/entity extraction, vector \+ multi retrieval và source tracing.  
 * Knowledge Object Extraction với structured output.  
@@ -164,7 +166,7 @@ Continuum AI không cạnh tranh với document storage ở khả năng lưu fil
 
 ## **3.2. Stretch Goals**
 
-* Google Drive/Confluence/GitHub connectors ngoài Jira, file upload và manual note.
+* Future connectors for Google Drive/Confluence/GitHub (each requires separate approval), file upload and manual note.
 * AI Knowledge Interviewer: gap-driven questions và interview → Proposed Knowledge.
 * Advanced freshness/conflict/incident memory và automated employee-transfer analysis.
 * Advanced onboarding journey và personalized learning path.  
@@ -190,13 +192,13 @@ Continuum AI tập trung vào một software project có nhiều team. Mọi mem
 | ----- | ----- | ----- | ----- |
 | Persistent role | ADMIN | Organization | Quản lý user/project/team, role, connector, source, ACL, grant và audit; không mặc định đọc dữ liệu confidential. |
 | Persistent role | TEAM\_LEADER | Project/team được giao | Quản lý knowledge và member trong scope; tạo project mới chỉ khi ADMIN cấp riêng quyền tổ chức `project.create`. |
-| Persistent role | MEMBER | Project/team membership | Tìm kiếm, hỏi AI, tạo manual/Jira-linked note, upload, báo gap và tham gia handover. |
+| Persistent role | MEMBER | Project/team membership | Tìm kiếm, hỏi AI, quản lý task trong phạm vi được cấp, tạo task-linked Work Note, upload, báo gap và tham gia handover. |
 | Scoped assignment | SME | Domain/module/process cụ thể | Review, trả lời gap và verify trong phạm vi được giao. |
 | Scoped assignment | KNOWLEDGE\_OWNER | Knowledge/requirement/process cụ thể | Approve, reject, edit, deprecate, supersede, assign reviewer và đặt review cycle. |
 | Handover assignment | SUCCESSOR | Handover scope cụ thể | Nhận handover package, học knowledge path, hỏi AI và báo phần chưa đủ để tiếp quản. |
 | Lifecycle state | ONBOARDING / OFFBOARDING | Project membership | Kích hoạt onboarding hoặc knowledge-transfer workflow; không phải global RBAC role. |
 
-Quyền hiệu lực được tính từ role + project/team scope + capability grant/assignment + resource ACL + lifecycle state. Explicit deny có độ ưu tiên cao hơn inherited allow. Chi tiết chuẩn nằm trong `02_ACTORS_ROLES_AND_PERMISSIONS.md`; quy trình ghi chú/Jira tại `03_DAILY_WORKFLOW_AND_JIRA_SYNC.md`.
+Quyền hiệu lực được tính từ role + project/team scope + capability grant/assignment + resource ACL + lifecycle state. Explicit deny có độ ưu tiên cao hơn inherited allow. Chi tiết chuẩn nằm trong `02_ACTORS_ROLES_AND_PERMISSIONS.md`; quy trình task nội bộ và Work Note tại `03_DAILY_WORKFLOW_AND_JIRA_SYNC.md`.
 
 &nbsp;
 
@@ -258,7 +260,7 @@ Knowledge phải được version hóa với valid\_from, valid\_until, created\
 | Module | Mục tiêu | Chức năng chính |
 | ----- | ----- | ----- |
 | M01 – Identity & Project Access | Quản lý user, project, team, membership, 3 persistent role, scoped assignment và lifecycle state. | RBAC, `project.create` Admin grant, project/team scope, SME/Owner/Successor assignment, resource ACL. |
-| M02 – Knowledge Capture & Ingestion | Thu nhận manual notes, Jira task context và document, giữ metadata gốc. | Daily/task notes, Jira backfill/webhook/reconciliation, R2 upload, document versions, parsing/OCR, job status. |
+| M02 – Knowledge Capture & Ingestion | Thu nhận manual notes, Continuum task context và document, giữ metadata gốc. | Daily/task notes gắn với task nội bộ, R2 upload, document versions, parsing/OCR, job status. |
 | M03 – SAG Retrieval Layer | Lập index event/entity/vector và tìm evidence. | Fast vector search, Precise multi retrieval, source tracing. |
 | M04 – Knowledge Extraction | Biến source/evidence thành Proposed Knowledge Object. | Type classification, claim/action/condition/reason extraction, source linking. |
 | M05 – Verification Center | Human-in-the-loop review. | Approve, edit, reject, request clarification, assign reviewer, deprecate. |
@@ -430,10 +432,10 @@ Dự án nên có LLM Gateway để tránh phụ thuộc một provider. Provide
 | Frontend | Next.js (App Router) + TypeScript; Tailwind CSS + TailAdmin | Web application và dashboard theo UI foundation đã chốt, tối ưu Server/Client components; không phụ thuộc frontend Next.js của SAG. |
 | Core API | Node.js + NestJS + TypeScript | Quản lý domain, RBAC, workflow, validation và audit; tách business layer khỏi retrieval engine. |
 | SAG Service | FastAPI \+ zleap-sag / SAG self-hosted API | Reuse open-source retrieval engine qua stable API boundary. |
-| Primary Database | MongoDB + Mongoose | Source of truth cho lifecycle, version, permission, workflow và audit của Continuum. |
+| Primary Database | MongoDB + Mongoose | Source of truth cho task, lifecycle, version, permission, workflow và audit của Continuum. |
 | Vector / Retrieval Index | LanceDB ban đầu qua SAG | Lưu index phục vụ retrieval; không là nguồn truth của Continuum. |
 | Object Storage | Cloudflare R2 ưu tiên; S3-compatible adapter dự phòng | Private raw documents, OCR outputs, exports. |
-| Jira Integration | Jira Cloud REST API + webhook + reconciliation | Task context cho manual note, source trace và giảm nhập báo cáo. |
+| Task Management | Continuum Task API + MongoDB | Nguồn canonical cho task DATN; Work Note có thể liên kết task nội bộ tùy chọn qua `taskId`. Jira sync không thuộc MVP task-management scope. |
 | Queue | Redis + BullMQ | Async OCR/ingestion/extraction/retry cho backend Node.js. |
 | AI | Provider-agnostic LLM Gateway | Đổi provider và benchmark dễ hơn. |
 | Deployment | Docker Compose | Reproducible local/staging setup cho capstone. |
@@ -461,7 +463,7 @@ Nguồn truth của organizational knowledge nằm trong Continuum structured da
 | Nhóm | Collection chính |
 | ----- | ----- |
 | Identity & Scope | organizations, users, projects, teams, project\_memberships, team\_memberships, roles, role\_assignments, organization\_capability\_grants, sme\_assignments, knowledge\_owner\_assignments |
-| Jira & Work Notes | jira\_connections, jira\_account\_links, jira\_issues, jira\_events, jira\_sync\_jobs, work\_notes, work\_note\_versions |
+| Task & Work Notes | Continuum Task storage (schema follows approved task Use Cases); work\_notes, work\_note\_versions |
 | Chat | chat\_sessions, chat\_messages |
 | Sources | sources, documents, document\_versions, source\_acls, document\_acls |
 | Knowledge | knowledge\_objects, knowledge\_versions, knowledge\_evidence, knowledge\_owners, knowledge\_verifications |
@@ -559,8 +561,8 @@ Tối thiểu log: knowledge created/edited/verified/rejected/deprecated, permis
 | FR-20 | Member Handover | Admin/Team Leader/Departing Member | P0 | Scoped checklist, assign successor và confirm readiness; advanced transfer analysis P1. |
 | FR-21 | Audit Log | Admin/Team Leader | P0 | Tra cứu audit events theo technical, security và project/team scope. |
 | FR-22 | Evaluation Export | Project Team/Admin | P1 | Export benchmark results, latency, citations và model metadata. |
-| FR-23 | Daily/Task Notes | Team Leader/Member | P0 | Ghi what/how/why, blocker, next step; liên kết Jira tùy chọn, author xác nhận; tạo được không cần Jira. |
-| FR-24 | Jira Task Sync | Admin/System | P0 | Backfill issue/comment/status, webhook idempotent và reconciliation; permission-aware source mapping. |
+| FR-23 | Daily/Task Notes | Team Leader/Member | P0 | Ghi what/how/why, blocker, next step; liên kết Continuum task tùy chọn, author xác nhận. |
+| FR-24 | Internal Task Management | Team Leader/Member | P0 (scope proposed) | Task lifecycle thuộc Continuum; Use Case, field và status cụ thể được xác định trong `12-continuum-task-management-use-cases.md` và chờ duyệt. |
 
 &nbsp;
 
@@ -643,7 +645,7 @@ Tối thiểu log: knowledge created/edited/verified/rejected/deprecated, permis
 | ----- | ----- |
 | Auth | POST /auth/login; GET /me |
 | Project/capability | POST /projects (requires Admin or active organization `project.create` grant); POST /organization-capability-grants (Admin only) |
-| Jira & notes | POST /jira/connections; POST /jira/webhooks; GET /jira/issues; POST /work-notes; GET /work-notes |
+| Task & notes | Internal task endpoints (contract follows approved task Use Cases); POST /work-notes; GET /work-notes |
 | Sources | POST /sources; POST /sources/{id}/documents; GET /ingestion-jobs/{id} |
 | Knowledge | GET/POST /knowledge; GET /knowledge/{id}/versions; POST /knowledge/{id}/verify; /reject; /deprecate |
 | Assistant | POST /assistant/query; GET /assistant/threads/{id} |
@@ -765,7 +767,7 @@ Kế hoạch 10 tuần (khoảng 2,5 tháng) dùng tuần tương đối để n
 | ----- | ----- | ----- |
 | P0 – Foundation | 1 | Scope/actor quyết định, DB/API contracts, dataset design, Docker baseline và chia ownership module. |
 | P1 – Access & project | 2–3 | Auth, 3 role, `project.create` grant, project/team membership, ACL và audit. |
-| P2 – Capture & integration | 3–5 | Manual note, Jira backfill/webhook/reconciliation, R2 upload, parse/OCR/job status. |
+| P2 – Capture & task management | 3–5 | Internal task lifecycle, task-linked manual note, R2 upload, parse/OCR/job status. |
 | P3 – Knowledge lifecycle | 5–7 | SAG index/trace, Proposed Knowledge, human verification, immutable version/evidence. |
 | P4 – Chat & handover | 7–8 | Permission-aware chat/citation/insufficient evidence, gap và scoped handover checklist. |
 | P5 – Evaluation & hardening | 9–10 | Dataset benchmark, leak tests, failure analysis, bugfix, reproducible demo và report. |
@@ -841,7 +843,7 @@ Kế hoạch 10 tuần (khoảng 2,5 tháng) dùng tuần tương đối để n
 ## **21.2. Future work**
 
 * Temporal/enterprise graph database khi traversal scale lớn.  
-* Broader connectors ngoài Jira MVP: Drive, SharePoint, Slack, Teams, GitHub.
+* External connectors (including Drive, SharePoint, Slack, Teams, GitHub and Jira) after a separate scope, ACL and architecture decision.
 * Advanced conflict resolution workflows và policy diff.  
 * Cross-organization/tenant isolation hardening.  
 * MCP interface để internal AI agents dùng verified organizational context.  

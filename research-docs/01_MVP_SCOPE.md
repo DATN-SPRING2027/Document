@@ -4,9 +4,9 @@
 
 - Project: Continuum AI
 - Project type: Graduation project and team knowledge continuity system
-- Version: 1.2
+- Version: 1.3
 - Status: Accepted MVP baseline
-- Last updated: 2026-09-18
+- Last updated: 2026-10-01
 
 ## 1. Purpose
 
@@ -57,7 +57,7 @@ All team members, not only leaders, contribute knowledge during normal project o
 - Current status, unfinished work, risks, and open questions.
 - Knowledge source, evidence, owner, reviewer, version, validity, and review date.
 - Handover notes and successor questions.
-- Task-linked daily notes: what was done, how/why, blockers, next steps, and evidence. Jira data can prefill context, but the person confirms the note.
+- Task-linked daily notes: what was done, how/why, blockers, next steps, and evidence. Internal Continuum task data can prefill task context, but the person confirms the note.
 
 The system may extract candidates from project artifacts, but AI output remains `PROPOSED` until an authorized human verifies it.
 
@@ -67,7 +67,7 @@ The system may extract candidates from project artifacts, but AI output remains 
 Active project work
       |
       v
-Members and leaders create notes, upload sources, and confirm Jira-linked work context
+Members and leaders manage internal project tasks, create notes, upload sources, and confirm task-linked work context
       |
       v
 Source ingestion and SAG retrieval indexing
@@ -109,11 +109,13 @@ Successor asks evidence-grounded questions and reports gaps
 
 ### 6.2. Continuous knowledge capture
 
-- Manual structured knowledge entry and short daily/task notes remain the primary capture path.
-- Jira Cloud issue/comment/status sync for linked project work, with initial import, webhook updates, deduplication and reconciliation; users can correct/confirm the resulting note.
+- Continuum's internal Task API is the canonical source for DATN task lifecycle, with task records stored in MongoDB; Jira is not a task source or MVP task-sync connector. See [ADR-009](../research-tech/ADR-009-internal-task-source-and-mongodb.md).
+- Task MVP proposal: create/list/detail/edit, assign by Team Leader, fixed status transition, basic search/filter, limited history, optional Work Note link, and open-task handover. A task belongs to one project and at most one team; Kanban is P1. Field/status/permission details remain proposed, pending user review in [Task-management Use Cases](Internal-Work-Management/12-continuum-task-management-use-cases.md).
+- Manual structured knowledge entry and short daily/task notes remain available. A Work Note may optionally reference an internal task by `taskId`; task metadata can prefill context, but the member confirms the note and supplies what/how/why, blockers, next steps and evidence.
 - File upload (PDF, DOCX, Markdown, TXT, image) and source management; Cloudflare R2 stores originals, MongoDB stores metadata.
 - Required knowledge templates by team, module, or process.
 - AI extraction of Proposed Knowledge from authorized evidence.
+- Only author-confirmed Work Notes and evidence allowed by source policy/ACL may be submitted to SAG for retrieval/indexing. Task records and fields (including title, description, status and assignee) remain in MongoDB and are not indexed as an independent SAG source.
 - Reminders for missing/overdue work notes and required knowledge; no employee scoring.
 - Audit trail for contributions and changes.
 
@@ -138,7 +140,8 @@ Successor asks evidence-grounded questions and reports gaps
 - Create required handover items and identify knowledge gaps.
 - Record unresolved questions for a human follow-up; automated AI interviewing is a stretch capability.
 - Assign a successor and a scoped handover package.
-- Track predecessor tasks, successor questions, unresolved gaps, and readiness.
+- An authorized Team Leader reads open-task candidates from the Continuum Task API, selects tasks, and assigns them to a scoped successor. The Task API updates the canonical assignee; Handover stores the `taskId` and its own acknowledgement/readiness state. Successor access is limited to the selected tasks and permitted evidence, not the entire project.
+- Track task references, successor questions, unresolved gaps, and readiness.
 - Require the assigned Team Leader or Admin to confirm completion according to scope.
 
 ### 6.6. Evaluation
@@ -151,7 +154,7 @@ Successor asks evidence-grounded questions and reports gaps
 
 ## 7. Stretch goals
 
-- GitHub, Google Drive, Confluence, MCP-based internal app connectors, or meeting-note connectors beyond Jira.
+- GitHub, Google Drive, Confluence, MCP-based internal app connectors, Jira import/linking, or meeting-note connectors; these are future/stretch integrations and are not task sources in the MVP.
 - AI-generated interview questions and interview-to-Proposed-Knowledge conversion.
 - Advanced conflict detection.
 - Advanced freshness scoring, incident memory, and automated employee-transfer analysis.
@@ -187,4 +190,4 @@ The MVP is successful when it demonstrates:
 
 ## 10. Delivery boundary: 10 weeks
 
-The demonstrable vertical slice is: Admin configures project/team and grants, members add manual or Jira-linked work notes and documents, files are processed/indexed, AI proposes knowledge for human review, and a successor asks the cited chat assistant with permission checks. Dataset-based evaluation is required. Do not treat every possible dashboard, connector, interview, or enterprise workflow as mandatory in this period. See [Daily workflow and Jira sync](03_DAILY_WORKFLOW_AND_JIRA_SYNC.md).
+The demonstrable vertical slice is: Admin configures project/team and grants, members manage internal project tasks and add manual or task-linked Work Notes/documents, files are processed/indexed, AI proposes knowledge for human review, and a successor uses a scoped handover package and cited chat assistant with permission checks. Dataset-based evaluation is required. Do not treat every possible dashboard, connector, interview, or enterprise workflow as mandatory in this period. See [Daily work capture and internal task management](03_DAILY_WORKFLOW_AND_JIRA_SYNC.md).

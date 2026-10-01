@@ -1,6 +1,8 @@
 # Continuum AI — Schema Dịch Vụ Tích Hợp Jira Cloud
 ## (Jira Connector Service Schema - svc_jira)
 
+> **LƯU TRỮ LỊCH SỬ — KHÔNG ÁP DỤNG CHO MVP HIỆN TẠI.** Theo [ADR-009](../research-tech/ADR-009-internal-task-source-and-mongodb.md), Continuum Task API/MongoDB là nguồn task chính thức; Jira import, webhook, mirror và reconciliation không được triển khai trong task MVP. Giữ nội dung dưới đây làm tham khảo cho baseline cũ.
+
 > **Database:** `continuum_jira` (MongoDB 7.0)  
 > **Service sở hữu độc quyền:** `svc_jira`  
 > Nằm trong bộ tài liệu thiết kế Database Microservices Continuum AI. Xem [Mục lục](README.md).

@@ -4,9 +4,9 @@
 
 ## Vì sao cần xem xét integration
 
-Brief đặt Jira, Confluence, GitHub, Drive, Slack/Teams và Calendar cạnh nhau. `[INFERENCE]` Chúng có thể là các system-of-record chuyên biệt, không nhất thiết là “fragmentation” cần gom toàn bộ dữ liệu vào một database. Một internal layer có thể liên kết/điều phối mà không thay thế hệ thống nguồn.
+Brief đặt Jira, Confluence, GitHub, Drive, Slack/Teams và Calendar cạnh nhau. `[INFERENCE]` Chúng có thể là các system-of-record chuyên biệt, không nhất thiết là “fragmentation” cần gom toàn bộ dữ liệu vào một database. Continuum hiện chọn tự quản lý task DATN; các nguồn ngoài có thể được nghiên cứu cho những loại dữ liệu khác mà không trở thành nguồn task.
 
-`[DOCUMENTED]` Continuum MVP yêu cầu Jira Cloud task-context sync theo product research: initial import, webhooks, dedup/reconcile, retry/idempotency và revoke inaccessible content; manual capture vẫn primary. Connectors ngoài Jira hiện là stretch/future trong tài liệu MVP hiện hữu. Điều này KHÔNG phê duyệt Integration Hub tổng quát cho mọi tool.
+`[DECIDED — 2026-10-01]` Jira Cloud task-context sync không thuộc MVP hiện tại. Task của Continuum là canonical cho DATN; không import, đồng bộ hay ghi task qua Jira. Các loại connector khác vẫn chưa được duyệt và phải có phạm vi, quyền truy cập, chủ sở hữu và lifecycle riêng. Quyết định này KHÔNG phê duyệt Integration Hub tổng quát cho mọi tool.
 
 ## Integration patterns cần phân biệt
 
@@ -25,7 +25,7 @@ Brief đặt Jira, Confluence, GitHub, Drive, Slack/Teams và Calendar cạnh nh
 | Data class | Source candidates | Quy tắc cần chốt |
 |---|---|---|
 | User identity | Continuum/IdP/Atlassian/GitHub | Identity mapping, deactivation, duplicate account |
-| Task | Jira hoặc future internal platform | Canonical ownership, write-back, tombstone, reconciliation |
+| Task DATN | Continuum internal Task module | Canonical ownership đã chọn; fields/status/ownership detail còn chờ duyệt Use Case; không có Jira write-back/sync trong MVP |
 | Code/PR | GitHub | Visibility, repo install scope, deleted/private repo behavior |
 | Docs/files | Drive/Confluence | Content vs link only, inherited ACL, version/deletion |
 | Discussion | Slack/Teams | Consent/retention, channel ACL, event volume |
@@ -46,8 +46,8 @@ These are research checklist items, not claims that a generic Integration Hub is
 
 ## Current DATN evidence vs target
 
-- `[DOCUMENTED]` Jira sync is in Continuum MVP product research.
-- `[FACT]` Current source contains Jira-related schemas/queue scaffolding, but evidence reviewed does not establish a complete Jira Cloud API, OAuth, webhook, reconciliation or end-to-end user flow. Schema/scaffold ≠ working integration.
+- `[DECIDED]` Jira task sync is outside the current Continuum task MVP.
+- `[FACT]` Current source contains Jira-related schemas/queue scaffolding from the earlier integration direction, but evidence reviewed does not establish a complete Jira Cloud API, OAuth, webhook, reconciliation or end-to-end user flow. Schema/scaffold ≠ working integration and does not override the product decision.
 - `[DOCUMENTED]` Architecture target is Browser → Next.js BFF → NestJS monolith; MongoDB 7.0/shared `continuum_db` is operational SoT; LanceDB is auxiliary retrieval. See accepted DEC-011/013/014/015 and SPEC-001/003/004/005.
 - `[FACT]` Current source search found no active LanceDB runtime dependency in BE; this is a target-vs-source implementation gap, not grounds to alter the accepted decision.
 - `[UNKNOWN]` Provider credentials, tenants, rate limits, event subscription, service ownership and real connector behavior are not proven by repo scaffolding.
@@ -58,4 +58,4 @@ These are research checklist items, not claims that a generic Integration Hub is
 
 ## Decision questions
 
-`[DECISION REQUIRED]` Which providers are in scope, what is source of truth per data class, read vs write, freshness SLA, ACL semantics, retention/deletion, supported identity mapping, and who owns connector operations? No broad connector hub should be inferred from one Jira integration requirement.
+`[DECISION REQUIRED]` For any future external connector other than the internal task module: which providers and data classes are in scope, read vs write, freshness SLA, ACL semantics, retention/deletion, identity mapping, and operational owner? Do not infer a broad connector hub or reintroduce Jira task sync from this research.

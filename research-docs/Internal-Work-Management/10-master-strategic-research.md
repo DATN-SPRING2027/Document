@@ -1,16 +1,18 @@
 # Master Strategic Research: Internal Work + Knowledge Management
 
-**Status:** Draft research for product/technical lead review. No decision, approved requirement, implementation task or architecture change is made here.  
+**Status:** Draft research. Records the user's task-source decision but makes no decision on broad enterprise work-management scope or detailed implementation requirements.
 **Evidence date:** Repository snapshot read during this research; official web sources checked 2026-09-25.  
-**Scope:** Assess whether DATN needs an internal work-management ecosystem or whether Jira/Atlassian plus configuration/operating-model changes suffice.
+**Scope:** Assess the delivery boundary and operating implications of the selected internal task source, and keep the broader organization-wide work-management hypothesis separate.
+
+**Decision update (2026-10-01):** Continuum Task API with canonical task records in MongoDB is the source for DATN task lifecycle; Jira is not the task source. This boundary is recorded in ADR-009 and the affected product/architecture/database documents. The detailed Use Case/schema remains under review. Market/cost research below remains reference material, but Jira-as-source and hybrid recommendations are no longer current product direction.
 
 ## Executive Summary
 
-- `[DOCUMENTED]` Current Continuum AI MVP addresses knowledge continuity for **one software project with multiple teams**, not enterprise-wide work management. Jira supplies task context; user-confirmed capture, evidence-backed knowledge, authorized human verification, permission-aware retrieval and handover form its documented core.
-- `[UNKNOWN]` The central problem in this hypothesis is not proven: repository evidence contains no current Jira plan/invoice, seat count, configuration audit, measured friction, or user interviews. Therefore cost pressure, Jira deficiency, and need for Department/executive entities remain unknown.
+- `[DOCUMENTED]` Current Continuum AI MVP addresses knowledge continuity for **one software project with multiple teams**, not enterprise-wide work management. Continuum Task API/MongoDB supplies task lifecycle context; user-confirmed capture, evidence-backed knowledge, authorized human verification, permission-aware retrieval and handover form its core.
+- `[UNKNOWN]` The repository contains no quantified user friction, build/run cost, delivery capacity or maintenance-owner evidence. The user's decision selects an internal task source; it does not by itself prove economic advantage or a need for Department/executive entities.
 - `[WEB RESEARCH]` Jira has Free and paid tiers with differing user/feature limits; Premium includes cross-team/project planning features. Thus “Jira cannot support cross-team planning” is too broad; some capabilities are plan-gated or configuration-dependent. Jira + Confluence provides product-level work/document linking. Public capability is not proof that DATN tenant is configured or that workflow fits.
-- `[INFERENCE]` A hybrid concept—keep task authority in Jira while Continuum addresses verified knowledge continuity—is consistent with current Continuum documents. That is not a recommendation to build a broad management platform or a decision to retain Jira forever.
-- `[DECISION REQUIRED]` Choose after obtaining actual license/configuration/use-case evidence and comparing SaaS, internal and hybrid total cost over a common time horizon.
+- `[DECIDED]` Internal Continuum Task is canonical for DATN; Jira is not used as the task source. This does not approve a full Jira feature clone, organization-wide hierarchy, or unbounded scope.
+- `[DECISION REQUIRED]` Review detailed task Use Cases, fields/statuses, delivery boundary and technical impact. Cost research does not override the chosen source-of-truth direction.
 
 ## Business Problem
 
@@ -24,9 +26,9 @@ The research hypothesis is that an external SaaS work system may impose cost, pl
 | Knowledge is lost during team/member changes | This is the documented Continuum problem/purpose | `[DOCUMENTED]` |
 | Jira itself causes the knowledge loss | Task context and verified experiential knowledge differ; causality not established | `[INFERENCE]` / `[UNKNOWN]` |
 
-## Current Jira Situation
+## Jira Market Research (Reference Only)
 
-`[UNKNOWN]` Actual DATN site, plan, billable seats, apps, workflows, permissions, automation, dashboards, integrations and Confluence use were not available in repo evidence. Public capabilities below must not be conflated with tenant state.
+`[UNKNOWN]` Actual DATN site, plan, billable seats, apps, workflows, permissions, automation, dashboards, integrations and Confluence use were not available in repo evidence. Public capabilities below are historical market context only; Jira is not the selected task source for Continuum.
 
 `[WEB RESEARCH]` Atlassian lists Free up to 10 users and plan-dependent limits; Standard/Premium/Enterprise add different controls, storage, automation, planning/reporting and governance. Jira Premium Plans/Advanced Roadmaps supports planning across multiple teams/projects. Jira has global/project/issue permission concepts. Jira/Confluence integration and Smart Links support linking work and docs. Links: [Jira pricing](https://www.atlassian.com/software/jira/pricing), [Jira editions](https://www.atlassian.com/software/jira/guides/more/jira-editions), [Advanced Roadmaps](https://support.atlassian.com/jira-software-cloud/docs/what-is-advanced-roadmaps/), [permission types](https://support.atlassian.com/jira-cloud-administration/docs/types-of-permissions-in-jira/), [Jira + Confluence](https://www.atlassian.com/software/confluence/jira-integration).
 
@@ -83,9 +85,9 @@ Operational source of truth for accepted Continuum target: MongoDB 7.0, shared `
 
 ## Integration Model
 
-Current product documentation calls for Jira task-context sync for Continuum MVP and treats other connectors as future/stretch. Source has Jira-related scaffolding but does not prove full live API/OAuth/webhook/reconciliation UX; source search found no active LanceDB runtime dependency. This is an implementation gap against current target/spec evidence, not a reason to change accepted architecture.
+Current product documentation calls for internal Continuum Task API/MongoDB and does not require Jira task-context sync. The reviewed code snapshots do not provide internal task CRUD. ADR-009 and the affected Tech, Architecture, workflow and database-design documents record the internal source boundary; the remaining implementation/spec gap is the detailed task Use Case, field-level schema, API contract and authorization matrix. LanceDB is the accepted MVP SAG target (DEC-015/SPEC-005), while its current source/deployment integration still requires verification; PostgreSQL + pgvector/Qdrant remains a future alternative.
 
-Integration quality requires identity mapping, source authority, least-scope auth, webhook verification, idempotency, retries, ordering/versioning, reconciliation, deletion/ACL revocation, observability, retention and audit. Start with links/read-only sync as candidate, not a decided architecture.
+Any future external connector would require identity mapping, source authority, least-scope auth, webhook verification where relevant, idempotency, retries, ordering/versioning, reconciliation, deletion/ACL revocation, observability, retention and audit. This is future connector research, not a requirement for the current internal Task API.
 
 ## Build vs Buy vs Hybrid
 
@@ -93,8 +95,8 @@ Integration quality requires identity mapping, source authority, least-scope aut
 |---|---|---|---|
 | A Continue Jira | Reuse mature work system; adjust plan/config/process | Plan costs/limitations; tenant fit unknown | Requires tenant/use-case audit |
 | B Jira + Confluence | Work + documentation product integration | Separate product seats/admin, permissions across products | Knowledge needs must be measured |
-| C Internal replacing Jira | Tailored domain and control | Large build, migration, security and ongoing operations burden | Not current Continuum MVP; no complete task product evidenced |
-| D Internal above Jira | Preserve task SoT while joining verified context | Connector, ACL, duplication and freshness burden | Conceptually aligned with Continuum current documents; not a broad product approval |
+| C Internal task source | Tailored task context; direct linking to notes and handover | Build/run cost, security and ongoing operations burden | Selected by the user as task source; detailed scope and technical design remain open |
+| D Internal above Jira | Preserve Jira task SoT while joining verified context | Connector, ACL, duplication and freshness burden | Not the selected DATN task direction |
 | E Internal + multi-system | Broad interoperability potential | Highest connector/governance/maintenance scope | Hypothesis only; other connectors stretch/future in current MVP docs |
 
 No ranking: weights and real costs are absent. Market examples in `08-build-buy-hybrid.md` link official product docs and are feature-area scan, not vendor validation or recommendation.
@@ -105,7 +107,7 @@ Organization → (Department?) → Team → Project → Work → Knowledge → D
 
 ## MVP Hypothesis
 
-The candidate in `09-internal-platform-mvp.md` is an experimental, one-cohort slice around task links, capture, verified knowledge, scoped retrieval and handover; Department, portfolio layer and task-system replacement remain unapproved. Proposed MUST/SHOULD/LATER/OUT OF SCOPE labels do not modify `01_MVP_SCOPE.md`.
+The candidate in `09-internal-platform-mvp.md` keeps the broader Department/portfolio layer hypothetical while recording the selected internal project-scoped Task source. Detailed P0/P1 task Use Cases remain in `12-continuum-task-management-use-cases.md` for user review; they do not silently expand the MVP before approval.
 
 ## Success Metrics
 
@@ -114,7 +116,7 @@ Define baseline before target: actual recurring TCO; time to answer repeatable c
 ## Risks
 
 1. Rewriting Continuum’s accepted MVP into an enterprise system without approval.
-2. Duplicating Jira task authority and creating conflicting updates.
+2. Reintroducing Jira as a second writable task source or expanding the internal module to full Jira parity.
 3. Assuming Department, director access or cardinality.
 4. Underestimating build/maintenance/security/backup/support costs.
 5. ACL mismatch causing disclosure in search, model prompts, aggregate views, cache or logs.
@@ -125,34 +127,32 @@ Define baseline before target: actual recurring TCO; time to answer repeatable c
 
 ## What We Should NOT Build
 
-`[PROPOSAL]` Do not build a Jira clone before proving an unmet need; generic workflow builder; broad enterprise Department hierarchy before cardinality decisions; every connector at once; duplicate canonical task CRUD without source-of-truth decision; unrestricted director visibility; employee scoring; autonomous knowledge verification/permission changes; full HR/LMS; migration platform without a migration decision. These guardrails are research proposals, not binding product decisions.
+`[PROPOSAL]` Do not build full Jira parity; generic workflow builder; broad enterprise Department hierarchy before cardinality decisions; every connector at once; a second task source; unrestricted director visibility; employee scoring; autonomous knowledge verification/permission changes; full HR/LMS; or Jira migration/synchronization without a separate decision. The narrow internal task source is selected; this guardrail limits feature breadth.
 
 ## UNKNOWN
 
-- Actual Jira plan, users, invoices, Confluence/apps/Guard and configuration.
 - User-reported and observed friction; root cause distribution.
 - Operating model, team/org sizes, Department presence and all cardinalities.
 - Executive persona, recurring decisions, visibility and data classes.
 - Internal staff/run cost, delivery capacity, operations owner and security constraints.
-- Whether Jira configuration or Jira+Confluence resolves any measured problem.
-- Canonical task source, link/sync/write mode and acceptable freshness.
+- Exact internal task fields, state transitions, ownership scope and permissions.
 - Connector credentials, data scopes, ACL behavior, retention and privacy.
 - Approved scope relationship between new hypothesis and Continuum MVP.
 
 ## DECISION REQUIRED
 
-Product/technical lead to decide only after review: whether to investigate/pilot the hypothesis; whether Department/executive layer is in scope; system-of-record boundaries; build/buy/hybrid option; user cohort; data/authorization policy; metrics/thresholds; cost horizon and owner. This report makes none of those choices.
+Product/technical lead to decide after review: detailed internal task Use Cases and fields; whether Department/executive layer is in scope; user cohort; data/authorization policy; metrics/thresholds; cost horizon and operations owner. The task-source choice is already recorded as internal Continuum Task for DATN.
 
 ## Next Research Questions
 
 1. What exact recurring incident causes measurable loss/time/cost, for which actor, how often?
-2. What Jira plan, paid products, seats, apps and permissions does DATN currently operate, from invoice/admin evidence?
-3. Which required task workflows are blocked after configuration and plan alternatives are tested?
+2. Which exact internal task fields, statuses, assignments and permissions are needed for the selected project's capture and handover flow?
+3. Which parts of the accepted six-week MVP must be reduced to deliver the task flow without compromising knowledge verification, permission-aware retrieval and handover evaluation?
 4. Which facts/knowledge are lost, where are sources stored, and what handover task demonstrates the loss?
 5. Is Department a real unit with independent lifecycle/access/ownership, or merely reporting grouping?
 6. What decision would an executive view change, and what fields may that audience see?
-7. Does Jira+Confluence or a lightweight operating-model change resolve the problem at lower TCO?
-8. What is the smallest pilot that tests value without duplicating task authority or changing accepted Continuum scope?
+7. What is the build/run cost and who owns maintenance of the internal task source after the graduation project?
+8. What is the smallest project-scoped task slice that supports capture and handover without expanding into full Jira parity?
 9. What are internal build/run/security/support costs under a realistic staffing and time horizon?
 10. What measurable evidence would make the leader stop, narrow, continue or approve a separate product scope?
 
@@ -167,3 +167,5 @@ Product/technical lead to decide only after review: whether to investigate/pilot
 - [07 — Integration hub](07-integration-hub.md)
 - [08 — Build, buy and hybrid](08-build-buy-hybrid.md)
 - [09 — Internal platform MVP hypothesis](09-internal-platform-mvp.md)
+- [11 — ManageWork codebase assessment](11-managework-codebase-assessment.md)
+- [12 — Continuum task-management use cases for review](12-continuum-task-management-use-cases.md)

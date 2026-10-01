@@ -16,7 +16,7 @@
    - `howSolved`: Chi tiết kỹ thuật, thuật toán, thư viện được sử dụng để giải quyết.
    - `whyThisWay`: Lý do chọn giải pháp này (So sánh giải pháp khác, đánh đổi kỹ thuật - Trade-offs).
 2. **Quy tắc vàng Author-Confirmed:**
-   - Mọi ghi chú tự gõ hoặc do AI gợi ý từ Jira/Git đều ở trạng thái `DRAFT`.
+    - Mọi ghi chú tự gõ hoặc do AI gợi ý đều ở trạng thái `DRAFT`.
    - **Chỉ khi chính tác giả bấm nút xác nhận** (`authorConfirmedAt != null`), ghi chú mới chuyển sang `CONFIRMED` và đủ điều kiện để đưa vào Hộp thư kiểm chứng tri thức.
 3. **Định nghĩa Yêu cầu Tri thức (`knowledge_requirements`):** Đặt ra các tiêu chuẩn tài liệu tối thiểu cho từng module phần mềm.
 
@@ -34,8 +34,7 @@ export interface IWorkNote {
   authorUserId: Types.ObjectId;      // Logical Ref sang svc_iam.users._id
   
   // Liên kết ngữ cảnh công việc
-  jiraIssueId?: string;             // Logical Ref ID từ svc_jira (dạng string/ObjectId)
-  jiraIssueKey?: string;            // Khóa hiển thị (VD: "CONT-142")
+  taskId?: Types.ObjectId;          // Optional logical Ref tới tasks._id; tối đa 1 task/Work Note
   gitCommitHash?: string;           // Mã băm Git commit liên quan
   
   title: string;
@@ -60,7 +59,9 @@ export interface IWorkNote {
 * **Chỉ mục:**
   - `(organizationId, projectId, status, createdAt)`: `{ index: true }`
   - `(authorUserId, status, createdAt)`: `{ index: true }`
-  - `(projectId, jiraIssueKey)`: `{ index: true }`
+  - `(organizationId, projectId, taskId)`: `{ index: true }` khi Work Note có liên kết task.
+
+`taskId` chỉ là tham chiếu tới task canonical trong MongoDB: một Work Note liên kết 0..1 task và một task có thể được tham chiếu bởi 0..N Work Note. `svc_capture` không sao chép title/status/assignee làm nguồn ghi task thứ hai; Task API xác thực task và quyền theo organization/project/team. Work Note vẫn có thể không liên kết task. Theo proposal, chỉ trạng thái `CONFIRMED` và nguồn qua ACL/eligibility mới đủ điều kiện lập chỉ mục SAG; draft không được index.
 
 ---
 
@@ -94,7 +95,7 @@ export interface ICaptureDraft {
   organizationId: Types.ObjectId;
   projectId: Types.ObjectId;
   userId: Types.ObjectId;
-  contextKey: string;                // VD: "jira_issue_CONT-142" hoặc "scratchpad"
+  contextKey: string;                // VD: "task_<taskId>" hoặc "scratchpad"
   draftContent: {
     title?: string;
     whatDone?: string;
@@ -169,5 +170,4 @@ export interface IKnowledgeRequirement {
 - **Sự kiện xuất bản (Published Events):**
   - `capture.note.confirmed`: Phát ra khi tác giả bấm xác nhận ghi chú. Payload chứa toàn văn What/How/Why. Consumer là `svc_lifecycle` để đưa vào Hộp thư kiểm chứng.
   - `capture.requirement.created`: Phát ra khi có yêu cầu tri thức mới được tạo.
-- **Sự kiện lắng nghe (Consumed Events):**
-  - `jira.issue.synced`: Nhận thông tin task Jira vừa đồng bộ để tự động gợi ý ngữ cảnh cho lập trình viên.
+- **Task context:** Capture đọc task qua Continuum Task API theo yêu cầu có kiểm tra quyền; không tiêu thụ sự kiện đồng bộ Jira.
