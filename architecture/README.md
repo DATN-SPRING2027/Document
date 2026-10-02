@@ -4,7 +4,9 @@
 > **Phiên bản kiến trúc:** 2.0 (Approved Architecture Baseline)  
 > **Sơ đồ tương tác trực quan:** [architecture_diagram.html](../diagram/architecture_diagram.html)  
 
-> **Decision amendment — 2026-10-01:** Continuum Task Service + MongoDB owns the canonical task lifecycle. Its source stays in DATN_BE and its screens/API client stay in DATN_FE; it runs as a separate NestJS deployment and owns logical database `continuum_task` on the existing replica set. See [ADR-009](../research-tech/ADR-009-internal-task-source-and-mongodb.md) and [ADR-010](../research-tech/ADR-010-task-service-in-existing-repositories.md). Only permitted Work Notes/evidence enter SAG indexing. This Task amendment does not select or change SAG retrieval storage.
+> **Approved Task product target — 2026-10-01 (not current runtime):** Continuum Task Service + MongoDB is the canonical task lifecycle for the MVP. Its source stays in DATN_BE and its screens/API client stay in DATN_FE; when implemented, it will run as a separate NestJS deployment and own logical database `continuum_task` on the existing replica set. See [ADR-009](../research-tech/ADR-009-internal-task-source-and-mongodb.md) and [ADR-010](../research-tech/ADR-010-task-service-in-existing-repositories.md). Only permitted Work Notes/evidence enter SAG indexing. This Task amendment does not select or change SAG retrieval storage.
+
+> **Database topology decision — 2026-10-02:** The Authorized Human Architecture Decision Authority approved database-per-service on the existing MongoDB cluster/replica set. MongoDB remains the operational source of truth; each active bounded service owns its logical database and cross-cutting audit uses `continuum_audit`. This supersedes the shared `continuum_db` topology in ADR-002/DEC-011 only. Current DATN-BE deployment has eight domain databases plus audit; `continuum_task` and `continuum_ai_adapter` remain product targets until their runtime owners are implemented and reconciled. The authority record is workspace `docs/adr/ADR-003-database-per-service-persistence.md`; see the [topology alignment note](../research-docs/Workspace/02-database-topology-successor-2026-10-02.md).
 
 ---
 
@@ -16,7 +18,7 @@ Continuum AI không phải là một kho lưu trữ tài liệu tĩnh hay một 
 1. **Human-in-the-loop (Con người là chốt chặn cuối cùng):** AI chỉ đóng vai trò đề xuất (`PROPOSED`). Bắt buộc SME hoặc Team Leader có thẩm quyền xác nhận thì tri thức mới chuyển sang trạng thái hoạt động (`ACTIVE`).
 2. **Pre-Retrieval Scoped ACL:** Tính toán tập quyền hiệu lực ($P_{\text{eff}}$) của người dùng **trước khi** truy vấn Vector Database/SAG để triệt tiêu hoàn toàn nguy cơ rò rỉ tài liệu mật.
 3. **Evidence-Grounded Citations (Trích dẫn minh bạch):** Mọi câu trả lời của trợ lý AI bắt buộc phải đính kèm trích dẫn (Document ID, Locator, Hash, Version). Nếu không đủ bằng chứng, hệ thống trả về `INSUFFICIENT_EVIDENCE` và ghi nhận một Knowledge Gap thay vì bịa đặt (hallucination).
-4. **Source of Truth phân định rõ ràng:** MongoDB 7.0 lưu sự thật nghiệp vụ của Continuum, gồm task, vòng đời, quyền và lịch sử kiểm toán. Task Service chỉ sở hữu database `continuum_task`; SAG không sở hữu task. SAG chỉ giữ dữ liệu dẫn xuất phục vụ truy hồi từ các Work Note/evidence được phép. Quyết định engine SAG được quản lý riêng.
+4. **Source of Truth phân định rõ ràng:** MongoDB 7.0 lưu sự thật nghiệp vụ của Continuum, gồm task, vòng đời, quyền và lịch sử kiểm toán. Mỗi bounded service đang hoạt động sở hữu một logical database; audit dùng `continuum_audit`. Task Service sở hữu `continuum_task` khi runtime target được triển khai; SAG không sở hữu task và chỉ giữ dữ liệu dẫn xuất phục vụ truy hồi từ các Work Note/evidence được phép. Quyết định engine SAG được quản lý riêng.
 
 ---
 

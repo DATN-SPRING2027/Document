@@ -126,7 +126,7 @@ services:
     environment:
       - SERVICE_PORT=3009
       - MONGODB_URI=mongodb://mongo1:27017,mongo2:27017,mongo3:27017/?replicaSet=rs0
-      - MONGODB_DATABASE=continuum_task
+      - SERVICE_DATABASE=continuum_task
       - REDIS_HOST=redis
     expose:
       - "3009"
@@ -157,7 +157,7 @@ services:
 
 ---
 
-> Đây là sơ đồ đích cho Task, không phải cấu hình đã triển khai. Nó theo mẫu hiện có của DATN_BE/docker-compose.microservices.yml: dùng chung image/build từ repository BE, chạy entrypoint riêng (dist/services/task/main.js), cấp SERVICE_PORT và MONGODB_DATABASE, chỉ expose trong mạng nội bộ. Gateway route qua TASK_SERVICE_URL tới HTTP prefix /internal; tên biến/port phải được chốt trong implementation PR.
+> Đây là sơ đồ đích cho Task, không phải cấu hình đã triển khai. Nó theo mẫu hiện có của DATN_BE deployment: dùng chung image/build từ repository BE, chạy entrypoint riêng (dist/services/task/main.js), cấp SERVICE_PORT và SERVICE_DATABASE, chỉ expose trong mạng nội bộ. Gateway route qua TASK_SERVICE_URL tới HTTP prefix /internal; tên biến/port phải được chốt trong implementation PR.
 
 ## 4. Topo Kubernetes (K8s Production Topology)
 

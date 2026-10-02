@@ -207,7 +207,7 @@ The exact Project endpoint paths, request DTOs, response envelope, pagination fi
 ### Findings requiring care
 
 - `[PARTIAL]` Declaring an index in `persistence.ts` is not proof that the running environment has created it; `MONGODB_AUTO_INDEX` is configurable and defaults to false in current validation.
-- `[ACCEPTED DECISION]` MVP operational persistence uses MongoDB 7.0 with shared `continuum_db` under DEC-011/ADR-002. `[DOCUMENTATION SYNC NEEDED]` Current source persistence definitions and historical inventories still contain service-specific names such as `continuum_iam`; this is a documentation/configuration alignment issue, not an open architecture decision.
+- `[ACCEPTED DECISION — 2026-10-02]` MongoDB 7.0 remains the operational source of truth; database-per-service on the existing cluster supersedes the shared `continuum_db` topology in ADR-002/DEC-011. Current BE runtime owns eight domain databases plus `continuum_audit`. Task and AI Adapter database designs remain target-only; Jira is still present in BE runtime despite its product docs being historical. See ADR-003 and the topology alignment note for migration gates and inventory reconciliation.
 - `[UNKNOWN]` No Project-specific soft-delete metadata beyond `status` is defined.
 - `[UNKNOWN]` No archive reason, archivedBy, archivedAt, version or optimistic-concurrency behavior is defined in the Project schema.
 
@@ -280,7 +280,7 @@ The exact Project endpoint paths, request DTOs, response envelope, pagination fi
 2. Approve remaining read/update/archive permissions and archive/restore effects for Teams, Memberships and downstream data.
 3. Approve whether restore is MVP or later scope.
 4. Approve the canonical Project API and response/error contract.
-5. Follow the accepted shared MongoDB topology (`continuum_db`) in implementation planning and treat current service-specific persistence names as documentation/configuration sync work.
+5. Follow the accepted database-per-service topology on the existing MongoDB cluster. Use the active BE runtime inventory in ADR-003; preserve `continuum_db` only as the migration source until a clean dry-run, verified backup and separately authorized cutover. Resolve Task/AI Adapter/Jira inventory differences before provisioning additional targets.
 
 ## 18. Dependencies
 

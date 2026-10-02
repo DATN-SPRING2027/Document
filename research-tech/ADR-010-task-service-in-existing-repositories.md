@@ -5,6 +5,7 @@
 - **Decision owner:** Thang / Continuum AI project team
 - **Scope:** Task service deployment, repository ownership, API/event integration, persistence ownership, audit, and Agent access
 - **Supersedes:** The deployment and task-database placement portions of ADR-009. ADR-009 remains authoritative for the canonical task source, Jira exclusion, Work Note relationship, SAG eligibility boundary, and handover semantics.
+- **Runtime status:** Accepted target, not included in the current active DATN-BE database inventory as of 2026-10-02. Provision `continuum_task` only with the Task service implementation and migration contract; see workspace ADR-003.
 
 ## Context
 
@@ -47,7 +48,7 @@ The HTTP API contract, DTOs, response/error semantics, organization/project/team
 
 1. Add the Task module and entrypoint under `DATN_BE/src/services/task/`; the entrypoint calls the existing `bootstrapService(TaskModule)`.
 2. Reuse the shared backend build and service bootstrap. It starts internal HTTP and the existing Redis transporter; do not create a second backend repository or install a second platform stack.
-3. Add a Task service definition to `docker-compose.microservices.yml` using the existing backend build anchor, a dedicated command, `SERVICE_PORT`, and `MONGODB_DATABASE=continuum_task`. Keep its port internal; use the existing Mongo replica set and Redis.
+3. Add a Task service definition to the backend deployment using the existing build, a dedicated command, `SERVICE_PORT`, and `SERVICE_DATABASE=continuum_task`. Keep its port internal; use the existing Mongo replica set and Redis.
 4. Add Gateway configuration/controller for Task, modeled on the existing IAM proxy pattern. Forward authenticated user/scope and correlation context over an authenticated internal connection; do not expose the Task container to the browser.
 5. Point the existing DATN_FE BFF/API client at the Gateway task routes. Capture and Handover call the Task contract for validation, reads and assignment. The AI Engine/Agent uses the same authorized contract and returns proposals; only a permitted human-confirmed command mutates task data.
 6. Add readiness/health checks, structured logs, tracing IDs, bounded timeouts, retry/idempotency rules for cross-service commands, and database/outbox metrics. Final names and operational limits belong in the implementation contract.

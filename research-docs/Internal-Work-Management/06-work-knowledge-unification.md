@@ -31,8 +31,9 @@ Arrows are conceptual links, not foreign keys or approved product relationships.
 
 | Information | Possible canonical source | DATN evidence/status |
 |---|---|---|
-| Operational records/users/projects/work notes | MongoDB per accepted DEC-011/SPEC-001; Task Service separately owns logical DB `continuum_task` on the existing replica set | `[DOCUMENTED]` architectural decision; implementation maturity must be checked separately |
-| Task lifecycle | Continuum Task API/Task Service; MongoDB `continuum_task` | `[APPROVED TARGET]` Canonical task source for the MVP; separate process/deployment from source code in existing `DATN_BE`; runtime implementation must be verified separately |
+| Operational records/users/projects/work notes | MongoDB 7.0 on the existing cluster; one logical database per active bounded service; cross-cutting audit in `continuum_audit` | `[ACCEPTED DECISION / CURRENT RUNTIME]` Active BE inventory is eight domain databases plus audit, including `continuum_jira`; `continuum_task` and `continuum_ai_adapter` are not yet active runtime databases. Migration/cutover is separate. `continuum_db` is a migration source, not an active runtime target. |
+| Task lifecycle | Continuum Task API/Task Service; target database `continuum_task` | `[APPROVED TARGET, NOT CURRENT RUNTIME]` Canonical task source for the MVP, separately deployed from source in the existing `DATN_BE` repository. ADR-003 excludes `continuum_task` from the current active runtime database inventory until its runtime owner and migration contract are implemented. |
+| Jira runtime/integration | Current BE runtime inventory includes `continuum_jira`; product docs mark Jira historical | `[CURRENT RUNTIME / PRODUCT SCOPE RECONCILIATION]` Jira is not the canonical task source in the approved MVP. Runtime presence does not establish a Jira task-sync requirement or a complete connector. |
 | Code and review events | GitHub repository/PR | `[INFERENCE]` source type, not integrated work product evidence |
 | Files/docs | Drive/Confluence or other user-selected repository | `[UNKNOWN]` current DATN connector/use agreement |
 | Verified knowledge facts/proposals | Continuum persistence + provenance model | `[DOCUMENTED]` conceptual lifecycle; end-to-end completeness not proven by schemas |

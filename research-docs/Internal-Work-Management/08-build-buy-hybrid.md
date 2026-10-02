@@ -65,7 +65,9 @@ This is a feature-area scan, not an apples-to-apples pricing, security, usabilit
 
 ## DATN engineering feasibility
 
-- `[DOCUMENTED]` Accepted target: NestJS Modular Monolith source with independently deployed Task Service in the existing BE repository, Next.js BFF/UI in the existing FE repository, MongoDB 7.0 with Task-owned logical database `continuum_task`, shared runtime replica set, LanceDB auxiliary SAG store, PostgreSQL/pgvector only future SAG scaling option.
+- `[DOCUMENTED TARGET]` DATN-BE retains the Modular Monolith source architecture (DEC-013/SPEC-003). The accepted Task API/Service is an independently deployed target in the existing BE repository and owns logical database `continuum_task` on the existing MongoDB replica set when implemented (ADR-009/010).
+- `[CURRENT RUNTIME FACT]` The active BE deployment uses bounded-context entrypoints and database-per-service logical databases on the same cluster; its inventory is eight domain databases plus `continuum_audit`, including `continuum_jira`. `continuum_task` and `continuum_ai_adapter` are not in the active runtime inventory (ADR-003/DEC-011). Jira's runtime presence is separate from its status as an MVP task source.
+- `[DOCUMENTED]` LanceDB remains the auxiliary SAG store; PostgreSQL/pgvector is a separate future SAG scaling option.
 - `[FACT]` Current source has domain schemas/scaffolding and health controllers, but workspace research states no end-to-end Project/Team CRUD or FE workflows; source search did not find completed Jira integration or LanceDB runtime implementation.
 - `[INFERENCE]` Extending current architecture is technically plausible but engineering capacity, quality/security bar, operations ownership, and full lifecycle scope make a Jira replacement a major product/operational commitment. Plausible does not mean economical or approved.
 - `[DOCUMENTED]` Historical `.sage` inventory/current-state contains drift on accepted decisions; current decision register and SPEC are controlling evidence for accepted target. This report does not reconcile/edit those files.

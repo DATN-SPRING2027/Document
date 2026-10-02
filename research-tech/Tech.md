@@ -123,7 +123,7 @@ MongoDB is approved for the MVP with the following conditions:
 8. Treat denormalized dashboard and read models as derived data that can be rebuilt.
 9. Add idempotent migration or backfill scripts when a Mongoose schema change affects existing documents.
 
-The following is an inventory across the MongoDB-backed service databases, not one shared database. Task collections belong to logical database `continuum_task` per ADR-010; other services own their documented databases.
+The target catalog spans MongoDB-backed service databases rather than one shared database, consistent with workspace ADR-003/DEC-011. The current DATN-BE runtime inventory is eight domain databases plus `continuum_audit`; `continuum_task` and `continuum_ai_adapter` are target schemas without active BE runtime owners as of 2026-10-02. Product docs call Jira historical while current BE runtime still contains `continuum_jira`; resolve that inventory difference before removing its database or changing migration ownership.
 
 Expected collections include:
 
