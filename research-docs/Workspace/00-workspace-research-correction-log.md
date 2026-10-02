@@ -89,3 +89,9 @@ Historical repository references must not be presented as an unresolved architec
 - Jira changed: `NO`
 - Product requirements changed: `NO`
 - Business unknowns or decision boundaries resolved: `NO`
+
+## Superseding topology decision — 2026-10-02
+
+The correction above records the state of the evidence and decision register as of 2026-09-24. It is now superseded on database topology only by the Authorized Human Architecture Decision Authority's explicit approval of database-per-service on 2026-10-02, recorded in workspace ADR-003 and DEC-011. MongoDB 7.0 remains the operational source of truth; `continuum_audit` is the cross-cutting audit database. The accepted current DATN-BE inventory is eight domain databases plus audit. The former shared `continuum_db` is a migration source, not the active runtime target.
+
+Product catalog alignment now identifies `continuum_task` and `continuum_ai_adapter` as targets without active BE runtime owners and records the conflict that the BE runtime still includes `continuum_jira` while Product docs call Jira historical. That mismatch is not silently resolved by the topology change. Migration remains gated on a clean report, verified backup, paused writers, and separately approved environment cutover; the source is preserved.

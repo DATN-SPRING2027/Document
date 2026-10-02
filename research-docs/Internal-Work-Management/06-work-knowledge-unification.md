@@ -29,7 +29,7 @@ Arrows are conceptual links, not foreign keys or approved product relationships.
 
 | Information | Possible canonical source | DATN evidence/status |
 |---|---|---|
-| Operational records/users/projects/work notes | MongoDB `continuum_db` per accepted DEC-011/SPEC-001 | `[DOCUMENTED]` architectural decision; implementation maturity must be checked separately |
+| Operational records/users/projects/work notes | MongoDB 7.0, per-service logical databases on the existing cluster per ADR-003/DEC-011 | `[ACCEPTED DECISION]`; active BE runtime inventory is eight domain databases plus `continuum_audit`; verify migration/cutover separately |
 | Task/issue lifecycle | Jira Cloud in current Continuum MVP framing | `[DOCUMENTED]` task context sync; task-authority boundary for new work manager still needs decision |
 | Code and review events | GitHub repository/PR | `[INFERENCE]` source type, not integrated work product evidence |
 | Files/docs | Drive/Confluence or other user-selected repository | `[UNKNOWN]` current DATN connector/use agreement |

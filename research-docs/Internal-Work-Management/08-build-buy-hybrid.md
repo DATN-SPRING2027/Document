@@ -63,7 +63,7 @@ This is a feature-area scan, not an apples-to-apples pricing, security, usabilit
 
 ## DATN engineering feasibility
 
-- `[DOCUMENTED]` Accepted target: NestJS Modular Monolith, Next.js BFF, MongoDB 7.0 shared `continuum_db`, LanceDB auxiliary SAG store, PostgreSQL/pgvector only future SAG scaling option.
+- `[DOCUMENTED]` Backend runtime uses bounded NestJS service entrypoints and Next.js BFF; accepted persistence topology is MongoDB 7.0 database-per-service on the existing cluster, with `continuum_audit` for cross-cutting audit (ADR-003/DEC-011). LanceDB remains auxiliary SAG store; PostgreSQL/pgvector is a separate future SAG scaling option.
 - `[FACT]` Current source has domain schemas/scaffolding and health controllers, but workspace research states no end-to-end Project/Team CRUD or FE workflows; source search did not find completed Jira integration or LanceDB runtime implementation.
 - `[INFERENCE]` Extending current architecture is technically plausible but engineering capacity, quality/security bar, operations ownership, and full lifecycle scope make a Jira replacement a major product/operational commitment. Plausible does not mean economical or approved.
 - `[DOCUMENTED]` Historical `.sage` inventory/current-state contains drift on accepted decisions; current decision register and SPEC are controlling evidence for accepted target. This report does not reconcile/edit those files.

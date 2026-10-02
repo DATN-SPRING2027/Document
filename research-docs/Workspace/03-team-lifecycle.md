@@ -185,7 +185,7 @@ No final Team request DTO, response DTO, error mapping or optimistic-concurrency
 
 - `[GAP]` No Team `status`, `archivedAt`, `archivedBy`, archive reason or version field.
 - `[UNKNOWN]` The persistence index is declared, but runtime index creation is separately controlled by infrastructure settings.
-- `[ACCEPTED DECISION]` MVP operational persistence uses MongoDB 7.0 with shared `continuum_db` under DEC-011/ADR-002. `[DOCUMENTATION SYNC NEEDED]` Current persistence names remain service-specific in historical source/inventory references; this is a synchronization issue, not an open architecture decision.
+- `[ACCEPTED DECISION — 2026-10-02]` MongoDB 7.0 remains the operational source of truth; database-per-service on the existing cluster supersedes the shared `continuum_db` topology in ADR-002/DEC-011. Current BE runtime owns eight domain databases plus `continuum_audit`. Task and AI Adapter database designs remain target-only; Jira is still present in BE runtime despite its product docs being historical. See ADR-003 and the topology alignment note for migration gates and inventory reconciliation.
 - `[UNKNOWN]` No rule proves that a Team's Organization must equal the parent Project's Organization at runtime.
 
 ## 12. Authorization Dependencies

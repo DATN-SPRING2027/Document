@@ -26,6 +26,8 @@ Hệ thống phân định ranh giới lưu trữ dữ liệu rõ ràng giữa c
 ```
 
 ### 1.1. MongoDB 7.0 (3-Node Replica Set `rs0`) — Nguồn Chân Lý (Source of Truth)
+**Topology hiện hành theo workspace ADR-003/DEC-011 (2026-10-02):** MongoDB remains the operational source of truth on the existing cluster/replica set, with one logical database per active bounded service. Current DATN-BE deployment owns `continuum_iam`, `continuum_capture`, `continuum_jira`, `continuum_lifecycle`, `continuum_chat`, `continuum_handover`, `continuum_ingestion`, and `continuum_notification`; cross-cutting audit is in `continuum_audit`. Do not use the former shared `continuum_db` for runtime domain writes. Product targets `continuum_task` and `continuum_ai_adapter` are not in the current BE runtime inventory; reconcile their service deployment before provisioning or migrating into them. See the workspace authority record `docs/adr/ADR-003-database-per-service-persistence.md` and the local [topology catalog](../database-design/README.md).
+
 * **Tại sao dùng MongoDB?** Mô hình tri thức phần mềm (Knowledge Objects) có cấu trúc linh hoạt theo từng loại hình: Kiến trúc hệ thống, SOP quy trình triển khai, Báo cáo sự cố (Postmortem), Quyết định kỹ thuật (ADR). Cấu trúc Document-oriented của MongoDB cho phép lưu trữ snapshot nội dung bất biến (`knowledge_versions`) kèm siêu dữ liệu phong phú mà không cần migration bảng phức tạp.
 * **Giao dịch ACID Đa tài liệu (Multi-Document ACID Transactions):** Khi một tri thức được phê duyệt trong Verification Inbox, hệ thống bắt buộc mở một Mongoose Session để:
   1. Tạo bản ghi `knowledge_versions` mới.
@@ -37,7 +39,7 @@ Hệ thống phân định ranh giới lưu trữ dữ liệu rõ ràng giữa c
 
 #### Task Service storage boundary
 
-Task Service dùng database logic riêng `continuum_task` trên replica set hiện có, cấu hình bằng `MONGODB_URI` + `MONGODB_DATABASE` theo mẫu các service hiện tại trong `DATN_BE/docker-compose.microservices.yml`. Service sở hữu `tasks`, append-only `task_events` và `outbox_events` khi cần phát sự kiện bền vững. Ghi task mutation cùng history/outbox bằng transaction trong cùng database. Capture, Handover, Gateway và Agent không truy cập trực tiếp database này; chúng dùng Task API hoặc event contract. Không cần tạo MongoDB cluster vật lý hoặc repo mới.
+Task Service target dùng database logic riêng `continuum_task` trên replica set hiện có, cấu hình bằng `MONGODB_URI` + `SERVICE_DATABASE` theo mẫu các service hiện tại trong DATN-BE. Service sở hữu `tasks`, append-only `task_events` và `outbox_events` khi cần phát sự kiện bền vững. Ghi task mutation cùng history/outbox bằng transaction trong cùng database. Capture, Handover, Gateway và Agent không truy cập trực tiếp database này; chúng dùng Task API hoặc event contract. Đây là target service/database, chưa thuộc active BE runtime inventory. Không cần tạo MongoDB cluster vật lý hoặc repo mới.
 
 Task Agent chỉ nhận task context mà API cho phép theo user/scope hiện hành. Bản rewrite/gợi ý được giữ ở dạng proposal; người có quyền xác nhận trước khi mutation cập nhật task canonical. Lịch sử ghi actor, nguồn Agent/proposal, field thay đổi, task version và correlation/operation ID; không lưu full prompt hoặc toàn bộ raw context mặc định. Xem [Task storage design](../database-design/12_TASK_MANAGEMENT_SCHEMA.md) và [ADR-010](../research-tech/ADR-010-task-service-in-existing-repositories.md).
 

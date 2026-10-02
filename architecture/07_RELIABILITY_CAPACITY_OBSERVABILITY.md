@@ -184,7 +184,7 @@ DATE=$(date +%Y%m%d_%H%M%S)
 BACKUP_NAME="continuum_backup_${DATE}.gz"
 
 # 1. Dump MongoDB ra file nén
-mongodump --uri="mongodb://localhost:27017/continuum_db?replicaSet=rs0" --archive="/tmp/${BACKUP_NAME}" --gzip
+mongodump --uri="mongodb://localhost:27017/?replicaSet=rs0" --archive="/tmp/${BACKUP_NAME}" --gzip
 
 # 2. Upload file nén lên Cloudflare R2 qua AWS CLI (S3 compatible)
 aws s3 cp "/tmp/${BACKUP_NAME}" "s3://continuum-backups/${BACKUP_NAME}" --endpoint-url="https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com"

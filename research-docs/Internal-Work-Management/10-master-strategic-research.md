@@ -79,7 +79,7 @@ No confirmed executive persona, cadence, decision question or access scope is ev
 
 Work and knowledge are related but distinct: task lifecycle vs verified understanding/evidence. Current Continuum docs require user-confirmed capture and human-verified knowledge proposals; AI retrieval is subject to permission/provenance. Do not treat a Jira issue, schema, vector record or generated answer as verified product knowledge. See `06-work-knowledge-unification.md`.
 
-Operational source of truth for accepted Continuum target: MongoDB 7.0, shared `continuum_db` (DEC-011/SPEC-001). LanceDB is auxiliary SAG retrieval per DEC-015/SPEC-005; PostgreSQL+pgvector is future scaling option only. These decisions do not require copying every external system’s canonical data into MongoDB.
+Operational source of truth for accepted Continuum target: MongoDB 7.0, database-per-service logical topology on the existing cluster (ADR-003 successor to DEC-011). Cross-cutting audit uses `continuum_audit`. LanceDB is auxiliary SAG retrieval per DEC-015/SPEC-005; PostgreSQL+pgvector is a future SAG scaling option only. These decisions do not require copying every external system’s canonical data into MongoDB.
 
 ## Integration Model
 

@@ -48,7 +48,7 @@ These are research checklist items, not claims that a generic Integration Hub is
 
 - `[DOCUMENTED]` Jira sync is in Continuum MVP product research.
 - `[FACT]` Current source contains Jira-related schemas/queue scaffolding, but evidence reviewed does not establish a complete Jira Cloud API, OAuth, webhook, reconciliation or end-to-end user flow. Schema/scaffold ≠ working integration.
-- `[DOCUMENTED]` Architecture target is Browser → Next.js BFF → NestJS monolith; MongoDB 7.0/shared `continuum_db` is operational SoT; LanceDB is auxiliary retrieval. See accepted DEC-011/013/014/015 and SPEC-001/003/004/005.
+- `[ACCEPTED DECISION — 2026-10-02]` MongoDB 7.0 remains the operational source of truth with one logical database per active bounded service on the existing cluster; cross-cutting audit uses `continuum_audit`. The previous shared `continuum_db` topology is superseded by ADR-003/DEC-011. Runtime-vs-product service inventory still needs Task/AI Adapter/Jira reconciliation. LanceDB remains auxiliary retrieval per DEC-015/SPEC-005.
 - `[FACT]` Current source search found no active LanceDB runtime dependency in BE; this is a target-vs-source implementation gap, not grounds to alter the accepted decision.
 - `[UNKNOWN]` Provider credentials, tenants, rate limits, event subscription, service ownership and real connector behavior are not proven by repo scaffolding.
 

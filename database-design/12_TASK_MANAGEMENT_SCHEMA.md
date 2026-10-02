@@ -46,7 +46,7 @@ Ranh giới đã chốt: Task Service là đường đọc/ghi duy nhất cho ta
 ## 4. Các quyết định cần hoàn tất trước khi triển khai
 
 1. Duyệt các khuyến nghị trong Use Case doc trước khi biến field/status/permission proposal thành requirement.
-2. Cấu hình `MONGODB_DATABASE=continuum_task` trên MongoDB replica set hiện có; không tạo MongoDB cluster vật lý mới. Trước triển khai cần reconcile `DATN_BE/AGENTS.md`, hiện đang chỉ định shared `continuum_db`.
+2. Khi Task service được triển khai, cấu hình `SERVICE_DATABASE=continuum_task` trên MongoDB replica set hiện có; không tạo MongoDB cluster vật lý mới. `continuum_task` chưa thuộc active DATN-BE runtime inventory. Reconcile việc sở hữu service/database với workspace ADR-003 và lập dry-run migration riêng trước khi chuyển dữ liệu.
 3. Chốt response/DTO và cách trả lỗi khi task bị hủy hoặc caller không còn quyền xem.
 4. Chốt retention cho `task_events` và cách đồng bộ domain event sang compliance audit nếu cần.
 5. Chốt retry, idempotency và retention cho outbox/event consumers. Không copy task records vào SAG; SAG storage được quyết định riêng và không bị thay đổi bởi Task Service.
