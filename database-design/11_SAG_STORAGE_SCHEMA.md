@@ -94,13 +94,13 @@ Tầng này chịu trách nhiệm trích xuất và lưu trữ cấu trúc tri t
 
 | Bảng / Thành phần | Hiện trạng SAG Gốc | Thay đổi áp dụng vào Continuum AI | Lý do & Rationale Kỹ Thuật |
 | :--- | :--- | :--- | :--- |
-| **`users`, `agents`** | Có sẵn trong SAG Platform DB | **LOẠI BỎ HOÀN TOÀN** khỏi SAG Storage | Continuum AI đã có vi dịch vụ [01_SVC_IAM_SCHEMA.md](01_SVC_IAM_SCHEMA.md) độc lập với 3 roles tĩnh (`ADMIN`, `TEAM_LEADER`, `MEMBER`) và `continuum_iam`. Không lưu người dùng trùng lặp. |
+| **`users`, `agents`** | Có sẵn trong SAG Platform DB | **LOẠI BỎ HOÀN TOÀN** khỏi SAG Storage | Continuum AI đã có vi dịch vụ [01_SVC_IAM_SCHEMA.md](01_SVC_IAM_SCHEMA.md): actor vận hành `PLATFORM_OPERATOR` tách biệt với 3 Organization/Project roles (`ADMIN`, `TEAM_LEADER`, `MEMBER`) trong `continuum_iam`. Không lưu người dùng trùng lặp. |
 | **`chat_conversation`, `chat_message`** | Có sẵn trong SAG Platform DB | **LOẠI BỎ KHỎI SAG** | Lịch sử chat, phiên hỏi đáp và trích dẫn citations do [05_SVC_CHAT_SCHEMA.md](05_SVC_CHAT_SCHEMA.md) quản lý tập trung trong `continuum_chat`. |
 | **`universe_*` & `exploration_*` (3D Knowledge Galaxy)** | Lưu tọa độ `x, y, z`, `radius`, cụm module và camera | **CHÍNH THỨC SỬ DỤNG & NÂNG CẤP THÀNH ĐIỂM NHẤN CỐT LÕI (WOW-FACTOR)** | Trực quan hóa toàn cảnh tri thức dự án thành một **"Vũ Trụ / Thiên Hà Tri Thức 3D"** (Interactive 3D Knowledge Galaxy trên Three.js). Người kế nhiệm có thể bay qua các tinh cầu module, xem mật độ tri thức, và camera tự động zoom vào đúng bằng chứng khi hỏi đáp. |
 | **`octx_*` (Gói chuyển giao)** | Gói xuất/nhập tri thức tĩnh | **GIỮ CHUẨN ĐỂ MỞ RỘNG GIAI ĐOẠN 2** | Sẽ dùng làm định dạng export gói tri thức khi kỹ sư bàn giao rời dự án (Offline Handover Archive). |
 | **Multi-Tenancy (`organization_id`, `project_id`)** | SAG gốc **KHÔNG CÓ**, chỉ có `user_id` đơn lẻ | **BẮT BUỘC BỔ SUNG vào tất cả các bảng** | Đảm bảo tính cô lập dữ liệu tuyệt đối giữa các công ty và các dự án trong Continuum AI. Không để lộ tri thức chéo tenant. |
 | **Phân loại Nguồn Tri thức (`source_type`)** | SAG gốc chỉ coi mọi nguồn là Document tệp phẳng | **BỔ SUNG trường `source_type`**: `DOCUMENT_VERSION`, `WORK_NOTE`, `AUDIO_HANDOVER` | Evidence chỉ được index sau khi qua eligibility gate, xác nhận và ACL hiện hành; task là ngữ cảnh công việc, không phải source type SAG. |
-| **Bảo mật Trước Truy Vấn (Pre-retrieval ACL)** | SAG gốc **KHÔNG CÓ**, bất kỳ ai search cũng thấy toàn bộ | **BỔ SUNG `confidentiality_level` & `allowed_roles`** vào `kb_document`, `source_chunk`, `source_event` | Kỹ sư cấp `MEMBER` không được phép tìm thấy thông tin tài chính/hợp đồng dự án cấp `ADMIN` hoặc `TEAM_LEADER`. Phải lọc quyền ngay từ tầng SQL JOIN. |
+| **Bảo mật Trước Truy Vấn (Pre-retrieval ACL)** | SAG gốc **KHÔNG CÓ**, bất kỳ ai search cũng thấy toàn bộ | **BỔ SUNG `confidentiality_level` & `allowed_roles`** vào `kb_document`, `source_chunk`, `source_event` | Phải áp membership, scope và source ACL từ trước khi truy vấn. `ADMIN` hoặc `PLATFORM_OPERATOR` không được đọc confidential content chỉ nhờ vai trò; không suy diễn quyền nội dung theo chức danh. Lọc quyền ngay từ tầng SQL JOIN. |
 | **Liên kết Ngược MongoDB (`continuum_ref_id`)** | SAG gốc sinh UUID ngẫu nhiên không trace được | **BỔ SUNG `continuum_document_version_id`, `continuum_source_id`** | Cho phép frontend khi nhấp vào Citation link có thể đối chiếu tức thì về document gốc trong MongoDB mà không bị mất dấu. |
 | **Danh mục `entity_type`** | SAG gốc để rỗng hoặc generic | **CHUẨN HÓA DANH MỤC THỰC THỂ PHẦN MỀM** | Định nghĩa tập thực thể chuyên biệt: `TECH_STACK`, `MODULE_SERVICE`, `ARCHITECTURE_DECISION`, `API_CONTRACT`, `BUSINESS_RULE`, `ROLE_RESPONSIBILITY`. |
 
@@ -161,7 +161,7 @@ CREATE TABLE kb_document (
     
     -- [CONTINUUM THÊM] Bảo mật phân quyền Pre-retrieval ACL
     confidentiality_level VARCHAR(32) DEFAULT 'INTERNAL', -- 'INTERNAL' | 'CONFIDENTIAL' | 'RESTRICTED'
-    allowed_roles JSON DEFAULT '["ADMIN", "TEAM_LEADER", "MEMBER"]', -- Danh sách roles được phép đọc
+    allowed_roles JSON NOT NULL DEFAULT '[]', -- Nhãn lọc phụ; không tự cấp quyền đọc
     
     status VARCHAR(32) DEFAULT 'PENDING',       -- PENDING, EXTRACTING, EXTRACTED, FAILED
     token_usage BIGINT DEFAULT 0,               -- Số token tiêu thụ để LLM extract tài liệu này
@@ -197,7 +197,7 @@ CREATE TABLE source_chunk (
     rank INTEGER DEFAULT 0,                     -- Thứ tự đoạn trong văn bản gốc
     
     -- [CONTINUUM THÊM] ACL kế thừa từ tài liệu cha để lọc vector siêu tốc
-    allowed_roles JSON DEFAULT '["ADMIN", "TEAM_LEADER", "MEMBER"]',
+    allowed_roles JSON NOT NULL DEFAULT '[]', -- Kế thừa như điều kiện phụ, không thay membership/scope/source ACL
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     
@@ -227,7 +227,7 @@ INSERT INTO entity_type (code, name, description, color_hex) VALUES
 ('TECH_STACK', 'Công nghệ & Thư viện', 'Framework, Ngôn ngữ lập trình, Thư viện, Database (VD: Next.js, Mongoose, Redis)', '#10B981'),
 ('MODULE_SERVICE', 'Vi dịch vụ & Module', 'Tên Service, Component, Subsystem (VD: svc_iam, svc_lifecycle, AuthGuard)', '#3B82F6'),
 ('ARCHITECTURE_DECISION', 'Quyết định kiến trúc', 'Quyết định thiết kế, Mẫu thiết kế, ADR (VD: Database-per-service, JWT in Cookie)', '#8B5CF6'),
-('BUSINESS_RULE', 'Quy tắc nghiệp vụ', 'Chính sách, Ràng buộc nghiệp vụ (VD: Phải có authorConfirmedAt, Bắt buộc 3 roles)', '#F59E0B'),
+('BUSINESS_RULE', 'Quy tắc nghiệp vụ', 'Chính sách, ràng buộc nghiệp vụ (VD: phải có authorConfirmedAt; Platform Operator tách khỏi 3 Organization/Project roles)', '#F59E0B'),
 ('DATABASE_SCHEMA', 'Bảng dữ liệu & Thực thể', 'Collection, Table, Field dữ liệu (VD: documents, knowledge_versions)', '#EC4899'),
 ('ROLE_RESPONSIBILITY', 'Trách nhiệm & Vai trò', 'Vai trò dự án, Module phụ trách (VD: Lead Architect, Module Payment Owner)', '#6366F1');
 ```
@@ -285,7 +285,7 @@ CREATE TABLE source_event (
     score FLOAT DEFAULT 1.0,                    -- Độ tin cậy trích xuất LLM
     
     -- [CONTINUUM THÊM] Kế thừa ACL
-    allowed_roles JSON DEFAULT '["ADMIN", "TEAM_LEADER", "MEMBER"]',
+    allowed_roles JSON NOT NULL DEFAULT '[]', -- Kế thừa nhãn lọc phụ, không phải quyền truy cập
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     
@@ -343,7 +343,7 @@ CREATE TABLE chunk_vectors (
     embedding vector(1024) NOT NULL,
     
     -- Pre-retrieval ACL kế thừa từ Document
-    allowed_roles JSONB DEFAULT '["ADMIN", "TEAM_LEADER", "MEMBER"]'::jsonb,
+    allowed_roles JSONB NOT NULL DEFAULT '[]'::jsonb, -- Supplemental filter only; never an access grant
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     
     CONSTRAINT fk_chunk_vector_chunk FOREIGN KEY (chunk_id) 
@@ -418,7 +418,7 @@ Nếu dự án quyết định tách riêng kho vector khỏi PostgreSQL để x
     "source_id": "doc_uuid_string",            // Ánh xạ sang kb_document.id
     "organization_id": "org_uuid_string",      // Tenant Filter
     "project_id": "proj_uuid_string",          // Project Filter
-    "allowed_roles": ["ADMIN", "TEAM_LEADER", "MEMBER"], // Pre-retrieval ACL Filter
+    "allowed_roles": [], // Supplemental filter only; effective membership/scope/source ACL is resolved separately
     "heading": "3.2 Cơ chế xác thực Token Rotation",
     "text_content": "Chi tiết đoạn trích..."
   }
@@ -437,7 +437,7 @@ curl -X PUT "http://localhost:6333/collections/continuum_chunks/index" \
   -H "Content-Type: application/json" \
   -d '{"field_name": "project_id", "field_schema": "keyword"}'
 
-# 3. Index cho Allowed Roles (Pre-retrieval ACL)
+# 3. Index cho `allowed_roles` (nhãn phụ; không phải quyền)
 curl -X PUT "http://localhost:6333/collections/continuum_chunks/index" \
   -H "Content-Type: application/json" \
   -d '{"field_name": "allowed_roles", "field_schema": "keyword"}'
@@ -452,7 +452,7 @@ curl -X PUT "http://localhost:6333/collections/continuum_chunks/index" \
     "must": [
       { "key": "organization_id", "match": { "value": "org_continuum_corp" } },
       { "key": "project_id", "match": { "value": "proj_continuum_core" } },
-      { "key": "allowed_roles", "match": { "any": ["MEMBER"] } }
+      { "key": "source_id", "match": { "any": ["source-id-from-trusted-effective-acl"] } }
     ]
   },
   "limit": 10,
@@ -621,7 +621,7 @@ CREATE INDEX ix_explor_step_created ON exploration_steps(session_id, created_at 
 Tùy thuộc vào việc lựa chọn **PostgreSQL + pgvector (Hợp nhất)** hay **PostgreSQL + Qdrant (Tách rời)**, quy trình truy vấn siêu cạnh động được thực hiện như sau:
 
 ### 5.1. Phương Án 1: Hợp Nhất Trên PostgreSQL 16 + pgvector (Single-Query Dynamic Retrieval)
-Hệ thống thực hiện tìm kiếm vector (`<=>`), kết nối Dynamic Hyperedges (`JOIN`), và lọc phân quyền Pre-retrieval ACL (`allowed_roles`) gói gọn trong **1 câu SQL duy nhất**:
+`allowed_roles` chỉ là nhãn lọc phụ, không phải ACL hoàn chỉnh và không tự cấp quyền. Trước vector search, IAM/authorization phải tính tập source mà chủ thể hiện tại được đọc từ trusted identity, Organization Membership, Project/Team membership, assigned scope, resource ACL và explicit deny. Chỉ truyền tập hiệu lực do backend xác thực vào truy vấn; không nhận danh sách quyền từ client. Biểu thức `:authorizedSourceIds` bên dưới là contract placeholder cho phép lọc trước khi chunk content được đọc; cấu trúc ACL chuẩn và resolver chưa được chốt:
 
 ```sql
 WITH top_similar_chunks AS (
@@ -633,7 +633,7 @@ WITH top_similar_chunks AS (
     FROM chunk_vectors cv
     WHERE cv.organization_id = :currentOrgId
       AND cv.project_id = :currentProjectId
-      AND cv.allowed_roles ? :currentUserRole
+      AND cv.source_id = ANY(:authorizedSourceIds)
     ORDER BY cv.embedding <=> :queryEmbedding ASC
     LIMIT 10
 )
@@ -666,8 +666,8 @@ LIMIT 20;
 
 ### 5.2. Phương Án 2: Hai Chặng Khi Dùng PostgreSQL + Qdrant (Two-Stage Retrieval Flow)
 
-1. **Chặng 1 (Qdrant Vector Search):** Gọi REST/gRPC API sang Qdrant với Payload Filter (`organization_id`, `project_id`, `allowed_roles`) để lấy danh sách top 10 `chunk_id` có điểm tương đồng cao nhất.
-2. **Chặng 2 (PostgreSQL Hyperedges Expansion):** Dùng danh sách `chunk_ids` từ Chặng 1 để truy vấn vào PostgreSQL, mở rộng đồ thị siêu cạnh các thực thể liên quan:
+1. **Chặng 1 (Qdrant Vector Search):** Gọi REST/gRPC API sang Qdrant với tenant/project filter và giới hạn theo source IDs thuộc tập ACL đã được backend resolve từ trusted context. `allowed_roles` nếu lưu chỉ là điều kiện phụ, không thay thế membership/scope/ACL.
+2. **Chặng 2 (PostgreSQL Hyperedges Expansion):** Kiểm tra lại ACL hiệu lực trong truy vấn authoritative PostgreSQL trước khi đọc `content`, metadata nhạy cảm hoặc mở rộng hyperedge; chỉ dùng `chunk_ids` chưa đủ để cấp quyền:
 
 ```sql
 SELECT 
@@ -689,6 +689,7 @@ LEFT JOIN event_entity ee ON se.id = ee.event_id
 LEFT JOIN entity e ON ee.entity_id = e.id
 LEFT JOIN entity_type et ON e.type_code = et.code
 WHERE sc.id IN (:topChunkIdsFromQdrant)
+  AND kd.id = ANY(:authorizedSourceIds)
   AND sc.organization_id = :currentOrgId
   AND sc.project_id = :currentProjectId
 ORDER BY ee.weight DESC NULLS LAST;
