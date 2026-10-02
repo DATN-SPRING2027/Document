@@ -98,3 +98,5 @@ Audit at least: membership/role/assignment changes; `project.create` grants, rev
 ## 8. Scope exclusions
 
 No enterprise-wide HR hierarchy, automatic disciplinary action, AI-controlled permission grants, automatic successor assignment, or blanket ADMIN access to confidential content in the 10-week MVP.
+
+Project, Team and membership operations are detailed in the proposed [Project, Team and Membership Use Cases](Workspace/05-project-team-access-use-cases.md). This document remains the source of truth for persistent role vocabulary and the authorization baseline; the linked use-case proposal adds no roles and does not approve unresolved capability mappings.

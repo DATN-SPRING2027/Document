@@ -6,6 +6,7 @@ Repository này lưu đặc tả, phạm vi MVP, mô hình actor/role, nghiên c
 
 - [Phạm vi MVP](research-docs/01_MVP_SCOPE.md)
 - [Actor, role và permission](research-docs/02_ACTORS_ROLES_AND_PERMISSIONS.md)
+- [Use Case quản lý Project, Team và Membership](research-docs/Workspace/05-project-team-access-use-cases.md)
 - [Quy trình quản lý task nội bộ và ghi chú công việc](research-docs/03_DAILY_WORKFLOW_AND_JIRA_SYNC.md)
 - [Đặc tả dự án](research-docs/Continuum_AI_Graduation_Project_Specification_v1.0.docx.md)
 - [Kiến trúc hệ thống hoàn chỉnh (System Architecture)](architecture/README.md)

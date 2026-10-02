@@ -23,6 +23,8 @@ Status: Research only. No implementation was performed.
 
 `[DECISION REQUIRED]` The repository does not establish the complete Project lifecycle policy, including who may create/read/update/archive/restore a Project, what archive does to Teams and Memberships, and whether restore is part of MVP.
 
+The proposed product flows are catalogued in [Project, Team and Membership Use Cases](05-project-team-access-use-cases.md). This research remains the source-evidence and implementation-gap report for Project lifecycle.
+
 ## 2. Business Goal
 
 The Project boundary should provide a safe workspace in which:

@@ -23,6 +23,8 @@ Status: Research only. No implementation was performed.
 
 `[UNKNOWN]` The source does not define a `team.status`, `team.leaderId` or explicit Team-owner field. Product documents describe Team Leader responsibilities, but do not prove that a Team stores a direct leader reference.
 
+The proposed Team lifecycle and leadership use cases are catalogued in [Project, Team and Membership Use Cases](05-project-team-access-use-cases.md). This research remains the source-evidence and implementation-gap report for Team lifecycle.
+
 ## 2. Business Goal
 
 The Team boundary should allow a Project to:

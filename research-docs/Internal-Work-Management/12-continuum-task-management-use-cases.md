@@ -90,7 +90,7 @@ Nếu demo bắt buộc phải có giao diện kiểu Jira board, có thể nân
 | Git/development integration, import/export, bulk operations (#268–292) | Hoãn | Không thuộc vòng lặp cốt lõi và có thể làm trễ luồng capture/handover. |
 | Delete task (#33), restore/archive tổng quát (#15–16, #34–35) | Không làm trong P0 | Giữ lịch sử và liên kết; dùng trạng thái `CANCELLED`. Archive/retention chỉ cần khi có policy đã xác nhận. |
 
-Authentication, profile, project/member lifecycle và cấp quyền ở cấp tổ chức/project không được sao chép vào tài liệu task này; tiếp tục dùng các use case/baseline tương ứng của Continuum.
+Authentication, profile, project/member lifecycle và cấp quyền ở cấp tổ chức/project không được sao chép vào tài liệu task này; tiếp tục dùng các use case/baseline tương ứng của Continuum, được nối tại [Project, Team and Membership Use Cases](../Workspace/05-project-team-access-use-cases.md).
 
 ## 5. Actor và quan hệ với use case hiện có
 

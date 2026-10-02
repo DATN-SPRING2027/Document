@@ -106,6 +106,7 @@ Successor asks evidence-grounded questions and reports gaps
 - Three persistent roles and project/team membership scope; Admin grants `project.create` separately to selected Team Leaders.
 - SME, Knowledge Owner, and Successor assignments.
 - Onboarding and offboarding membership states.
+- Project, Team and membership use-case flows are proposed in [Project, Team and Membership Use Cases](Workspace/05-project-team-access-use-cases.md); unresolved lifecycle and permission details remain subject to review.
 
 ### 6.2. Continuous knowledge capture
 

@@ -26,6 +26,8 @@ This research covers two connected boundaries:
 
 `[PARTIAL]` The frontend has a generic BFF, API client and `activeProjectId` store. `[GAP]` There are no verified workspace pages, workspace hooks, Team Membership endpoints, backend DTOs, authorization guards or Workspace E2E flows.
 
+The proposed Project/Team membership use cases and their authorization boundary are catalogued in [Project, Team and Membership Use Cases](05-project-team-access-use-cases.md). This research remains the source-evidence and FE/BE gap report.
+
 ## 2. Scope
 
 Included:
