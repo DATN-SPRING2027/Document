@@ -23,6 +23,8 @@ Status: Research only. No implementation was performed.
 
 `[CONFLICT]` Leader/product documents describe a richer state model (`ACTIVE`, `INVITED`, `SUSPENDED`, `REMOVED`) and onboarding/offboarding states, while the current source schema exposes only `ACTIVE`/`INACTIVE`. This document records the mismatch without choosing a canonical model.
 
+The proposed member use cases and lifecycle dependencies are catalogued in [Project, Team and Membership Use Cases](05-project-team-access-use-cases.md). This research remains the source-evidence and implementation-gap report; membership states and invitation semantics remain open for approval.
+
 ## 2. Business Goal
 
 Project Membership should:
