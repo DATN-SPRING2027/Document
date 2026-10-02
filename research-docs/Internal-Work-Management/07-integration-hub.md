@@ -2,7 +2,7 @@
 
 **Trạng thái:** Hypothesis research; không chốt connector list, event contract hay architecture.
 
-> **Decision amendment — 2026-10-02:** Continuum owns the canonical task lifecycle in the MVP through its Task API/Task Service. The service runs separately but its source remains in the existing `DATN_BE` repository, and it owns task data in MongoDB `continuum_task`. Jira is not the task source and Jira import, webhooks, sync and reconciliation are outside the task MVP. This research remains relevant only to optional external-source integrations; it does not reopen the approved task-source decision. See [ADR-009](../../research-tech/ADR-009-internal-task-source-and-mongodb.md), [ADR-010](../../research-tech/ADR-010-task-service-in-existing-repositories.md) and [Task Management Use Cases](12-continuum-task-management-use-cases.md).
+> **Approved Task product target — 2026-10-02 (not current runtime):** Continuum's Task API/Service is the canonical task lifecycle for the MVP. Its source remains in the existing `DATN_BE` repository; when implemented, the service will run separately and own task data in MongoDB `continuum_task`. Jira is not the task source and Jira import, webhooks, sync and reconciliation are outside the task MVP. This research remains relevant only to optional external-source integrations; it does not reopen the approved task-source decision. See [ADR-009](../../research-tech/ADR-009-internal-task-source-and-mongodb.md), [ADR-010](../../research-tech/ADR-010-task-service-in-existing-repositories.md) and [Task Management Use Cases](12-continuum-task-management-use-cases.md).
 
 ## Vì sao cần xem xét integration
 
