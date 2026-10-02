@@ -119,7 +119,7 @@ def build_document() -> str:
             vertex("uc-profile", "Manage Profile & 2FA", USE_CASE_STYLE, 860, 155, 220, 50),
             vertex("uc-org", "Manage Organizations\n& Projects", USE_CASE_STYLE, 210, 250, 220, 55),
             vertex("uc-teams", "Manage Teams\n& Members", USE_CASE_STYLE, 210, 330, 220, 55),
-            vertex("uc-jira", "Configure Jira Connector", USE_CASE_STYLE, 210, 410, 220, 50),
+            vertex("uc-jira", "Configure External Source Connector (Future)", USE_CASE_STYLE, 210, 410, 250, 50),
             vertex("uc-acl", "Manage Source ACL Policies", USE_CASE_STYLE, 210, 490, 220, 50),
             vertex("uc-audit", "View Audit Logs", USE_CASE_STYLE, 210, 570, 220, 50),
             vertex("uc-leader-workspace", "Manage Team Workspace", USE_CASE_STYLE, 500, 620, 230, 50),

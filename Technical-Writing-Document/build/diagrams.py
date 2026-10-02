@@ -1,169 +1,180 @@
-"""Figures for the Continuum AI capstone reports (matplotlib, white background, black outlines like the sample)."""
-import os
-import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
-
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "figs")
-os.makedirs(OUT, exist_ok=True)
-plt.rcParams["font.family"] = "Arial"
-
-FILL_HUB = "#FFE8E1"
-FILL_BOX = "#FFFFFF"
-FILL_ALT = "#EAF1FB"
-EDGE = "#000000"
+"""Pillow-only report diagrams. Keeps report generation independent of matplotlib."""
+from pathlib import Path
+from PIL import Image, ImageDraw, ImageFont
 
 
-def box(ax, cx, cy, w, h, text, fill=FILL_BOX, fs=10, bold=False):
-    ax.add_patch(FancyBboxPatch((cx - w / 2, cy - h / 2), w, h, boxstyle="round,pad=0,rounding_size=0.12",
-                                fc=fill, ec=EDGE, lw=1.1))
-    ax.text(cx, cy, text, ha="center", va="center", fontsize=fs, fontweight="bold" if bold else "normal",
-            linespacing=1.25)
+ROOT = Path(__file__).resolve().parent
+FIG_DIR = ROOT / "figs"
+FIG_DIR.mkdir(parents=True, exist_ok=True)
+W, H = 2200, 1350
+BG = "#FFFFFF"
+INK = "#19324D"
+MUTED = "#536579"
+BLUE = "#DCEBFA"
+TEAL = "#D9F2EE"
+GOLD = "#FFF0C9"
+PURPLE = "#EAE2F5"
+PALE = "#F3F6FA"
+GREEN = "#DFF0D8"
+ORANGE = "#FBE2D5"
 
 
-def arrow(ax, p, q, style="-|>", ls="-", rad=0.0):
-    ax.add_patch(FancyArrowPatch(p, q, arrowstyle=style, mutation_scale=13, lw=1.2, color=EDGE,
-                                 linestyle=ls, connectionstyle=f"arc3,rad={rad}", shrinkA=0, shrinkB=0))
+def _font(size, bold=False):
+    names = [
+        "C:/Windows/Fonts/arialbd.ttf" if bold else "C:/Windows/Fonts/arial.ttf",
+        "C:/Windows/Fonts/calibrib.ttf" if bold else "C:/Windows/Fonts/calibri.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    ]
+    for name in names:
+        try:
+            return ImageFont.truetype(name, size=size)
+        except OSError:
+            pass
+    return ImageFont.load_default()
+
+
+def _canvas(title, subtitle=None):
+    im = Image.new("RGB", (W, H), BG)
+    d = ImageDraw.Draw(im)
+    d.text((W // 2, 48), title, fill=INK, font=_font(46, True), anchor="mt")
+    if subtitle:
+        d.text((W // 2, 112), subtitle, fill=MUTED, font=_font(25), anchor="mt")
+    return im, d
+
+
+def _centered_text(draw, box, text, font, color=INK, spacing=8):
+    x1, y1, x2, y2 = box
+    lines = text.split("\n")
+    heights = []
+    widths = []
+    for line in lines:
+        b = draw.textbbox((0, 0), line, font=font)
+        widths.append(b[2] - b[0])
+        heights.append(b[3] - b[1])
+    total = sum(heights) + spacing * (len(lines) - 1)
+    y = y1 + (y2 - y1 - total) / 2
+    for line, width, height in zip(lines, widths, heights):
+        draw.text((x1 + (x2 - x1 - width) / 2, y), line, font=font, fill=color)
+        y += height + spacing
+
+
+def _box(draw, rect, text, fill=BLUE, font_size=25, radius=22, outline=INK, width=3):
+    draw.rounded_rectangle(rect, radius=radius, fill=fill, outline=outline, width=width)
+    _centered_text(draw, rect, text, _font(font_size, True))
+
+
+def _arrow(draw, start, end, color=INK, width=5, head=17):
+    draw.line((start, end), fill=color, width=width)
+    import math
+    angle = math.atan2(end[1] - start[1], end[0] - start[0])
+    left = (end[0] - head * math.cos(angle - 0.55), end[1] - head * math.sin(angle - 0.55))
+    right = (end[0] - head * math.cos(angle + 0.55), end[1] - head * math.sin(angle + 0.55))
+    draw.polygon((end, left, right), fill=color)
+
+
+def _save(im, name):
+    im.save(FIG_DIR / name, optimize=True)
 
 
 def fig1_feature_map():
-    fig, ax = plt.subplots(figsize=(11, 6.6))
-    ax.set_xlim(0, 22)
-    ax.set_ylim(0, 13.2)
-    ax.axis("off")
-    hub = (11, 6.6)
-    box(ax, *hub, 4.2, 1.7, "Continuum AI\nplatform", FILL_HUB, 12, True)
-    W = 5.4
-    top = [
-        ("Access & Governance", 4.0,
-         ["3 roles + scoped assignments", "project.create grant (audited)", "Audit trail"]),
-        ("Knowledge Capture", 11.0,
-         ["Manual & daily/task notes", "Jira Cloud sync", "File upload (PDF, DOCX, MD, TXT, image)"]),
-        ("AI Extraction", 18.0,
-         ["SAG retrieval + evidence", "Proposed Knowledge", "Provider-agnostic LLM Gateway"]),
+    im, d = _canvas("Continuum AI — Capability Map", "Governed knowledge continuity built around project work, verified knowledge, and scoped access")
+    _box(d, (760, 180, 1440, 320), "CONTINUUM AI\nKnowledge continuity platform", TEAL, 34)
+
+    groups = [
+        (80, 440, 700, 1030, "Platform governance", PURPLE,
+         ["Platform Operator", "Provision Organization", "Bootstrap first Admin", "Health and configuration"]),
+        (790, 440, 1410, 1030, "Organization and work", BLUE,
+         ["Organization Admin", "Organization users / roles / scopes", "Project from any ACTIVE member", "Project / Team scoped access"]),
+        (1500, 440, 2120, 1030, "Knowledge continuity", GOLD,
+         ["Continuum Task API", "Work Notes and evidence", "Human verification", "Evidence-grounded Q&A / handover"]),
     ]
-    bottom = [
-        ("Lifecycle & Verification", 4.0,
-         ["Version / validity / owner", "Human verification", "Gap & coverage tracking"]),
-        ("Permission-aware Assistant", 11.0,
-         ["Pre-retrieval ACL", "Cited answers", "Insufficient-evidence reply"]),
-        ("Handover & Successor", 18.0,
-         ["Departure / transfer checklist", "Scoped handover package", "Successor questions"]),
-    ]
-    for label, x, leaves in top:
-        y = 9.0
-        box(ax, x, y, W, 1.1, label, FILL_ALT, 10.5, True)
-        for i, t in enumerate(leaves):
-            box(ax, x, y + 1.15 + 0.68 * (len(leaves) - 1 - i), W + 0.9, 0.52, t, FILL_BOX, 8.6)
-        ax.plot([x, hub[0] + (x - hub[0]) * 0.2], [y - 0.55, hub[1] + 0.85], color=EDGE, lw=1.2)
-    for label, x, leaves in bottom:
-        y = 4.2
-        box(ax, x, y, W, 1.1, label, FILL_ALT, 10.5, True)
-        for i, t in enumerate(leaves):
-            box(ax, x, y - 1.15 - 0.68 * i, W + 0.9, 0.52, t, FILL_BOX, 8.6)
-        ax.plot([x, hub[0] + (x - hub[0]) * 0.2], [y + 0.55, hub[1] - 0.85], color=EDGE, lw=1.2)
-    ax.text(11, 0.2, "Evaluation & benchmark: retrieval, answer, citation, permission and handover metrics",
-            ha="center", va="center", fontsize=9, style="italic")
-    fig.savefig(os.path.join(OUT, "fig1_feature_map.png"), dpi=200, bbox_inches="tight", facecolor="white")
-    plt.close(fig)
+    for x1, y1, x2, y2, title, fill, labels in groups:
+        d.rounded_rectangle((x1, y1, x2, y2), radius=28, fill=PALE, outline="#AAB8C7", width=3)
+        d.text(((x1 + x2) // 2, y1 + 25), title, font=_font(31, True), fill=INK, anchor="mt")
+        gap = 22
+        box_h = (y2 - y1 - 115 - gap * (len(labels) - 1)) // len(labels)
+        for idx, label in enumerate(labels):
+            top = y1 + 85 + idx * (box_h + gap)
+            _box(d, (x1 + 38, top, x2 - 38, top + box_h), label, fill, 24, radius=16)
+    for x in (390, 1100, 1810):
+        _arrow(d, (x, 440), (1100, 326), color="#60758A", width=4, head=15)
+    _box(d, (480, 1120, 1720, 1245), "Access is resolved from active membership + explicit Project / Team scope + content ACL", GREEN, 27)
+    _save(im, "fig1_feature_map.png")
 
 
 def fig2_core_loop():
-    fig, ax = plt.subplots(figsize=(11, 4.6))
-    ax.set_xlim(0, 22)
-    ax.set_ylim(0, 9.2)
-    ax.axis("off")
-    top = [("Active project work", "notes, Jira tasks,\nuploaded sources"),
-           ("Ingestion & indexing", "parse / OCR /\nSAG retrieval index"),
-           ("AI proposes\nknowledge", "PROPOSED + evidence\n(never auto-verified)"),
-           ("Human verification", "Owner / scoped SME\nVERIFIED -> ACTIVE")]
-    bot = [("Gap & coverage\nmonitoring", "missing / overdue\nknowledge follow-up"),
-           ("Departure or\nresponsibility transfer", "handover checklist,\nunresolved questions"),
-           ("Scoped handover\npackage", "successor + learning path"),
-           ("Cited Q&A", "permission-aware,\ninsufficient-evidence aware")]
-    xs = [3.0, 8.3, 13.6, 19.0]
-    for i, ((t, s), x) in enumerate(zip(top, xs)):
-        box(ax, x, 7.2, 4.4, 1.9, "", FILL_ALT)
-        ax.text(x, 7.55, t, ha="center", va="center", fontsize=10, fontweight="bold", linespacing=1.15)
-        ax.text(x, 6.65, s, ha="center", va="center", fontsize=8.3, linespacing=1.2)
-        if i:
-            arrow(ax, (xs[i - 1] + 2.2, 7.2), (x - 2.2, 7.2))
-    # bottom row runs right-to-left so the loop closes back to the first box
-    bxs = [19.0, 13.6, 8.3, 3.0]
-    for i, ((t, s), x) in enumerate(zip(bot, bxs)):
-        box(ax, x, 2.2, 4.4, 1.9, "", FILL_HUB if i == 3 else "#FFFFFF")
-        ax.text(x, 2.55, t, ha="center", va="center", fontsize=10, fontweight="bold", linespacing=1.15)
-        ax.text(x, 1.65, s, ha="center", va="center", fontsize=8.3, linespacing=1.2)
-        if i:
-            arrow(ax, (bxs[i - 1] - 2.2, 2.2), (x + 2.2, 2.2))
-    arrow(ax, (19.0, 6.25), (19.0, 3.15))
-    arrow(ax, (3.0, 3.15), (3.0, 6.25), ls="--")
-    ax.text(3.25, 4.7, "new knowledge and gaps\nfeed the next cycle", fontsize=8, style="italic", va="center")
-    fig.savefig(os.path.join(OUT, "fig2_core_loop.png"), dpi=200, bbox_inches="tight", facecolor="white")
-    plt.close(fig)
+    im, d = _canvas("Continuum AI — Knowledge Continuity Loop", "Task work becomes verified, permission-aware knowledge that supports a safe handover")
+    top = [
+        (90, 250, 540, 430, "1. Record work\nContinuum Task API", BLUE),
+        (620, 250, 1070, 430, "2. Capture context\nWork Note / evidence", TEAL),
+        (1150, 250, 1600, 430, "3. Review and verify\nHuman approval", GOLD),
+        (1680, 250, 2130, 430, "4. Index eligible sources\nSAG retrieval", PURPLE),
+    ]
+    for x1, y1, x2, y2, label, fill in top:
+        _box(d, (x1, y1, x2, y2), label, fill, 26)
+    for i in range(3):
+        _arrow(d, (top[i][2] + 12, 340), (top[i + 1][0] - 12, 340))
+    bottom = [
+        (1680, 710, 2130, 900, "5. Ask with evidence\nACL checked before answer", GREEN),
+        (1150, 710, 1600, 900, "6. Prepare handover\nTask + verified knowledge", BLUE),
+        (620, 710, 1070, 900, "7. Successor receives\nscoped context and actions", TEAL),
+        (90, 710, 540, 900, "8. Learn and update\nWork continues in task", GOLD),
+    ]
+    for x1, y1, x2, y2, label, fill in bottom:
+        _box(d, (x1, y1, x2, y2), label, fill, 25)
+    for i in range(3):
+        _arrow(d, (bottom[i][0] - 12, 805), (bottom[i + 1][2] + 12, 805))
+    _arrow(d, (1905, 445), (1905, 695), color="#60758A")
+    _arrow(d, (315, 695), (315, 445), color="#60758A")
+    _box(d, (510, 1030, 1690, 1175), "Authorization is enforced at each step\n(read · review · retrieval · handover)", PALE, 26)
+    _save(im, "fig2_core_loop.png")
 
 
 def fig3_gantt():
-    phases = [
-        ("P0 Foundation", 1, 1, "Scope/actors, DB & API contracts, dataset design, Docker baseline"),
-        ("P1 Access & project", 2, 3, "Auth, 3 roles, project.create grant, membership, ACL, audit"),
-        ("P2 Capture & integration", 3, 5, "Manual/daily notes, Jira sync, R2 upload, parse/OCR jobs"),
-        ("P3 Knowledge lifecycle", 5, 7, "SAG index/trace, Proposed Knowledge, verification, versions"),
-        ("P4 Chat & handover", 7, 8, "Permission-aware chat, gaps, handover checklist"),
-        ("P5 Evaluation & hardening", 9, 10, "Benchmark, leak tests, failure analysis, demo, report"),
-    ]
-    colors = ["#8FAADC", "#F4B183", "#A9D18E", "#FFD966", "#C9A0DC", "#9DC3E6"]
-    fig, ax = plt.subplots(figsize=(11, 3.9))
-    for i, (name, s, e, _) in enumerate(phases):
-        y = len(phases) - 1 - i
-        ax.barh(y, e - s + 1, left=s - 1, height=0.62, color=colors[i], edgecolor="black", lw=1)
-        ax.text(s - 1 + (e - s + 1) / 2, y, f"Wk {s}" if s == e else f"Wk {s}-{e}", ha="center", va="center", fontsize=8.5)
-    ax.set_yticks(range(len(phases)))
-    ax.set_yticklabels([p[0] for p in phases][::-1], fontsize=9.5)
-    ax.set_xticks([i + 0.5 for i in range(10)])
-    ax.set_xticklabels([f"W{i + 1}" for i in range(10)], fontsize=9)
-    ax.set_xlim(0, 10)
-    ax.set_xticks(range(11), minor=True)
-    ax.grid(axis="x", which="minor", color="#BBBBBB", lw=0.6)
-    ax.tick_params(axis="x", which="minor", length=0)
-    ax.set_axisbelow(True)
-    for s in ("top", "right"):
-        ax.spines[s].set_visible(False)
-    fig.savefig(os.path.join(OUT, "fig3_schedule.png"), dpi=200, bbox_inches="tight", facecolor="white")
-    plt.close(fig)
+    im, d = _canvas("Continuum AI — Delivery Plan", "Ten-week plan; exact dates and remaining team capacity should be confirmed by the project owner")
+    x0, y0 = 570, 245
+    col = 150
+    row_h = 135
+    names = ["Scope and requirements", "Organization / Project / ACL", "Continuum Task management", "Knowledge capture and review", "SAG retrieval and grounded Q&A", "Handover and integration", "Hardening and release"]
+    phases = [(0, 1), (0, 4), (1, 5), (3, 6), (4, 8), (6, 9), (8, 10)]
+    for week in range(10):
+        x = x0 + week * col
+        d.text((x + col // 2, y0 - 45), f"W{week + 1}", font=_font(22, True), fill=INK, anchor="mm")
+        d.line((x, y0, x, y0 + row_h * len(names)), fill="#D9E0E7", width=2)
+    d.line((x0 + 10 * col, y0, x0 + 10 * col, y0 + row_h * len(names)), fill="#D9E0E7", width=2)
+    colors = [PURPLE, BLUE, TEAL, GOLD, GREEN, ORANGE, "#DDE4EF"]
+    for idx, (name, (start, finish)) in enumerate(zip(names, phases)):
+        y = y0 + idx * row_h
+        d.text((x0 - 25, y + row_h // 2), name, font=_font(23, True), fill=INK, anchor="rm")
+        d.line((x0, y + row_h, x0 + 10 * col, y + row_h), fill="#D9E0E7", width=2)
+        bx1 = x0 + start * col + 9
+        bx2 = x0 + finish * col - 9
+        d.rounded_rectangle((bx1, y + 25, bx2, y + row_h - 25), radius=17, fill=colors[idx], outline=INK, width=2)
+    d.text((x0, y0 + row_h * len(names) + 55), "Plan is a working sequence, not a verified progress report.", font=_font(24), fill=MUTED)
+    _save(im, "fig3_schedule.png")
 
 
 def fig4_git_flow():
-    fig, ax = plt.subplots(figsize=(11, 4.3))
-    ax.set_xlim(0, 22)
-    ax.set_ylim(0, 8.6)
-    ax.axis("off")
-    rows = [("DB PR", "schema / migration\n(feat/<Name>-<task>-db)", 3.2),
-            ("BE PR", "controller / service / DTO\n(feat/<Name>-<task>-be-api)", 3.2),
-            ("FE PR", "UI / API integration\n(feat/<Name>-<task>-fe-ui)", 3.2)]
-    box(ax, 2.2, 4.3, 3.8, 1.7, "Jira task\n(ticket key)", FILL_ALT, 9.5, True)
-    box(ax, 7.0, 4.3, 4.2, 1.7, "New branch from\nlatest origin/main", FILL_BOX, 9.5)
-    arrow(ax, (4.1, 4.3), (4.9, 4.3))
-    ys = [7.0, 4.3, 1.6]
-    for (t, s, _), y in zip(rows, ys):
-        box(ax, 13.0, y, 5.0, 1.7, "", FILL_BOX)
-        ax.text(13.0, y + 0.42, t, ha="center", va="center", fontsize=10, fontweight="bold")
-        ax.text(13.0, y - 0.32, s, ha="center", va="center", fontsize=8.2, linespacing=1.2)
-        arrow(ax, (9.1, 4.3), (10.5, y), rad=0.0)
-        arrow(ax, (15.5, y), (17.6, 4.3 + (y - 4.3) * 0.25))
-    box(ax, 19.6, 4.3, 3.9, 3.0, "", FILL_HUB)
-    ax.text(19.6, 5.15, "Review gate", ha="center", va="center", fontsize=10, fontweight="bold")
-    ax.text(19.6, 3.75, "CI: lint, typecheck,\ntests, build\nhuman approval\nmerge by teammate", ha="center",
-            va="center", fontsize=8.2, linespacing=1.25)
-    fig.savefig(os.path.join(OUT, "fig4_git_flow.png"), dpi=200, bbox_inches="tight", facecolor="white")
-    plt.close(fig)
-
-
-if __name__ == "__main__":
-    fig1_feature_map()
-    fig2_core_loop()
-    fig3_gantt()
-    fig4_git_flow()
-    print("figures written to", OUT)
+    im, d = _canvas("Continuum AI — Delivery and Review Flow", "Task management is implemented in the existing BE / FE repositories with a clear backend service boundary")
+    _box(d, (90, 280, 520, 470), "Continuum Task API\ncanonical task source", TEAL, 29)
+    _box(d, (650, 280, 1050, 470), "Feature branch\nBE or FE repository", BLUE, 28)
+    _arrow(d, (535, 375), (635, 375))
+    lanes = [
+        (1200, 170, "Backend PR", PURPLE),
+        (1200, 400, "Frontend PR", GOLD),
+        (1200, 630, "DB contract / migration review", GREEN),
+    ]
+    bus_x = 1900
+    review_y = 970
+    for x, y, label, fill in lanes:
+        center_y = y + 80
+        _box(d, (x, y, x + 620, y + 160), label, fill, 28)
+        _arrow(d, (1065, 375), (1185, center_y), color="#60758A", width=4, head=14)
+        d.line(((x + 620, center_y), (bus_x, center_y)), fill="#60758A", width=4)
+    d.line(((bus_x, lanes[0][1] + 80), (bus_x, review_y)), fill="#60758A", width=4)
+    d.line(((bus_x, lanes[-1][1] + 80), (bus_x, review_y)), fill="#60758A", width=4)
+    _box(d, (1200, 890, 1820, 1040), "Review + CI\nAPI and ACL alignment", ORANGE, 27)
+    _arrow(d, (bus_x, review_y), (1830, review_y), color="#60758A", width=4, head=14)
+    _box(d, (1200, 1110, 1820, 1270), "Merge after human review\nRelease from main", TEAL, 27)
+    _arrow(d, (1510, 1045), (1510, 1095))
+    _save(im, "fig4_git_flow.png")
