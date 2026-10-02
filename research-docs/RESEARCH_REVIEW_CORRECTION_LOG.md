@@ -158,6 +158,7 @@ The baseline is not ready for acceptance because several statements are stronger
 - **Required correction:** Keep the source-backed fact that the current schema enum contains only `project.create`. Reclassify the broader “all other permissions” statement as an inference or decision-required item. The accepted baseline also describes project-policy grants, scoped assignments, ACLs, and a permission matrix whose detailed mapping remains open.
 - **Evidence:** `product_docs/research-docs/02_ACTORS_ROLES_AND_PERMISSIONS.md:62-84`; `docs/decisions/decision-register.md:47-68`; `DATN-BE/src/services/iam/infrastructure/mongodb/mongodb.schemas.ts:135-150`.
 - **Reason:** Current persistence shape does not prove that the complete organization/project/team permission model has been approved or that all other permissions are role/team-membership-only.
+- **Resolution — 2026-10-02:** Applied in `Roles-Capabilities-Evaluator/01-roles-capabilities-evaluator-baseline.md`. The schema enum is retained as a source fact; the broader permission model remains open, and BE Project Foundation confirms `project.create` is not required for Project creation.
 
 #### Correction 4 — Align 401 client behavior with the HttpOnly BFF boundary
 

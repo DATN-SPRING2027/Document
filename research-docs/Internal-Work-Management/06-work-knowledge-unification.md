@@ -2,20 +2,22 @@
 
 **Trạng thái:** Conceptual research; không phải schema hay requirement được chấp thuận.
 
+> **Decision amendment — 2026-10-02:** Continuum Task API/Task Service is the approved canonical source for DATN task lifecycle in the MVP. Work Notes and handover records may link to a task using an optional logical `taskId`; they resolve task details through the Task API/event contract. Task records themselves are not SAG knowledge sources. Only authorized Work Notes/evidence that satisfy the ingestion policy may enter retrieval/indexing. Jira is not the task source for this MVP.
+
 ## Bài toán khái niệm
 
 Work/task trả lời “đang làm gì, ai chịu trách nhiệm, trạng thái/điều kiện hoàn tất là gì”; knowledge trả lời “đã học/xác minh được gì, bằng chứng ở đâu, ai tin cậy/duyệt, người sau dùng thế nào”. Hai loại thông tin liên quan nhưng không đồng nhất.
 
-- `[DOCUMENTED]` Continuum MVP liên kết Jira task context với Work Note/Capture được user xác nhận; knowledge proposal phải có evidence và human review trước verified state. Knowledge continuity và handover là mục tiêu MVP hiện hữu.
+- `[DOCUMENTED]` Continuum MVP links Continuum task context with user-confirmed Work Note/Capture; a knowledge proposal requires evidence and human review before reaching verified state. Knowledge continuity and handover are the current MVP goals.
 - `[UNKNOWN]` “Work Item”, “Decision”, “Document”, “Discussion” và “Evidence” như unified platform objects chưa được phê duyệt trong Continuum scope.
 
 ## Conceptual graph để nghiên cứu
 
 ```text
-Work item (canonical source TBD)
+Continuum task (canonical in MVP)
   ├── assigned to → person/team (scope TBD)
   ├── references → requirement / decision / document / discussion
-  ├── linked from → commit / pull request / Jira issue
+  ├── linked from → commit / pull request / optional future external source reference
   └── has context → capture / work note
                          └── may propose → knowledge object
                                               ├── supported by → evidence/source
@@ -29,8 +31,8 @@ Arrows are conceptual links, not foreign keys or approved product relationships.
 
 | Information | Possible canonical source | DATN evidence/status |
 |---|---|---|
-| Operational records/users/projects/work notes | MongoDB `continuum_db` per accepted DEC-011/SPEC-001 | `[DOCUMENTED]` architectural decision; implementation maturity must be checked separately |
-| Task/issue lifecycle | Jira Cloud in current Continuum MVP framing | `[DOCUMENTED]` task context sync; task-authority boundary for new work manager still needs decision |
+| Operational records/users/projects/work notes | MongoDB per accepted DEC-011/SPEC-001; Task Service separately owns logical DB `continuum_task` on the existing replica set | `[DOCUMENTED]` architectural decision; implementation maturity must be checked separately |
+| Task lifecycle | Continuum Task API/Task Service; MongoDB `continuum_task` | `[APPROVED TARGET]` Canonical task source for the MVP; separate process/deployment from source code in existing `DATN_BE`; runtime implementation must be verified separately |
 | Code and review events | GitHub repository/PR | `[INFERENCE]` source type, not integrated work product evidence |
 | Files/docs | Drive/Confluence or other user-selected repository | `[UNKNOWN]` current DATN connector/use agreement |
 | Verified knowledge facts/proposals | Continuum persistence + provenance model | `[DOCUMENTED]` conceptual lifecycle; end-to-end completeness not proven by schemas |
@@ -49,7 +51,7 @@ For retrieval: verify permissions before model context construction, carry citat
 - `[UNKNOWN]` Whether users need one product UI or only reliable links across tools.
 - `[UNKNOWN]` Whether a knowledge object may have multiple project/team scopes or versions.
 - `[UNKNOWN]` Decision/document/discussion lifecycle, ownership, approval, retention and deletion policy.
-- `[DECISION REQUIRED]` Which source is canonical for tasks if an internal Work Management hypothesis proceeds; whether tasks are linked/mirrored or owned internally.
+- `[DECISION REQUIRED]` Exact Task API/event fields, lifecycle and authorization contract; the canonical task source is already decided.
 - `[DECISION REQUIRED]` Which content classes may be indexed by SAG, with ACL and retention behavior.
 
 ## References

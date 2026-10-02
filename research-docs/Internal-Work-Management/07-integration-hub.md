@@ -2,11 +2,13 @@
 
 **Trạng thái:** Hypothesis research; không chốt connector list, event contract hay architecture.
 
+> **Decision amendment — 2026-10-02:** Continuum owns the canonical task lifecycle in the MVP through its Task API/Task Service. The service runs separately but its source remains in the existing `DATN_BE` repository, and it owns task data in MongoDB `continuum_task`. Jira is not the task source and Jira import, webhooks, sync and reconciliation are outside the task MVP. This research remains relevant only to optional external-source integrations; it does not reopen the approved task-source decision. See [ADR-009](../../research-tech/ADR-009-internal-task-source-and-mongodb.md), [ADR-010](../../research-tech/ADR-010-task-service-in-existing-repositories.md) and [Task Management Use Cases](12-continuum-task-management-use-cases.md).
+
 ## Vì sao cần xem xét integration
 
 Brief đặt Jira, Confluence, GitHub, Drive, Slack/Teams và Calendar cạnh nhau. `[INFERENCE]` Chúng có thể là các system-of-record chuyên biệt, không nhất thiết là “fragmentation” cần gom toàn bộ dữ liệu vào một database. Một internal layer có thể liên kết/điều phối mà không thay thế hệ thống nguồn.
 
-`[DOCUMENTED]` Continuum MVP yêu cầu Jira Cloud task-context sync theo product research: initial import, webhooks, dedup/reconcile, retry/idempotency và revoke inaccessible content; manual capture vẫn primary. Connectors ngoài Jira hiện là stretch/future trong tài liệu MVP hiện hữu. Điều này KHÔNG phê duyệt Integration Hub tổng quát cho mọi tool.
+`[SUPERSEDED]` The earlier Jira task-context sync framing is no longer current: Continuum's Task API is canonical, and Jira is not part of the task-management MVP. For a separately approved future connector, link/read-only/event/import patterns still need source ownership, ACL, deletion and reconciliation decisions. This does not approve a general Integration Hub.
 
 ## Integration patterns cần phân biệt
 
@@ -25,7 +27,7 @@ Brief đặt Jira, Confluence, GitHub, Drive, Slack/Teams và Calendar cạnh nh
 | Data class | Source candidates | Quy tắc cần chốt |
 |---|---|---|
 | User identity | Continuum/IdP/Atlassian/GitHub | Identity mapping, deactivation, duplicate account |
-| Task | Jira hoặc future internal platform | Canonical ownership, write-back, tombstone, reconciliation |
+| Task | Continuum Task API (canonical in MVP); Jira only a possible future external source | Any external import/link contract, field mapping, ownership, deletion and ACL propagation; must not create a second writable task source |
 | Code/PR | GitHub | Visibility, repo install scope, deleted/private repo behavior |
 | Docs/files | Drive/Confluence | Content vs link only, inherited ACL, version/deletion |
 | Discussion | Slack/Teams | Consent/retention, channel ACL, event volume |
@@ -46,9 +48,9 @@ These are research checklist items, not claims that a generic Integration Hub is
 
 ## Current DATN evidence vs target
 
-- `[DOCUMENTED]` Jira sync is in Continuum MVP product research.
-- `[FACT]` Current source contains Jira-related schemas/queue scaffolding, but evidence reviewed does not establish a complete Jira Cloud API, OAuth, webhook, reconciliation or end-to-end user flow. Schema/scaffold ≠ working integration.
-- `[DOCUMENTED]` Architecture target is Browser → Next.js BFF → NestJS monolith; MongoDB 7.0/shared `continuum_db` is operational SoT; LanceDB is auxiliary retrieval. See accepted DEC-011/013/014/015 and SPEC-001/003/004/005.
+- `[APPROVED TARGET]` Continuum Task API/Task Service is the canonical task source for the MVP; Jira task import/sync is excluded.
+- `[FACT]` Current source contains Jira-related schemas/queue scaffolding, but this is legacy implementation evidence and does not make Jira an active task source or establish a complete Jira Cloud API, OAuth, webhook, reconciliation or end-to-end user flow. Schema/scaffold ≠ working integration.
+- `[DOCUMENTED]` Architecture target is Browser → Next.js BFF → NestJS services; operational data uses MongoDB 7 on the existing replica set, with Task Service owning logical database `continuum_task`; LanceDB is auxiliary retrieval. See accepted DEC-011/013/014/015, [ADR-009](../../research-tech/ADR-009-internal-task-source-and-mongodb.md), [ADR-010](../../research-tech/ADR-010-task-service-in-existing-repositories.md) and SPEC-001/003/004/005.
 - `[FACT]` Current source search found no active LanceDB runtime dependency in BE; this is a target-vs-source implementation gap, not grounds to alter the accepted decision.
 - `[UNKNOWN]` Provider credentials, tenants, rate limits, event subscription, service ownership and real connector behavior are not proven by repo scaffolding.
 
@@ -58,4 +60,4 @@ These are research checklist items, not claims that a generic Integration Hub is
 
 ## Decision questions
 
-`[DECISION REQUIRED]` Which providers are in scope, what is source of truth per data class, read vs write, freshness SLA, ACL semantics, retention/deletion, supported identity mapping, and who owns connector operations? No broad connector hub should be inferred from one Jira integration requirement.
+`[DECISION REQUIRED — FUTURE CONNECTORS]` Which external providers, if any, are in scope; whether each is link-only/read-only; freshness, ACL, retention/deletion, identity mapping and operational ownership. The approved task source is not an open question: Continuum Task API remains canonical for MVP tasks. No broad connector hub is approved.

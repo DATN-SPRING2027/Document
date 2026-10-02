@@ -2,10 +2,12 @@
 
 **Trạng thái:** Draft; mô hình dưới đây là cách nghiên cứu vận hành, không phải quy trình đã được phê duyệt.
 
+> **Decision amendment — 2026-10-02:** Continuum Task API/Task Service is the canonical source for DATN tasks in the MVP. It is separately deployed from the other NestJS services, implemented in the existing `DATN_BE` repository, and stores task records in MongoDB `continuum_task`. Jira task sync is outside the MVP. This operating-model research may identify task actions and exception paths, but does not reopen the task-source decision. Current actor boundaries are `PLATFORM_OPERATOR` (platform provisioning/operations), `ADMIN` (Organization administration), `TEAM_LEADER` (explicitly assigned Project/Team scope), and `MEMBER` (membership/scope/ACL governed); no administrative role grants default confidential-content access.
+
 ## Bối cảnh hiện hành
 
 - `[DOCUMENTED]` Continuum được mô tả nhằm duy trì tri thức dự án phần mềm qua capture, ingestion/retrieval, đề xuất knowledge có evidence, human review, gap monitoring và handover. Xem `product_docs/research-docs/01_MVP_SCOPE.md` và `03_DAILY_WORKFLOW_AND_JIRA_SYNC.md`.
-- `[DOCUMENTED]` Jira là nguồn task context cho MVP; capture/Work Note được người dùng xác nhận và không bị thay bằng dữ liệu issue một cách ngầm định.
+- `[SUPERSEDED]` Earlier notes treated Jira as the task source. The current task context is owned by Continuum Task API; capture/Work Note remains user-confirmed and is not silently replaced by task data.
 - `[UNKNOWN]` Operating model thực tế của tổ chức (cách lập kế hoạch, phân bổ việc, review, quản lý thay đổi, weekly reporting và quyết định) chưa được chứng minh bằng telemetry hay phỏng vấn trong repo.
 
 ## Các luồng vận hành cần quan sát
@@ -27,13 +29,13 @@ Loop này tương thích về ý tưởng với Continuum MVP đã ghi nhận; p
 
 ## Operating-model questions
 
-1. Ai là người chịu trách nhiệm tạo, cập nhật và đóng task? Nơi nào là canonical?
+1. Ai được phép tạo, cập nhật, giao, chuyển trạng thái và đóng task theo action-by-scope policy đã duyệt? Continuum Task API là canonical; chi tiết quyền vẫn cần hoàn thiện.
 2. “Done” là hoàn tất deliverable, được review, hay đã có knowledge evidence?
 3. Những gì cần ghi lại ngoài task? Ai xác nhận sự thật và nguồn?
 4. Khi owner rời team, ai nhận trách nhiệm và ai chấp thuận handover?
 5. Ai được phép xem work/knowledge theo project/team? Có confidential class nào không?
 6. Reporting nào đang làm thủ công? Bao lâu, ai dùng, quyết định gì dựa trên report?
-7. Bất đồng giữa Jira, tài liệu, code/PR và knowledge được xử lý ở đâu?
+7. Bất đồng giữa Continuum Task, tài liệu, code/PR và verified knowledge được xử lý ở đâu?
 
 ## Friction diagnosis protocol
 

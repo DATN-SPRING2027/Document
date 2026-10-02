@@ -63,7 +63,7 @@ The core successor experience is an evidence-grounded chat over authorized, veri
 - A successor or member outside the project/team/assignment scope cannot view tasks or linked evidence through search, notes, handover or chat.
 - No Jira account, project, webhook, credential or Jira availability is required for task creation, update, capture or handover.
 - An unsupported chat question produces an insufficient-evidence response and can become a gap.
-- When a Team Leader requests a new project without `project.create`, the backend denies it; an Admin grant enables it only inside the granted organization and validity period.
+- Any authenticated User with `ACTIVE` Organization Membership in the trusted matching Organization Context may create a `PRIVATE` Project. The creator is bootstrapped as Project `MEMBER`; no role or `project.create` grant is required. This follows the accepted BE Project Foundation decisions.
 
 ## 6. Deferred work
 

@@ -44,7 +44,7 @@ Task Agent chỉ nhận task context mà API cho phép theo user/scope hiện h�
 ### 1.2. PostgreSQL 16 + pgvector (Bộ Lưu Trữ SAG & Vũ Trụ Tri Thức 3D)
 * **Tại sao dùng PostgreSQL 16 + pgvector (hoặc Qdrant)?**
   - **Hợp nhất ACID & Không lệch pha:** Thực thể quan hệ (Chunk, Event, Entity, Hyperedge) và Vector Embeddings nằm trong cùng một cơ sở dữ liệu. Khi xóa một tài liệu, toàn bộ vector và liên kết bị xóa theo `ON DELETE CASCADE`, loại bỏ triệt để rủi ro dữ liệu rác/lệch pha giữa relational DB và vector DB rời rạc.
-  - **Single-Query Dynamic Retrieval:** Tìm kiếm vector kết hợp Dynamic SQL Hyperedges và lọc quyền bảo mật Pre-retrieval ACL (`allowed_roles`) gói gọn trong 1 câu truy vấn CTE duy nhất, độ trễ cực thấp (< 10ms).
+  - **Single-Query Dynamic Retrieval:** Tìm kiếm vector kết hợp Dynamic SQL Hyperedges và lọc pre-retrieval theo tập source đã được backend authorization resolve. `allowed_roles` chỉ là nhãn lọc phụ, không phải ACL đầy đủ hay quyền truy cập; truy vấn phải giới hạn source được phép trước khi đọc nội dung chunk.
   - **Hỗ trợ Vũ trụ Tri thức 3D (3D Knowledge Galaxy):** Lưu trữ trực tiếp tọa độ $x, y, z$, bán kính cụm module, và lịch sử góc quay camera thám hiểm (`universe_overviews`, `universe_partitions`, `exploration_steps`). Chi tiết xem tại [11_SAG_STORAGE_SCHEMA.md](../database-design/11_SAG_STORAGE_SCHEMA.md).
   - **Lựa chọn phân tán mở rộng:** Hỗ trợ kết nối **Qdrant** khi quy mô vector vượt ngưỡng chục triệu bản ghi.
 

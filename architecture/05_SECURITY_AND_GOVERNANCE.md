@@ -9,24 +9,33 @@
 Continuum AI áp dụng mô hình phân quyền chặt chẽ kết hợp giữa **Role-Based Access Control (RBAC)** và **Attribute-Based Access Control (ABAC)**, tuân thủ tài liệu chuẩn [02_ACTORS_ROLES_AND_PERMISSIONS.md](../research-docs/02_ACTORS_ROLES_AND_PERMISSIONS.md).
 
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│                     MÔ HÌNH PHÂN QUYỀN 3 TẦNG                          │
-│                                                                        │
-│   [ 1. 3 ROLES CỐ ĐỊNH ]      [ 2. CAPABILITY GRANT ] [ 3. SCOPED ]    │
-│   • ADMIN (Tổ chức)           • project.create        • SME            │
-│   • TEAM_LEADER (Nhóm)          (Admin cấp riêng        • KNOWLEDGE_   │
-│   • MEMBER (Thành viên)          cho Team Leader)         OWNER        │
-│                                                       • SUCCESSOR      │
-└────────────────────────────────────────────────────────────────────────┘
+CONTINUUM AI PLATFORM
+├── PLATFORM_OPERATOR
+│   ├── vận hành nền tảng, provision Organization, bootstrap Admin đầu tiên
+│   ├── theo dõi health/configuration
+│   └── không mặc định đọc nội dung Organization
+└── ORGANIZATION
+    ├── ADMIN: quản lý User/membership, role/scope và Organization
+    │   └── không mặc định đọc nội dung confidential
+    └── PROJECT
+        ├── TEAM_LEADER: quản lý Project/Team được gán rõ ràng
+        └── MEMBER: thao tác theo membership, scope và ACL
 ```
 
-### 1.1. 3 Persistent Roles cố định
-1. **`ADMIN`:** Quản lý tài khoản, tổ chức và chính sách hệ thống. Quyền quản trị không tự cấp quyền đọc/sửa task hoặc tri thức bảo mật của dự án.
-2. **`TEAM_LEADER`:** Quản lý các nhóm được phân công, duyệt tri thức trong Verification Inbox của nhóm, khởi tạo quy trình bàn giao (`HANDOVER`). **Quy tắc bất biến:** Team Leader **không** mặc định có quyền tạo Project mới.
-3. **`MEMBER`:** Đóng góp ghi chú công việc hàng ngày, upload tài liệu, tìm kiếm tri thức trong phạm vi nhóm và tham gia quy trình chuyển giao.
+### 1.1. Phạm vi actor và role
 
-### 1.2. Quyền tạo dự án riêng biệt (`project.create`)
-* Quyền tạo dự án là một **Organization Capability Grant** độc lập. Chỉ khi Admin thực hiện thao tác cấp quyền trên bảng `organization_capability_grants`, Team Leader mới có thể tạo dự án mới. Thao tác này có thời hạn (`validUntil`) và có thể bị thu hồi (`revokedAt`).
+- **`PLATFORM_OPERATOR`** là actor platform-scoped để vận hành hệ thống, provision Organization, bootstrap Organization Admin đầu tiên và theo dõi health/configuration. Quyền này không tạo Organization Membership hay quyền đọc Organization content.
+- **`ADMIN`** quản lý User/membership, gán role/scope và quản lý Organization trong phạm vi đó. Role Admin không tự cấp Project Membership hoặc quyền đọc task, Work Note, evidence, knowledge hay handover confidential.
+- **`TEAM_LEADER`** quản lý đúng Project/Team scope được gán. Project-level delegation chỉ bao gồm Team con khi được ghi rõ; Team assignment không mở rộng sang Project/sibling Team.
+- **`MEMBER`** làm việc trong Project/Team membership và resource ACL hiện hành.
+- `SME`, `KNOWLEDGE_OWNER` và `SUCCESSOR` là scoped assignments, không phải persistent Organization roles.
+
+### 1.2. Organization Context và Project creation
+
+- `OrganizationMembership` là quan hệ chuẩn giữa User và Organization; RoleAssignment một mình không chứng minh membership. Chỉ membership `ACTIVE` tạo Organization Context. Không có active membership thì không có context; một membership được chọn tự động; nhiều membership cần lựa chọn rõ ràng được backend xác thực.
+- Bất kỳ User đã xác thực có `OrganizationMembership=ACTIVE` trong trusted matching Organization Context đều có thể tạo Project. Role `ADMIN`/`TEAM_LEADER`/`MEMBER` và grant `project.create` không phải điều kiện.
+- Project tạo mới là `PRIVATE`. Trong cùng transaction, creator nhận `ACTIVE ProjectMembership` và project-scoped `MEMBER` RoleAssignment cùng audit event. Creator không tự thành Team Leader, owner hay Team.
+- Schema `organization_capability_grants.project.create` có thể còn tồn tại; quyết định mới chỉ loại nó khỏi Project-create gate và không xóa/redesign hệ grant khác.
 
 ### 1.3. Các vai trò phân công có phạm vi (Scoped Assignments)
 * `SME` (Chuyên gia môn): Thẩm định tri thức trong phạm vi một module hoặc quy trình cụ thể.
@@ -47,9 +56,9 @@ $$\mathbf{P_{\text{eff}}} = \left( P_{\text{user}} \cup P_{\text{teams}} \cup P_
                       ▼
 ┌──────────────────────────────────────────────────────────────┐
 │ NestJS Pre-Retrieval Scoped ACL Resolver                     │
-│ 1. Giải mã JWT lấy userId, teamIds, roles                    │
-│ 2. Truy vấn MongoDB lấy source/evidence được phép xem         │
-│ 3. Tạo filter theo source + tenant/project + ACL             │
+│ 1. Xác thực User và resolve Organization qua Membership ACTIVE│
+│ 2. Kiểm tra scope/ACL trước khi truy vấn source/evidence      │
+│ 3. Kiểm tra quyền hiện hành trước context gửi sang LLM        │
 └─────────────────────┬────────────────────────────────────────┘
                       │ (Gửi kèm truy vấn có Scoped Filter)
                       ▼
@@ -59,7 +68,7 @@ $$\mathbf{P_{\text{eff}}} = \left( P_{\text{user}} \cup P_{\text{teams}} \cup P_
 └──────────────────────────────────────────────────────────────┘
 ```
 
-* **Lợi ích an ninh:** Loại bỏ 100% rủi ro LLM đọc phải ngữ cảnh nhạy cảm vượt quyền của người dùng.
+* **Lợi ích an ninh:** Kiểm tra scope và ACL trước khi đưa dữ liệu nhạy cảm vào LLM; không thể bảo đảm loại bỏ tuyệt đối mọi rủi ro.
 
 Task API dùng nguồn quyền Continuum/MongoDB cho mọi thao tác task. Đề xuất quyền task chi tiết nằm tại [permission baseline](../research-docs/02_ACTORS_ROLES_AND_PERMISSIONS.md): Member không tự giao task cho người khác; Team Leader giao/chuyển owner trong scope; Admin không có quyền đọc task chỉ vì là Admin; Successor chỉ đọc task được chọn/ủy quyền.
 

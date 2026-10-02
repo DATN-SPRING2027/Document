@@ -7,6 +7,8 @@
 **Status**: Research Only (No coding, no configuration/dependency changes, no PR for implementation)  
 **Target System**: DATN / Continuum AI Baseline  
 
+> **Decision amendment — 2026-10-02:** This is a source-code audit of the snapshot available when the research was written, not the current task-source contract. Continuum Task API is the canonical task source in the MVP; Jira is not an active task source, and Jira import/sync is outside scope. Treat Jira collection/service/queue names below as historical implementation scaffolding only. Any future task audit/outbox contract must align with Task Service ownership, the approved governance boundaries, and the current Task API/event contract.
+
 ---
 
 ## 1. Evidence Classification Standard (Truth Grading)
@@ -64,7 +66,7 @@ This research report strictly adheres to the project's evidence classification a
 | **Transaction Atomicity (`ClientSession`)** | Enterprise Architecture / ADR | `[GAP]` | `OutboxService.append` does NOT receive a Mongoose `session`. Outbox write cannot be joined to aggregate transaction. |
 | **Outbox Poller / Publisher Worker** | `03_SVC_JIRA_SCHEMA.md`; `01_SVC_IAM...` | `[GAP]` | No BullMQ worker or cron job processes `PENDING` outbox records. Records remain permanently `PENDING`. |
 | **Redis Idempotency Helper** | `DATN-BE/.../redis/idempotency.service.ts` | `[FACT]` | `IdempotencyService.claim(key, ttlSeconds)` uses `redis.setIfAbsent(key, '1', ttlSeconds)`. Scaffolding only; zero callers in business controllers. |
-| **Consumer Event Deduplication** | `03_DAILY_WORKFLOW_AND_JIRA_SYNC.md:54`; `SRS:972` | `[DESIGN]` / `[GAP]` | Architecture specifies Redis `SETNX` key `jira:event:{eventId}` (TTL 86,400s). No consumer implementation exists yet. |
+| **Consumer Event Deduplication** | Earlier Jira-sync research and SRS snapshot | `[SUPERSEDED DESIGN]` / `[GAP]` | The old proposal used Redis `SETNX` key `jira:event:{eventId}` (TTL 86,400s). It is not a current MVP contract. If Task events require deduplication, define a Task-owned key/envelope with the event contract; no consumer implementation is asserted here. |
 | **Sensitive Data Redaction** | Security Policy / SOC 2 Baseline | `[GAP]` | No sanitization interceptor exists. Risk of leaking credentials or tokens into audit/outbox storage. |
 
 ---
@@ -142,8 +144,8 @@ export interface IOutboxEnvelope<T = Record<string, unknown>> {
 ### 7.2. IAM Domain Events Catalog
 Referencing `Document/database-design/01_SVC_IAM_SCHEMA.md` (Section 3), `svc_iam` defines four core outbox events:
 1. `iam.user.registered`: Emitted upon user activation.
-2. `iam.role.assigned`: Emitted when role is assigned/changed (invalidates Gateway permission caches).
-3. `iam.capability.granted`: Emitted when `project.create` is granted to a Team Leader.
+2. `iam.role.assigned`: Candidate event when an approved role/scope assignment changes (invalidates Gateway permission caches only after the event contract is approved).
+3. `iam.capability.granted`: Candidate event for an approved capability grant. It does not imply that `project.create` is required for Project creation; grant lifecycle and any retained use remain separate policy decisions.
 4. `iam.session.revoked`: Emitted upon user logout or session revocation.
 
 ### 7.3. Security & PII Exclusion Findings
@@ -159,7 +161,7 @@ Referencing `Document/database-design/01_SVC_IAM_SCHEMA.md` (Section 3), `svc_ia
    - `[DESIGN]` TailAdmin specifications include an Audit Log View for Administrators.
    - `[GAP]` `DATN-FE` currently contains no audit log page, no `/audit` route, and no query hook for fetching audit events.
 2. **Idempotency Keys from Client**:
-   - `[DESIGN]` For critical state mutations (e.g., Jira issue sync, project creation), client requests can supply `X-Idempotency-Key`.
+   - `[DESIGN]` For critical state mutations (e.g., Continuum task creation or Project creator bootstrap), client requests may supply `X-Idempotency-Key`, subject to each API contract.
    - `[GAP]` Neither `DATN-FE/src/lib/api-client.ts` nor BFF proxy (`DATN-FE/src/lib/bff-proxy.ts`) currently generates or forwards `x-idempotency-key`.
 
 ---

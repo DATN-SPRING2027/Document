@@ -38,7 +38,7 @@ Sơ đồ là câu hỏi nghiên cứu, không phải schema target. Không đư
 ## Actor/scope implications
 
 - `[DOCUMENTED]` ADMIN không tự động có quyền đọc nội dung confidential; access được giới hạn theo membership/ACL và policy.
-- `[DOCUMENTED]` TEAM_LEADER không mặc định có `project.create`; quyền đó cần explicit organization capability grant theo research hiện hành.
+- `[APPROVED POLICY]` `TEAM_LEADER` chỉ quản lý Project/Team scope được gán rõ ràng. Tạo Project dựa trên Organization Membership `ACTIVE` trong trusted context; không yêu cầu role hay grant `project.create` theo BE Project Foundation. Grant schema còn lại không tự động được gỡ bỏ.
 - `[INFERENCE]` Department manager/director role không thể thêm vào role matrix chỉ vì concept org chart xuất hiện trong hypothesis.
 - `[DECISION REQUIRED]` Nếu cần org-wide view, xác định audience, fields/data classes, delegated access, drill-down enforcement, export/audit trước khi chọn role hoặc entity.
 
