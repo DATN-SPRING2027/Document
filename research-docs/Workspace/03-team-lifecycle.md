@@ -1,5 +1,7 @@
 # [RESEARCH] Workspace - Team Lifecycle
 
+> This document records implementation evidence and lifecycle gaps. Cross-document Organization/Project/Team access decisions are indexed in [Organization and Workspace Access Contract Readiness](00-organization-and-access-contract-readiness.md); proposed Team flows are in [Project, Team and Membership Use Cases](05-project-team-access-use-cases.md).
+
 Status: Research only. No implementation was performed.
 
 ## Evidence classification
@@ -63,7 +65,7 @@ Excluded:
 | Team has name/code/description | Team schema | `[FACT]` | These are the only business fields directly evidenced by source. |
 | Team code unique in Project/Organization scope | IAM persistence | `[FACT]` | Unique `(organizationId, projectId, code)` declaration. |
 | Teams are managed inside Project scope | Actors/permissions docs; leader breakdown | `[DESIGN]` | Exact actor policy is not implemented. |
-| Team create is permission controlled | Leader breakdown; actors/permissions docs | `[DESIGN]` | Admin or delegated Team Leader direction exists, exact matrix is unresolved. |
+| Team create is permission controlled | Confirmed governance hierarchy; actors/permissions docs | `[APPROVED HIGH-LEVEL BOUNDARY]` / `[IMPLEMENTATION GAP]` | Team Leader must have an explicit assignment covering the parent Project/Team. Organization Admin role alone does not authorize Team management. Exact actions and delegation rules remain unresolved. |
 | Team list/detail/update/archive are expected | `Danh Chia Task.docx` | `[DESIGN]` | No backend API found. |
 | Team must belong to the correct Project | Leader breakdown | `[DESIGN]` | Must be backend validated. |
 | Team archive is preferred to hard delete | Leader breakdown | `[DESIGN]` | No Team lifecycle status exists in source. |
@@ -200,7 +202,7 @@ Team actions depend on:
 6. explicit deny and cross-Project isolation;
 7. Team Membership validation.
 
-`[DESIGN]` Admin may manage Team configuration according to organization policy. Team Leaders may create/manage Teams only in assigned/delegated Project scope. The exact permission codes and delegation rules remain unresolved.
+`[APPROVED HIGH-LEVEL BOUNDARY]` A `TEAM_LEADER` manages Project/Team configuration only in an explicitly assigned scope. The Organization `ADMIN` manages Organization Users/Membership, roles/scopes and Organization settings; the role alone does not confer Project/Team configuration, membership or content access. The exact permission codes, mutation list and delegation rules remain unresolved.
 
 `[GAP]` Backend has no Team authorization guard or scope resolver.
 

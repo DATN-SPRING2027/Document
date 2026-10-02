@@ -17,18 +17,20 @@ Mỗi dịch vụ tuân thủ nguyên tắc **Đơn trách nhiệm (Single Respo
 ### 2.1. `svc_iam` (Authentication, Session & Identity Governance)
 * **Thư mục:** `backend/src/modules/auth/` và `backend/src/modules/identity/`
 * **Trách nhiệm:** 
-  - Đăng nhập, đăng ký thành viên nội bộ, băm mật khẩu Bcrypt 12 rounds.
+  - Xác thực User và quản lý tài khoản/session theo contract được duyệt; luồng invite/onboarding thành viên còn chờ chốt.
   - Cấp phát Access Token (JWT có Scoped Claims: `userId`, `orgId`, `roles`, `projectIds`) và Refresh Token.
   - Quản lý phiên an toàn (`refresh_sessions`) với cơ chế **Refresh Token Rotation & Reuse Detection**.
-  - Quản lý 3 roles tĩnh: `ADMIN` (tổ chức), `TEAM_LEADER` (nhóm), `MEMBER` (thành viên).
-  - Quản lý quyền tạo dự án riêng biệt (`organization_capability_grants` với mã `project.create`).
-* **Collections sở hữu:** `users`, `organizations`, `projects`, `teams`, `project_memberships`, `team_memberships`, `roles`, `role_assignments`, `organization_capability_grants`, `refresh_sessions`.
+  - Quản lý ba role Organization/Project: `ADMIN`, `TEAM_LEADER`, `MEMBER`; `PLATFORM_OPERATOR` là actor vận hành nền tảng riêng, không phải Organization role.
+  - Xác thực Organization Context từ `OrganizationMembership`; chỉ trạng thái `ACTIVE` tạo context. RoleAssignment không thay thế membership.
+  - Project create yêu cầu user đã xác thực, context tin cậy khớp Organization và membership `ACTIVE`; không yêu cầu role hay grant `project.create`. Project mới là `PRIVATE`, creator được bootstrap thành Project `MEMBER`.
+  - Có thể còn lưu collection `organization_capability_grants` theo schema hiện tại, nhưng `project.create` không được dùng làm cổng tạo Project.
+* **Collections sở hữu (target contract cần đối chiếu implementation):** `users`, `organizations`, `organization_memberships`, `projects`, `teams`, `project_memberships`, `team_memberships`, `roles`, `role_assignments`, `organization_capability_grants`, `refresh_sessions`.
 * **API Endpoints chính:**
   - `POST /api/v1/auth/login`: Xác thực và cấp token.
   - `POST /api/v1/auth/refresh`: Đổi token mới, hủy token cũ trong `refresh_sessions`.
   - `POST /api/v1/auth/logout`: Đưa `jti` vào Redis Blacklist (<1ms).
   - `POST /api/v1/iam/projects/:id/members`: Thêm thành viên vào dự án.
-  - `POST /api/v1/iam/grants/project-create`: Admin cấp quyền tạo project cho Team Leader.
+  - Project-create endpoint phải enforce active Organization Membership và matching trusted context; không gắn `@RequireCapability('project.create')` vào luồng này. Cụ thể API path/payload tiếp tục theo IAM OpenAPI.
 
 ---
 

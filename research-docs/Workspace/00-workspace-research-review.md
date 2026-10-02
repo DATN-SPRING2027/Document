@@ -6,6 +6,8 @@ Review scope: independent verification of the four Workspace research documents 
 
 This is a review report only. No source code, architecture, ADR, SPEC, decision register, product requirement, Jira issue, or the four reviewed research documents were modified.
 
+> **Later decision note — 2026-10-02:** This review remains a source-evidence snapshot from 2026-09-24. BE DEC-016 subsequently accepted `OrganizationMembership` as the authoritative User–Organization association, with only `ACTIVE` establishing context. Project Foundation subsequently accepted active-membership-based Project creation and atomic creator bootstrap as a private Project `MEMBER`. Any earlier open question or recommendation in this review about RoleAssignment as Organization linkage, Project-create authorization, or creator bootstrap is historical and superseded by those decisions. The implementation gaps identified here still require current-source verification.
+
 ## Review Method
 
 The review checks major claims using the following chain:

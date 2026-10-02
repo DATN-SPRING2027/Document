@@ -40,7 +40,7 @@ Document/architecture/
 * **Muốn nắm cách tổ chức giao diện Next.js, Server vs Client components:** Xem [02_FRONTEND_NEXTJS.md](02_FRONTEND_NEXTJS.md).
 * **Muốn xem cấu trúc mã nguồn, DTO, Repository của từng backend service:** Xem [03_SERVICES_DEEP_DIVE.md](03_SERVICES_DEEP_DIVE.md).
 * **Muốn hiểu MongoDB, Task outbox, BullMQ, OCR MinerU/MarkItDown và SAG storage boundary:** Xem [04_STORAGE_MESSAGING_AI.md](04_STORAGE_MESSAGING_AI.md).
-* **Muốn xem quy tắc bảo mật 3 roles, Rate Limiting, Redlock chống race conditions:** Xem [05_SECURITY_AND_GOVERNANCE.md](05_SECURITY_AND_GOVERNANCE.md).
+* **Muốn xem quy tắc bảo mật Platform Operator riêng với 3 Organization/Project roles, Rate Limiting, Redlock chống race conditions:** Xem [05_SECURITY_AND_GOVERNANCE.md](05_SECURITY_AND_GOVERNANCE.md).
 * **Muốn xem kiến trúc điều phối cụm Kubernetes, StatefulSet, HPA, Probes & Helm Charts:** Xem [06_CONTAINER_ORCHESTRATION_K8S.md](06_CONTAINER_ORCHESTRATION_K8S.md).
 * **Muốn xem cách tính toán RAM/CPU, chống sập OOM khi ít server, Saga và Backup 0đ:** Xem [07_RELIABILITY_CAPACITY_OBSERVABILITY.md](07_RELIABILITY_CAPACITY_OBSERVABILITY.md).
 

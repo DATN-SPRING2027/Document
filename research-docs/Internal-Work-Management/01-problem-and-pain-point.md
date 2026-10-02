@@ -1,18 +1,20 @@
 # Problem and Pain-Point Research
 
+> **Decision amendment — 2026-10-02:** Earlier framing described Jira task-context synchronization as the proposed/current MVP and treated internal task ownership as undecided. That is superseded: Continuum Task API is canonical for task lifecycle in the MVP; Jira task import/sync is out of scope. This document remains research on knowledge-continuity pain and whether broader enterprise workflow capability is needed. It does not reopen the accepted task-source decision.
+
 **Trạng thái:** Draft research để human review — không phải requirement, recommendation được duyệt hay quyết định sản phẩm.  
 **Mốc đối chiếu:** repository evidence hiện có và thông tin vendor công khai được kiểm tra ngày 2026-09-25.
 
 ## Câu hỏi nghiên cứu
 
-DATN có thực sự cần tự xây một hệ thống work + knowledge, hay Jira/Atlassian đã đáp ứng đủ và trở ngại (nếu có) nằm ở plan, cấu hình, operating model hoặc cách tổ chức thông tin?
+Sau khi Continuum đã chốt Task API nội bộ làm nguồn task cho MVP, DATN còn cần mở rộng thành work-management platform cấp doanh nghiệp hay không; những pain point rộng hơn có được giải quyết tốt hơn bằng cấu hình/quy trình hoặc một connector SaaS được duyệt riêng không?
 
 Các nhãn trong tài liệu: `[FACT]` là sự kiện quan sát/đo được; `[DOCUMENTED]` là nội dung đã ghi trong tài liệu DATN; `[WEB RESEARCH]` là thông tin từ nguồn ngoài có link; `[INFERENCE]` là kết luận suy ra; `[ASSUMPTION]` là giả định tạm; `[PROPOSAL]` là phương án để xem xét; `[UNKNOWN]` là thiếu evidence; `[DECISION REQUIRED]` là lựa chọn cần người có thẩm quyền.
 
 ## Kết luận tạm thời
 
-- `[DOCUMENTED]` Continuum MVP hiện được mô tả là knowledge-continuity system cho **một software project có nhiều team**, tập trung giữ lại tri thức khi thành viên đổi team/rời dự án/bàn giao. Nguồn: `product_docs/research-docs/01_MVP_SCOPE.md`, `03_DAILY_WORKFLOW_AND_JIRA_SYNC.md`.
-- `[DOCUMENTED]` Jira task context được đồng bộ để hỗ trợ quy trình capture/knowledge; ghi chú vẫn do con người xác nhận. Đây không phải tài liệu phê duyệt việc thay thế Jira bằng một task manager nội bộ.
+- `[DOCUMENTED]` Continuum MVP kết hợp quản lý task nội bộ với knowledge continuity cho **một software project có nhiều team**; Continuum Task API là task source canonical. Nguồn chuẩn: `research-docs/01_MVP_SCOPE.md`, `03_DAILY_WORKFLOW_AND_JIRA_SYNC.md`, Task Management Use Cases và ADR-009/010.
+- `[SUPERSEDED]` Jira task context sync từng được ghi là hỗ trợ capture/knowledge. Quyết định hiện tại loại Jira import/sync khỏi task MVP; Work Note vẫn do con người xác nhận và có thể giữ `taskId` tùy chọn để liên kết đến Continuum Task API.
 - `[UNKNOWN]` Chưa có evidence trong repository về Jira plan/license hiện DATN đang dùng, số billable seats, invoice, Marketplace apps, workflow/configuration, mức độ sử dụng Confluence, Jira friction đo được, hay phỏng vấn người dùng. Vì vậy không thể xác nhận “Jira quá đắt”, “Jira thiếu Department”, hoặc pain point thực tế là Jira.
 - `[WEB RESEARCH]` Jira Cloud có Free plan tối đa 10 người và các plan trả phí có những khác biệt về permissions, automation, storage, planning; Premium có cross-team/project planning. Do đó khẳng định chung rằng Jira không thể hỗ trợ cross-team là không chính xác; giới hạn có thể là plan hoặc cấu hình. Xem [Jira pricing](https://www.atlassian.com/software/jira/pricing) và [Plans in Jira Premium](https://support.atlassian.com/jira-software-cloud/docs/what-is-advanced-roadmaps/).
 - `[INFERENCE]` Hiện hypothesis “xây internal ecosystem để tiết kiệm tiền và hợp governance hơn” chưa được chứng minh. Nó cần được kiểm thử độc lập với mục tiêu Continuum đã được ghi nhận.

@@ -6,6 +6,8 @@
 **Status**: Research Only (No coding, no configuration/dependency changes, no PR, no implementation)  
 **Target System**: DATN / Continuum AI Baseline  
 
+> **Decision update — 2026-10-02:** This is a dated implementation/evidence report. The current accepted hierarchy separates `PLATFORM_OPERATOR` from Organization roles; `ADMIN` manages Organization Users/membership/roles/scopes without default confidential-content access; `TEAM_LEADER` manages only explicitly assigned Project/Team scope; `MEMBER` access requires membership and ACL. BE DEC-016 establishes `OrganizationMembership` as the authoritative User–Organization relationship, with only `ACTIVE` establishing context. Project Foundation allows any authenticated User with active Organization Membership in matching trusted context to create a `PRIVATE` Project and atomically bootstrap creator Project Membership + project-scoped `MEMBER` assignment + audit. `project.create` is not required. Older grant-gate or undecided-bootstrap text below is superseded policy; implementation still needs verification.
+
 ---
 
 ## 1. Evidence Classification Standard (Truth Grading)
@@ -28,11 +30,7 @@ This research report strictly adheres to the project's evidence classification a
 2. `[GAP]` **Zero Evaluator & Guard in Backend**: Across the entire `DATN-BE/src` codebase, there are currently **no** NestJS Guards (`CanActivate`), Interceptors, Evaluator Services, or Custom Decorators (`@Roles()`, `@RequireCapability()`). The sole controller in IAM (`iam.controller.ts`) exposes only a basic `/health` check.
 3. `[GAP]` **Missing 401 vs. 403 Transport Handling**: While `401 Unauthorized` and `403 Forbidden` response schemas are drafted in the OpenAPI specification (`DATN-BE/docs/openapi/iam-v1.openapi.json`), no NestJS exception filters, guards, or middleware currently enforce this distinction.
 4. `[GAP]` **Frontend UI Is Static Template Only**: In `DATN-FE`, the codebase is an unmodified bootstrap from the TailAdmin Next.js template. The Zustand store (`src/stores/client-state.ts`) only manages `activeProjectId`, with zero user identity, role, or capability state. No UX gating helpers (`can(...)`, `<Authorize />`) exist.
-5. `[DESIGN]` **Core Access Control Rules Defined in Specifications**:
-   - `ADMIN` does **not** automatically possess read or verification access to confidential project knowledge.
-   - `TEAM_LEADER` leadership alone **never** implies the ability to create projects; `project.create` requires an explicit, audited grant in `organization_capability_grants` issued by an `ADMIN`.
-   - **Deny Precedence**: Explicit Deny overrides all positive roles, assignments, or grants.
-   - **Enforcement Boundary**: Backend guards serve as the authoritative security boundary; frontend checks are strictly UX-only.
+5. `[APPROVED POLICY]` **Current Access Rules**: `PLATFORM_OPERATOR` is platform-scoped and has no default Organization-content access; `ADMIN` administers Organization membership/roles/scopes but has no default confidential-content access; `TEAM_LEADER` is limited to explicit Project/Team assignments; `MEMBER` is limited by membership and ACL. `OrganizationMembership` is authoritative and only `ACTIVE` establishes context. Any authenticated User with active Organization Membership in matching trusted context can create a `PRIVATE` Project without a role or `project.create` grant. Explicit deny wins; backend authorization is authoritative and FE checks are UX only.
 
 ---
 
@@ -41,7 +39,7 @@ This research report strictly adheres to the project's evidence classification a
 ### 3.1. In Scope:
 - **3 Persistent Roles**: `ADMIN`, `TEAM_LEADER`, `MEMBER`, and the strict separation between roles and capabilities (Role vs. Capability boundaries).
 - **Scope Hierarchy**: Organization Scope ➔ Project Scope ➔ Team Scope ➔ Domain / Resource ACL.
-- **Project Creation Capability (`project.create`)**: ADMIN issuing authority, grant validity, revocation, and privilege escalation prevention.
+- **Project Creation**: Active Organization Membership and trusted context are required; `project.create` is not a gate. Remaining capability grant policy is separate and unresolved.
 - **Evaluator & Guard Status**: Current implementation state of NestJS Guards, Decorators, and Deny Precedence resolution.
 - **401 Unauthorized vs. 403 Forbidden Boundaries**: Authentication failure vs. authorization/scope failure; authoritative backend enforcement vs. frontend UX gating.
 - **Cross-Scope & Privilege Escalation Scenarios**: Cross-tenant isolation, cross-project protection, and separation of duties.
@@ -60,7 +58,7 @@ This research report strictly adheres to the project's evidence classification a
 | **Superseded role names forbidden (`PROJECT_MANAGER`, `PROJECT_ADMIN`, `TEAM_MEMBER`)** | `02_ACTORS_ROLES_AND_PERMISSIONS.md` (Sec. 1) | `[FACT]` | Zero occurrences of superseded role names found in backend schemas or types. |
 | **SME, KNOWLEDGE_OWNER, SUCCESSOR are Scoped Assignments, not Roles** | `02_ACTORS_ROLES_AND_PERMISSIONS.md` (Sec. 4) | `[FACT]` / `[PARTIAL]` | `sme_assignments` and `knowledge_owner_assignments` exist as distinct collections in `DATN-BE/.../mongodb.schemas.ts`, decoupled from persistent roles. |
 | **ONBOARDING / OFFBOARDING are lifecycle states, not Roles** | `02_ACTORS_ROLES_AND_PERMISSIONS.md` (Sec. 4) | `[FACT]` / `[PARTIAL]` | `users.status` in Mongoose schema defines `['ACTIVE', 'SUSPENDED', 'PENDING_INVITE']`. Membership lifecycle states (`ONBOARDING`/`OFFBOARDING`) are documented in design but absent from schema. |
-| **Project creation capability (`project.create`) is independent of TEAM_LEADER role** | `02_ACTORS_ROLES_AND_PERMISSIONS.md` (Sec. 1, 5) | `[FACT]` / `[PARTIAL]` | Collection `organization_capability_grants` (`DATN-BE/.../mongodb.schemas.ts:139`) explicitly defines `capability: { type: String, enum: ['project.create'], required: true }`. |
+| **Legacy Project-create grant schema** | `mongodb.schemas.ts:139`; BE Project Foundation decision | `[FACT]` / `[SUPERSEDED POLICY]` | Schema defines `capability: 'project.create'`, but the grant is not required for current Project creation. Other grant policies are unaffected. |
 | **Hierarchical Containment: Org ➔ Project ➔ Team ➔ Resource** | `02_ACTORS_ROLES_AND_PERMISSIONS.md` (Sec. 2) | `[FACT]` / `[PARTIAL]` | `projects`, `teams`, `project_memberships`, and `team_memberships` schemas enforce foreign key references reflecting this strict hierarchy. |
 | **Deny Precedence (Explicit Deny takes precedence)** | `02_ACTORS_ROLES_AND_PERMISSIONS.md` (Sec. 2); `05_SECURITY...md` (Sec. 2) | `[DESIGN]` / `[GAP]` | Defined mathematically ($P_{\text{eff}} = \dots \setminus \text{ExplicitDeny}$); zero executable logic or checks exist in backend code. |
 | **NestJS Evaluator / Guard Enforcement in Backend** | `02_ACTORS_ROLES_AND_PERMISSIONS.md` (Sec. 6) | `[GAP]` | No class implements `CanActivate`, no `@UseGuards()`, and no permission evaluation service exists in `DATN-BE/src`. |
@@ -72,19 +70,12 @@ This research report strictly adheres to the project's evidence classification a
 ## 5. Core Business Rules & Boundaries
 
 ### 5.1. Roles and Capability Boundaries (Role vs. Capability)
-1. **BR-AUTH-01 (Role Immutability & Exclusivity)**: `[DESIGN]` The system recognizes exactly 3 persistent human roles: `ADMIN`, `TEAM_LEADER`, and `MEMBER`. Specialized titles such as SME, Knowledge Owner, or Successor are scoped, time-bounded assignments, not persistent RBAC roles.
-2. **BR-AUTH-02 (Admin Boundary on Confidential Knowledge)**: `[DESIGN]` An `ADMIN` manages organizational users, settings, integrations, and capability grants, but **does not automatically possess read or verification access to confidential project knowledge** without explicit project membership.
-3. **BR-AUTH-03 (Separation of Project Creation from Leadership)**: `[FACT]` / `[DESIGN]` The `TEAM_LEADER` role manages assigned project/team workspaces within an existing project. Team leadership **never** implicitly confers the capability to create new projects.
-4. **BR-AUTH-04 (Explicit `project.create` Grant)**: `[FACT]` / `[DESIGN]` For a `TEAM_LEADER` to create a project, an `ADMIN` must issue an explicit record in `organization_capability_grants` containing:
-   - `organizationId`: Target organization scope.
-   - `userId`: Recipient user ID (Team Leader).
-   - `capability`: `'project.create'`.
-   - `grantedBy`: Issuing Admin user ID.
-   - `reason`: Mandatory business justification.
-   - `expiresAt`: Optional but recommended expiry timestamp.
-   - `revokedAt`: Revocation timestamp (when revoked prior to expiry).
-5. **BR-AUTH-05 (No Self-Grant & No Delegation)**: `[DESIGN]` A grant recipient cannot self-grant `project.create`, extend their own grant validity, or delegate/transfer the grant to another individual.
-6. **BR-AUTH-06 (Bootstrap Policy on Project Creation)**: `[DESIGN]` When an authorized Team Leader successfully creates a project, audited bootstrap policy establishes their initial project membership and team leadership for that specific project. This action **does not elevate them to Organization Admin** and confers no rights across other projects.
+1. **BR-AUTH-01 (Role Boundary)**: `[APPROVED POLICY]` `ADMIN`, `TEAM_LEADER`, and `MEMBER` are persistent Organization/Project roles; `PLATFORM_OPERATOR` is a separate platform-scoped actor. SME, Knowledge Owner, and Successor are scoped assignments.
+2. **BR-AUTH-02 (Admin and Platform Boundary)**: `[APPROVED POLICY]` Platform operations do not grant default Organization-content access. An `ADMIN` manages Organization Users/membership/roles/scopes but has no default confidential Project-content access.
+3. **BR-AUTH-03 (Organization Membership Context)**: `[APPROVED BE DECISION: DEC-016]` `OrganizationMembership` is authoritative; only `ACTIVE` establishes Organization Context. RoleAssignment alone is insufficient.
+4. **BR-AUTH-04 (Explicit Team Leader Scope)**: `[APPROVED POLICY]` A `TEAM_LEADER` manages only explicitly assigned Project/Team scope and cannot self-grant broader authority.
+5. **BR-AUTH-05 (Project Creation Rule)**: `[APPROVED BE DECISION: Project Foundation]` Any authenticated User with active Organization Membership in matching trusted context may create a `PRIVATE` Project. The creator receives active Project Membership and project-scoped `MEMBER` RoleAssignment with the audit event atomically; no role or `project.create` grant is required.
+6. **BR-AUTH-06 (Deny and Enforcement)**: `[DESIGN]` Explicit deny wins; backend authorization is authoritative and FE checks are UX only.
 
 ### 5.2. Scope Hierarchy & Access Control Checks (Scope & ACL)
 1. **BR-SCOPE-01 (Hierarchical Containment)**: `[FACT]` / `[DESIGN]` Access evaluation requires strict containment validation:
@@ -107,7 +98,7 @@ This research report strictly adheres to the project's evidence classification a
    - **Definition**: The caller is **authenticated**, but **lacks required permissions** for the requested scope or resource.
    - **Trigger Conditions**:
      + User with role `MEMBER` attempting administrative operations (e.g., creating teams).
-     + User with role `TEAM_LEADER` without an active `project.create` grant attempting `POST /api/v1/projects`.
+     + Active Organization member with no `project.create` grant creating a Project is allowed; missing/non-active membership, mismatched context, or inactive subject is denied.
      + Expired (`expiresAt < now()`) or revoked (`revokedAt !== null`) capability grant.
      + Non-member attempting access to project resources (`project_memberships.status !== 'ACTIVE'`).
      + Operation blocked by explicit Deny Precedence or resource ACL.
@@ -125,7 +116,7 @@ This research report strictly adheres to the project's evidence classification a
 | **Database Schema** | Store 3 Persistent Roles | `02_ACTORS_ROLES...md:11`; `05_SECURITY...md:23` | `DATN-BE/src/services/iam/infrastructure/mongodb/mongodb.schemas.ts:107-119` (`roles`) | `[PARTIAL]` Schema has enum `ADMIN`, `TEAM_LEADER`, `MEMBER`. Missing seed migration for default role documents. |
 | **Database Schema** | Scoped Role Assignments | `02_ACTORS_ROLES...md:27` | `DATN-BE/.../mongodb.schemas.ts:120-134` (`role_assignments`) | `[PARTIAL]` Compound unique index `{ organizationId: 1, projectId: 1, userId: 1 }`. Null handling for org-level roles (`projectId: null`) requires verification. |
 | **Database Schema** | Time-bounded `project.create` Grants | `02_ACTORS_ROLES...md:13,84` | `DATN-BE/.../mongodb.schemas.ts:135-150` (`organization_capability_grants`) | `[FACT]` Complete schema with `capability`, `grantedBy`, `reason`, `expiresAt`, `revokedAt`. Index `{ organizationId: 1, userId: 1, capability: 1, revokedAt: 1 }`. |
-| **API Contract** | Admin endpoints for Capability Grants | `02_ACTORS_ROLES...md:80-84` | `DATN-BE/docs/openapi/iam-v1.openapi.json` | `[GAP]` OpenAPI defines `POST /api/v1/projects` (requiring `project.create`), but omits endpoints to create, revoke, or list capability grants. |
+| **API Contract** | Project creation and capability grants | BE Project Foundation decision; `iam-v1.openapi.json` | `[GAP / CONTRACT ALIGNMENT]` The earlier OpenAPI `project.create` requirement is superseded for Project creation. Align route authorization with active Organization Membership and trusted context; other grant routes need a separate contract. |
 | **Backend Logic** | Capability Evaluator & Deny Precedence | `02_ACTORS_ROLES...md:84-85` | Zero files in `DATN-BE/src` | `[GAP]` Missing `CapabilityEvaluatorService` and effective permission calculator. |
 | **Backend Guards** | NestJS Guards for 401 & 403 Enforcement | `02_ACTORS_ROLES...md:25`; `05_SECURITY...md:49` | Zero files in `DATN-BE/src` | `[GAP]` Missing `JwtAuthGuard` (401), `RolesGuard` (403), `CapabilityGuard` (403), and `ProjectScopeGuard` (403). |
 | **Frontend State** | Store user identity, roles, and grants | Architecture baseline | `DATN-FE/src/stores/client-state.ts` | `[GAP]` Zustand store only holds `activeProjectId`. Lacks user profile, roles, and granted capabilities. |
@@ -143,24 +134,24 @@ This research report strictly adheres to the project's evidence classification a
    - In MongoDB, `null` is indexed as an explicit value. This correctly restricts a user to at most one organization-level role assignment per organization. The implementation must adopt a consistent convention (storing literal `null` vs. sparse indexing).
 2. **Capability Enum Hardcoding**:
    - In `organization_capability_grants`, `capability` is strictly constrained to `enum: ['project.create']`.
-   - This reflects the approved MVP scope: **only `project.create` is an organization-level capability grantable separately to non-admins**; all other standard permissions flow from persistent role assignments and team memberships.
+   - This is a source-schema fact only. It does not establish that `project.create` is an active authorization gate (it is not required by the accepted Project Foundation decision) or that no other capabilities/policies exist. The remaining grant model is not fully specified.
 
 ### 7.2. API Contract Findings (OpenAPI vs. Implementation)
 1. **Missing Capability Grant Management Endpoints**:
    - In `DATN-BE/docs/openapi/iam-v1.openapi.json`, `POST /api/v1/projects` explicitly specifies:
      `"description": "Requires organization Admin or an active project.create capability grant."`
-     and defines `403 Forbidden` response.
-   - However, the specification lacks endpoints for Admins to grant or revoke this capability (e.g., `POST /api/v1/iam/organizations/{orgId}/capability-grants`). This contract gap must be resolved prior to implementation.
+     and defines `403 Forbidden` response. This is an earlier OpenAPI snapshot superseded for Project creation by the Project Foundation decision; align the OpenAPI before implementation.
+   - Any capability-grant management contract is separate; do not make it a prerequisite for Project creation.
 
 ### 7.3. Security & Privilege Escalation Vulnerabilities
 1. **Client-Side State Tampering Risk**:
    - If the application relied solely on client-side state to authorize project creation, malicious actors could forge API requests via Postman/curl.
-   - **Non-Negotiable Rule**: The backend guard must evaluate database/cache state on every `POST /api/v1/projects` invocation:
-     + Caller holds role `ADMIN` in `role_assignments` at organization scope, OR
-     + Caller holds an active record in `organization_capability_grants` with `capability = 'project.create'`, `revokedAt == null`, and `(expiresAt == null || expiresAt > now())`.
+    - **Non-Negotiable Rule**: The backend must evaluate database/cache state on every Project-create invocation:
+      + Caller is an authenticated active subject, has trusted matching Organization Context, and has `OrganizationMembership.status = ACTIVE` for that Organization.
+      + Validate Project input and code uniqueness, then atomically write the `PRIVATE` Project, creator Project Membership, project-scoped `MEMBER` RoleAssignment, and audit event. No role or `project.create` grant is required.
 2. **Token Revocation Lag (Stateful vs. Stateless)**:
    - If capability grants were encoded directly inside short-lived JWT access tokens, a revoked grant would remain usable until token expiration (up to 15 minutes).
-   - **Design Mitigation**: Capability evaluation for sensitive mutations (such as project creation) must verify grant validity against Redis cache or MongoDB, with immediate cache invalidation upon revocation.
+   - **Design Mitigation**: Membership and scope changes affecting sensitive access must be checked against authoritative state or a safely invalidated cache. Capability expiry is a separate policy and does not control Project creation.
 
 ---
 
@@ -171,7 +162,7 @@ This research report strictly adheres to the project's evidence classification a
 | **HTTP Status Handling** | OpenAPI defines `401 Unauthorized` and `403 Forbidden` | `src/lib/api-client.ts` lumps all `!response.ok` into a generic error string | **Critical**: Frontend cannot differentiate between expired sessions (requiring signin redirect) and permission denial (requiring an Access Denied banner). |
 | **Identity & Role State** | Schema stores `userId`, `organizationId`, `roleCode`, `capability` | Zustand store (`client-state.ts`) only holds `activeProjectId` | **Gap**: Frontend has no access to user roles or capabilities for conditional rendering. |
 | **BFF Header Forwarding** | Backend requires request identity and context headers | `src/lib/bff-proxy.ts` whitelist only includes standard headers (`accept`, `authorization`, `cookie`, `x-request-id`) | **Partial**: Auth token passes through `authorization`, but custom tenant headers are stripped. |
-| **Project Creation UI** | Requires Admin or `project.create` grant | UI template has no project creation form or modal | **Unimplemented**: Project creation workflow is entirely absent from the frontend. |
+| **Project Creation UI** | Any authenticated active Organization member may create | UI template has no project creation form or modal | **Unimplemented**: Project creation flow is absent; UX should reflect membership/context, with backend enforcement authoritative. |
 
 ---
 
@@ -197,8 +188,8 @@ In compliance with the directive **"Do not decide an unapproved matrix"**, the f
   - Section 5 of `02_ACTORS_ROLES_AND_PERMISSIONS.md` outlines high-level permissions for 10 core actions. Team Lead consensus is required to approve the complete mapping for all 20 listed permission codes before backend enforcement logic is coded.
 - `[UNKNOWN]` **UN-01: Explicit Deny Storage Mechanism**
   - The permission formula requires subtracting `ExplicitDeny`. Schema currently lacks an explicit deny rule collection. Must determine whether Deny is dynamically configurable in database or statically enforced in business logic (e.g., account `SUSPENDED`).
-- `[UNKNOWN]` **UN-02: Grant Expiration Cleanup Strategy**
-  - When a `project.create` grant expires (`expiresAt`), should an asynchronous worker proactively mark it as revoked, or is passive query filtering (`expiresAt > now()`) sufficient?
+- `[UNKNOWN]` **UN-02: Retained Grant Expiration Strategy**
+  - If the legacy `project.create` grant value or other capability grants remain in use outside Project creation, should expiry use scheduled cleanup or passive validity filtering? This does not block the approved Project-create rule.
 
 ---
 
@@ -223,7 +214,7 @@ In accordance with [AI_WORKFLOW.md](../../AI_WORKFLOW.md), implementation must b
   + Implement `JwtAuthGuard`: Validate Bearer token, verify against Redis blacklist; emit `401 Unauthorized`.
   + Implement `CapabilityEvaluatorService`: Enforce effective permission calculation and Deny Precedence.
   + Implement Decorators and Guards:
-    * `@RequireCapability('project.create')` paired with `CapabilityGuard`.
+    * Organization-context and active-membership guard for Project creation; do not attach `@RequireCapability('project.create')` to this operation.
     * `@Roles('ADMIN')` paired with `RolesGuard`.
     * Protect `POST /api/v1/projects`: Emit `403 Forbidden` if caller lacks required authority.
   + Add Admin API endpoints to grant/revoke capabilities.
