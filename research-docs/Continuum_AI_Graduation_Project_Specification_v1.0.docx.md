@@ -28,6 +28,8 @@ Scope: Enterprise Knowledge Management · RAG · SAG Retrieval · Knowledge Grap
 
 > **Scope amendment — 2026-10-01:** This v1.0 document is an earlier baseline. For DATN task lifecycle, it is superseded by [`01_MVP_SCOPE.md`](01_MVP_SCOPE.md), [`12-continuum-task-management-use-cases.md`](Internal-Work-Management/12-continuum-task-management-use-cases.md), and [ADR-009](../research-tech/ADR-009-internal-task-source-and-mongodb.md): Continuum Task API is the canonical source and stores task records in MongoDB; Jira task import, sync, webhooks, reconciliation and Jira-specific actors are outside the current MVP. Work Notes may optionally hold `taskId`; only authorized Work Notes/evidence may be sent to SAG retrieval/indexing. Handover reads tasks from the Task API and an authorized human chooses and assigns them to the successor. References below to Jira task context, Jira-linked notes, FR-24 Jira Task Sync, Jira API endpoints, and Jira collections describe the historical baseline only and are not active implementation requirements. Exact internal task fields/statuses remain subject to Use Case approval.
 
+> **Governance amendment — 2026-10-02:** The confirmed hierarchy is `PLATFORM_OPERATOR` → platform operations and Organization provisioning (not an Organization role; no default Organization-content access); `ORGANIZATION` → `ADMIN` manages Users/membership, assigns roles/scopes and manages Organization (no default confidential-content access); `PROJECT` → `TEAM_LEADER` manages only explicitly assigned Project/Team scope and `MEMBER` participates within active membership, scope and ACL. `OrganizationMembership` is the authoritative User–Organization relationship; only `ACTIVE` establishes context (DEC-016). Any authenticated User with active Organization Membership in the trusted Organization may create a `PRIVATE` Project; creator bootstrap atomically adds active Project Membership and project-scoped `MEMBER` assignment. No role or `project.create` grant is required. This update follows the accepted BE decisions and supersedes conflicting role, authorization and Project-create descriptions below. Invite-only onboarding, Project/Team membership lifecycle details, and the complete action-by-scope matrix remain proposed/open unless separately approved.
+
 &nbsp;
 
 ## **Quy ước và nguyên tắc tài liệu**
@@ -190,15 +192,16 @@ Continuum AI tập trung vào một software project có nhiều team. Mọi mem
 
 | Loại | Code | Phạm vi | Mục tiêu và quyền điển hình |
 | ----- | ----- | ----- | ----- |
-| Persistent role | ADMIN | Organization | Quản lý user/project/team, role, connector, source, ACL, grant và audit; không mặc định đọc dữ liệu confidential. |
-| Persistent role | TEAM\_LEADER | Project/team được giao | Quản lý knowledge và member trong scope; tạo project mới chỉ khi ADMIN cấp riêng quyền tổ chức `project.create`. |
-| Persistent role | MEMBER | Project/team membership | Tìm kiếm, hỏi AI, quản lý task trong phạm vi được cấp, tạo task-linked Work Note, upload, báo gap và tham gia handover. |
+| Platform actor | PLATFORM\_OPERATOR | Platform | Vận hành hệ thống, provision Organization, bootstrap Admin đầu tiên và theo dõi health/config; không mặc định đọc nội dung Organization. |
+| Persistent role | ADMIN | Organization | Quản lý User/membership, gán role/scope, quản lý Organization; không mặc định đọc nội dung confidential. |
+| Persistent role | TEAM\_LEADER | Project/Team được gán tường minh | Quản lý Project/Team trong scope được giao; không tự cấp quyền rộng hơn. Không có quyền tạo Project riêng theo role. |
+| Persistent role | MEMBER | Project/Team membership | Tìm kiếm, hỏi AI, quản lý task trong phạm vi được cấp, tạo task-linked Work Note, upload, báo gap và tham gia handover. |
 | Scoped assignment | SME | Domain/module/process cụ thể | Review, trả lời gap và verify trong phạm vi được giao. |
 | Scoped assignment | KNOWLEDGE\_OWNER | Knowledge/requirement/process cụ thể | Approve, reject, edit, deprecate, supersede, assign reviewer và đặt review cycle. |
 | Handover assignment | SUCCESSOR | Handover scope cụ thể | Nhận handover package, học knowledge path, hỏi AI và báo phần chưa đủ để tiếp quản. |
 | Lifecycle state | ONBOARDING / OFFBOARDING | Project membership | Kích hoạt onboarding hoặc knowledge-transfer workflow; không phải global RBAC role. |
 
-Quyền hiệu lực được tính từ role + project/team scope + capability grant/assignment + resource ACL + lifecycle state. Explicit deny có độ ưu tiên cao hơn inherited allow. Chi tiết chuẩn nằm trong `02_ACTORS_ROLES_AND_PERMISSIONS.md`; quy trình task nội bộ và Work Note tại `03_DAILY_WORKFLOW_AND_JIRA_SYNC.md`.
+Quyền hiệu lực yêu cầu identity và Organization Context hợp lệ trước, sau đó xét membership, role/delegation trong scope, assignment, resource ACL, lifecycle state và explicit deny. `PLATFORM_OPERATOR` không phải Organization membership; `ADMIN` không có quyền đọc confidential content chỉ nhờ role; `TEAM_LEADER` bị giới hạn ở scope được gán. Quy tắc tạo Project dùng active Organization Membership, không dùng grant `project.create`. Chi tiết chuẩn nằm trong `02_ACTORS_ROLES_AND_PERMISSIONS.md`; quy trình task nội bộ và Work Note tại `03_DAILY_WORKFLOW_AND_JIRA_SYNC.md`.
 
 &nbsp;
 
@@ -259,7 +262,7 @@ Knowledge phải được version hóa với valid\_from, valid\_until, created\
 
 | Module | Mục tiêu | Chức năng chính |
 | ----- | ----- | ----- |
-| M01 – Identity & Project Access | Quản lý user, project, team, membership, 3 persistent role, scoped assignment và lifecycle state. | RBAC, `project.create` Admin grant, project/team scope, SME/Owner/Successor assignment, resource ACL. |
+| M01 – Identity & Project Access | Quản lý platform actor, user, Organization/Project/Team membership, 3 persistent Organization/Project role, scoped assignment và lifecycle state. | Organization Context từ membership `ACTIVE`; Admin quản lý Organization; Team Leader theo scope rõ ràng; Project create theo active Organization Membership; SME/Owner/Successor assignment và resource ACL. |
 | M02 – Knowledge Capture & Ingestion | Thu nhận manual notes, Continuum task context và document, giữ metadata gốc. | Daily/task notes gắn với task nội bộ, R2 upload, document versions, parsing/OCR, job status. |
 | M03 – SAG Retrieval Layer | Lập index event/entity/vector và tìm evidence. | Fast vector search, Precise multi retrieval, source tracing. |
 | M04 – Knowledge Extraction | Biến source/evidence thành Proposed Knowledge Object. | Type classification, claim/action/condition/reason extraction, source linking. |
@@ -515,7 +518,7 @@ Quy tắc bắt buộc: xác định Allowed Knowledge Scope trước retrieval.
 | Project membership | User chỉ truy cập project mà họ đang có membership hợp lệ. |
 | Team membership | TEAM\_LEADER và MEMBER chỉ có quyền mặc định trong team được giao. |
 | Persistent role | ADMIN cấu hình tổ chức nhưng không mặc định đọc confidential knowledge; TEAM\_LEADER trong team được giao. |
-| Organization capability | TEAM\_LEADER cần grant `project.create` riêng từ ADMIN để tạo project mới. |
+| Project creation | Bất kỳ User xác thực có `OrganizationMembership=ACTIVE` trong Organization context khớp đều có thể tạo Project `PRIVATE`; creator nhận Project Membership + `MEMBER`, không cần role/grant `project.create`. |
 | Scoped assignment | SME, Knowledge Owner và Successor chỉ có quyền bổ sung trong phạm vi assignment. |
 | Source/Document | ACL từ source gốc được propagate đến extracted knowledge. |
 | Knowledge Object | Có thể restrictive hơn source nếu chứa sensitive synthesis. |
@@ -540,8 +543,8 @@ Tối thiểu log: knowledge created/edited/verified/rejected/deprecated, permis
 | ID | Requirement | Actor | Priority | Acceptance summary |
 | ----- | ----- | ----- | ----- | ----- |
 | FR-01 | Authentication & Session | User | P0 | Đăng nhập/đăng xuất, session/JWT, account status. |
-| FR-02 | Project, Team & Membership | Admin/Team Leader | P0 | Admin quản lý project/team; Leader trong scope, chỉ tạo project mới với `project.create` được Admin cấp. |
-| FR-03 | Scoped RBAC, Assignment & ACL | Admin | P0 | Ba role ADMIN/TEAM\_LEADER/MEMBER; SME/Owner/Successor assignment; source ACL và audited capability grant. |
+| FR-02 | Project, Team & Membership | PLATFORM\_OPERATOR/Admin/Team Leader/Member | P0 | Platform Operator bootstrap Organization/Admin; Admin quản lý Organization membership/role/scope; Team Leader quản lý Project/Team được gán; Project create yêu cầu active Organization Membership và bootstrap creator thành MEMBER. |
+| FR-03 | Scoped RBAC, Assignment & ACL | Admin | P0 | Ba role Organization/Project ADMIN/TEAM\_LEADER/MEMBER và actor PLATFORM\_OPERATOR riêng; SME/Owner/Successor assignment; source ACL; capability grant chỉ theo policy được duyệt, không gate Project create. |
 | FR-04 | Source Management | Admin/Team Leader/Member | P0 | Manual upload PDF/DOCX/MD/TXT/ảnh; R2 private; metadata MongoDB; ingest theo scope. |
 | FR-05 | Document Processing | System | P0 | Parse/OCR/chunk, metadata, job retry/status. |
 | FR-06 | SAG Indexing | System | P0 | Tạo event/entity/vector index và source trace. |
@@ -556,11 +559,11 @@ Tối thiểu log: knowledge created/edited/verified/rejected/deprecated, permis
 | FR-15 | Interview Processing | Member/Scoped SME/System | P1 | Transcript → claims → proposed knowledge → contributor confirmation. |
 | FR-16 | Conflict Candidate | Owner/Scoped SME | P1 | Phát hiện và đưa candidate conflict vào review queue. |
 | FR-17 | Freshness Review | Owner/Team Leader | P1 | Review cycle và REVIEW\_REQUIRED. |
-| FR-18 | Continuity Dashboard | Admin/Team Leader | P1 | Project/team coverage, freshness, concentration, gap, risk và handover progress. |
+| FR-18 | Continuity Dashboard | Admin/Team Leader | P1 | Organization Admin chỉ xem metadata/tổng hợp được phép; Team Leader xem trong assigned scope. Chi tiết nguồn, nội dung confidential và evidence vẫn qua ACL. |
 | FR-19 | Successor Onboarding | Successor/Team Leader | P0 | Scoped handover package, knowledge path, cited assistant và unresolved-gap reporting. |
-| FR-20 | Member Handover | Admin/Team Leader/Departing Member | P0 | Scoped checklist, assign successor và confirm readiness; advanced transfer analysis P1. |
-| FR-21 | Audit Log | Admin/Team Leader | P0 | Tra cứu audit events theo technical, security và project/team scope. |
-| FR-22 | Evaluation Export | Project Team/Admin | P1 | Export benchmark results, latency, citations và model metadata. |
+| FR-20 | Member Handover | Team Leader trong assigned scope/Departing Member/Successor | P0 | Scoped checklist, Team Leader chọn/giao task cho successor và confirm readiness; Admin không đọc nội dung handover chỉ vì role Organization; advanced transfer analysis P1. |
+| FR-21 | Audit Log | Admin/Team Leader | P0 | Tra cứu audit events theo Organization security hoặc assigned Project/Team scope; không mặc định lộ nội dung confidential. |
+| FR-22 | Evaluation Export | Project Team/Admin | P1 | Export benchmark results, latency, citations và model metadata; nội dung/citation chi tiết vẫn chịu ACL và Admin không được vượt quyền chỉ nhờ role. |
 | FR-23 | Daily/Task Notes | Team Leader/Member | P0 | Ghi what/how/why, blocker, next step; liên kết Continuum task tùy chọn, author xác nhận. |
 | FR-24 | Internal Task Management | Team Leader/Member | P0 (scope proposed) | Task lifecycle thuộc Continuum; Use Case, field và status cụ thể được xác định trong `12-continuum-task-management-use-cases.md` và chờ duyệt. |
 
@@ -623,7 +626,7 @@ Tối thiểu log: knowledge created/edited/verified/rejected/deprecated, permis
 
 ## **13.4. UC-04 – Member handover và successor takeover**
 
-1\. Admin hoặc Team Leader trong scope khởi tạo handover cho leader/member rời project hoặc đổi responsibility.
+1\. Team Leader trong assigned scope hoặc departing member khởi tạo handover cho người rời Project/Team hoặc đổi responsibility. Admin có thể quản lý Organization membership/workflow metadata nhưng không đọc nội dung handover chỉ vì role.
 
 2\. System phân tích member–responsibility–module–knowledge–evidence relationships.
 
@@ -631,11 +634,11 @@ Tối thiểu log: knowledge created/edited/verified/rejected/deprecated, permis
 
 4\. Team Leader xác nhận priority và handover items; AI interview topics là P1.
 
-5\. Departing member bổ sung knowledge; Owner/SME verify; Admin hoặc Team Leader trong scope gán Successor.
+5\. Departing member bổ sung knowledge; Owner/SME verify; Team Leader trong assigned scope gán Successor.
 
 6\. Successor nhận scoped handover package, hỏi AI và báo unresolved gaps.
 
-7\. Handover chỉ complete khi required items được xử lý hoặc Admin/Team Leader có thẩm quyền ghi nhận waiver có audit reason.
+7\. Handover chỉ complete khi required items được xử lý hoặc Team Leader trong assigned scope ghi nhận waiver có audit reason theo policy.
 
 # **14\. API VÀ INTEGRATION CONTRACT**
 
@@ -644,7 +647,7 @@ Tối thiểu log: knowledge created/edited/verified/rejected/deprecated, permis
 | Area | Endpoints ví dụ |
 | ----- | ----- |
 | Auth | POST /auth/login; GET /me |
-| Project/capability | POST /projects (requires Admin or active organization `project.create` grant); POST /organization-capability-grants (Admin only) |
+| Project/capability | POST /api/v1/iam/projects (requires authenticated active subject and active Organization Membership in trusted context; creates a `PRIVATE` Project and bootstraps creator as Project `MEMBER`); other capability-grant routes remain subject to a separate approved contract |
 | Task & notes | Internal task endpoints (contract follows approved task Use Cases); POST /work-notes; GET /work-notes |
 | Sources | POST /sources; POST /sources/{id}/documents; GET /ingestion-jobs/{id} |
 | Knowledge | GET/POST /knowledge; GET /knowledge/{id}/versions; POST /knowledge/{id}/verify; /reject; /deprecate |
@@ -766,7 +769,7 @@ Kế hoạch 10 tuần (khoảng 2,5 tháng) dùng tuần tương đối để n
 | Phase | Tuần | Deliverables |
 | ----- | ----- | ----- |
 | P0 – Foundation | 1 | Scope/actor quyết định, DB/API contracts, dataset design, Docker baseline và chia ownership module. |
-| P1 – Access & project | 2–3 | Auth, 3 role, `project.create` grant, project/team membership, ACL và audit. |
+| P1 – Access & project | 2–3 | Auth and Organization Context; `PLATFORM_OPERATOR` provisioning; Organization Membership; three Organization/Project roles; explicit Team Leader scope; Project/Team membership, ACL and audit. |
 | P2 – Capture & task management | 3–5 | Internal task lifecycle, task-linked manual note, R2 upload, parse/OCR/job status. |
 | P3 – Knowledge lifecycle | 5–7 | SAG index/trace, Proposed Knowledge, human verification, immutable version/evidence. |
 | P4 – Chat & handover | 7–8 | Permission-aware chat/citation/insufficient evidence, gap và scoped handover checklist. |
@@ -864,16 +867,17 @@ Continuum AI được định vị là Organizational Knowledge Continuity Syste
 
 # **PHỤ LỤC A – PERMISSION MATRIX MẪU**
 
-| Action | Admin | Team Leader | Member | Assignment effect |
-| ----- | ----- | ----- | ----- | ----- |
-| Create project | ✓ | Chỉ với grant `project.create` cấp tổ chức từ Admin | — | Không |
-| Create team / add member | ✓ | Trong project/team được giao, theo policy | — | Không |
-| Grant `project.create` / role | ✓ | — | — | Không |
-| Search/ask chat | ACL cho phép | ACL + team scope | ACL + membership scope | SME/Owner/Successor không vượt ACL |
-| Manual note / upload / propose | ✓ trong scope | ✓ trong scope | ✓ trong scope | Không tự xác minh |
-| Verify/reject knowledge | Không vì Admin role đơn thuần | Nếu policy/domain cho phép | — | SME/Owner trong scope có thể review |
-| Handover | Quản lý trong scope | Quản lý team mình | Tham gia phần được giao | Successor chỉ xem gói + ACL |
-| Audit | Security scope | Team scope | Own actions theo policy | Không thêm quyền |
+| Action | Platform Operator | Admin | Team Leader | Member | Assignment effect |
+| ----- | ----- | ----- | ----- | ----- | ----- |
+| Provision Organization / bootstrap first Admin | ✓ | — | — | — | Không |
+| Create project | Chỉ khi có Organization Membership `ACTIVE` riêng | ✓ khi Organization Membership `ACTIVE` | ✓ khi Organization Membership `ACTIVE` | ✓ khi Organization Membership `ACTIVE` | Không cần role hay `project.create` grant |
+| Create team / manage members | — | Organization policy/scope | Chỉ trong Project/Team được gán | — | Không tự mở rộng quyền |
+| Assign role/scope | — | Trong Organization policy | — | — | Cấp đúng scope và có audit |
+| Search/ask chat | No | ACL + membership | ACL + assigned scope + ACL | ACL + membership | SME/Owner/Successor chỉ trong assignment + ACL |
+| Manual note / upload / propose | No by platform role alone | Trong membership/scope + ACL | Trong assigned scope + ACL | Trong membership/scope + ACL | Không tự xác minh |
+| Verify/reject knowledge | No by platform role alone | Chỉ theo assignment/policy; không do Admin đơn thuần | Chỉ nếu được giao/policy cho phép | — | SME/Owner trong scope có thể review |
+| Handover | Platform operational metadata only | Organization administration, không mặc định đọc nội dung gói | Quản lý trong assigned scope | Tham gia phần được giao | Successor chỉ xem gói + ACL |
+| Audit | Platform health/config only | Organization security scope | Assigned Project/Team scope | Own actions theo policy | Không thêm quyền |
 
 &nbsp;
 

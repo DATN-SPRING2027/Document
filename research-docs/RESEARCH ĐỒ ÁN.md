@@ -8,6 +8,8 @@
 
 Các ví dụ về Payment Service chuyển từ MongoDB sang PostgreSQL trong tài liệu này là tình huống minh họa cho temporal knowledge và decision memory, không phải quyết định công nghệ của Continuum AI. Stack MVP đã chốt nằm trong [Tech.md](../research-tech/Tech.md).
 
+> **Governance and task-source amendment — 2026-10-02:** The hierarchy and task-source statements below are superseded where they conflict with the accepted Continuum model. `PLATFORM_OPERATOR` is platform-scoped: provisions Organizations, bootstraps the first Organization Admin, and monitors system health/configuration, with no default Organization-content access. `ADMIN` manages Organization Users/membership, roles/scopes and Organization settings, with no default confidential-content access. `TEAM_LEADER` manages only explicitly assigned Project/Team scope. `MEMBER` acts within active membership, assigned scope and resource ACL. Continuum Task API is the canonical task source for the MVP; Jira task import/sync is excluded. Any authenticated User with active Organization Membership in trusted context may create a private Project and is bootstrapped as its initial Project `MEMBER`. See [Actors, Roles & Permissions](02_ACTORS_ROLES_AND_PERMISSIONS.md), [Access Contract Readiness](Workspace/00-organization-and-access-contract-readiness.md), [ADR-009](../research-tech/ADR-009-internal-task-source-and-mongodb.md) and [ADR-010](../research-tech/ADR-010-task-service-in-existing-repositories.md).
+
 ---
 
 # **1\. Tổng quan dự án**
@@ -377,60 +379,25 @@ Tickets         Freshness          Training
 
 Continuum AI MVP tập trung vào một software project có nhiều team. Mọi leader và member đều phải đóng góp, cập nhật và chuyển giao knowledge liên quan đến responsibility của mình trong suốt quá trình project hoạt động.
 
-## **10.1. Project Manager**
+### **10.1. Platform Operator — platform scope**
 
-Project Manager quản lý continuity trên toàn project và nhiều team:
+`PLATFORM_OPERATOR` vận hành nền tảng, provision Organization, bootstrap Organization Admin đầu tiên và theo dõi health/configuration. Quyền platform không tạo Organization Membership và không mặc định cho phép đọc nội dung nội bộ Organization.
 
-* theo dõi project knowledge coverage, gap, freshness và concentration;  
-* khởi tạo handover khi leader hoặc member rời project hay đổi responsibility;  
-* gán hoặc phê duyệt successor;  
-* điều phối transfer giữa nhiều team;  
-* xác nhận handover readiness hoặc waiver có audit reason.
+### **10.2. Organization Admin — Organization scope**
 
-Project Manager vẫn chịu resource ACL và không mặc nhiên đọc mọi confidential knowledge.
+`ADMIN` quản lý User/Membership của Organization, gán các role/scope được phép và quản lý Organization settings/policy. Quyền này không tự tạo Project/Team Membership hoặc quyền đọc task, Work Note, evidence, knowledge hay handover confidential. Việc gán Project/Team authority phải có scope riêng theo contract đã duyệt.
 
----
+### **10.3. Team Leader — explicitly assigned Project/Team scope**
 
-## **10.2. Team Leader**
+`TEAM_LEADER` quản lý đúng Project/Team scope được gán; scope ở Project chỉ bao gồm Team con nếu delegation contract ghi rõ. Trong phạm vi được cấp, Team Leader có thể điều phối contribution/review/handover theo action policy. Vai trò không cho phép tự mở rộng scope hoặc vượt resource ACL.
 
-Team Leader chịu trách nhiệm continuity trong team được giao:
+### **10.4. Member — membership, scope and ACL governed**
 
-* định nghĩa required knowledge của team, module và process;  
-* gán Knowledge Owner và scoped SME;  
-* theo dõi gap, conflict, freshness và overdue update;  
-* quản lý handover của team member;  
-* đề xuất successor;  
-* xác nhận team handover package.
+`MEMBER` tìm kiếm knowledge được phép, ghi/cập nhật work context, tham gia review và hoàn thành handover items theo quyền cụ thể. `OrganizationMembership=ACTIVE` xác lập Organization Context; Project/Team/resource access tiếp tục cần membership/scope/ACL phù hợp. Người tạo đề xuất knowledge không được tự activate nó chỉ vì là tác giả.
 
----
+### **10.5. Scoped assignments and unresolved actions**
 
-## **10.3. Team Member**
-
-Mọi Team Member đều là knowledge consumer và knowledge contributor:
-
-* tìm kiếm và hỏi AI trên knowledge được phép;  
-* tạo hoặc cập nhật decision, procedure, incident, lesson learned, known issue, workaround và dependency;  
-* xác nhận claim do AI trích xuất từ công việc của mình;  
-* báo knowledge thiếu, lỗi thời hoặc mâu thuẫn;  
-* tham gia review và AI interview;  
-* hoàn thành handover items khi rời project hoặc chuyển responsibility.
-
-Member không được tự activate knowledge chỉ vì họ là người tạo nội dung.
-
----
-
-## **10.4. Project Administrator**
-
-Project Administrator quản lý kỹ thuật trong project:
-
-* project/team membership và persistent role;  
-* connector và data source;  
-* permission policy và resource ACL;  
-* ingestion configuration;  
-* session/service credential revocation;  
-* technical và security audit.
-
-Project Administrator không mặc nhiên là SME hoặc Knowledge Owner và không tự động được đọc confidential source content.
+`SME`, `KNOWLEDGE_OWNER` và `SUCCESSOR` là assignment theo scope, không phải persistent Organization role. Nhiệm vụ cụ thể như quản lý connector, gán successor, xác nhận handover hoặc approve knowledge cần action-level permission và assignment tương ứng; chức danh Admin không tự cấp các quyền này. Các dòng mô tả `Project Manager`/`Project Administrator` trong bản nghiên cứu cũ không phải role codes của mô hình hiện hành.
 
 ---
 
@@ -1631,7 +1598,7 @@ Từ đó hệ thống tính coverage.
 
 # **43\. Successor Onboarding Module**
 
-Khi một thành viên mới tiếp nhận responsibility hoặc thay người cũ, Project Manager / Team Leader tạo Successor assignment. Hệ thống xác định:
+Khi một thành viên mới tiếp nhận responsibility hoặc thay người cũ, Team Leader trong scope được gán hoặc reviewer được ủy quyền rõ ràng tạo Successor assignment theo action policy. Hệ thống xác định:
 
 Successor
 
@@ -1777,7 +1744,7 @@ làm thước đo duy nhất.
 
 # **48\. Member Handover / Offboarding Module**
 
-Khi một Team Member hoặc Team Leader chuẩn bị rời project, chuyển team hoặc đổi responsibility, Project Manager / Team Leader khởi tạo handover và hệ thống chạy:
+Khi một Member hoặc Team Leader chuẩn bị rời Project, chuyển Team hoặc đổi responsibility, Team Leader trong assigned scope hoặc reviewer được ủy quyền rõ ràng khởi tạo handover và hệ thống chạy:
 
 Departing Member (lifecycle state: OFFBOARDING)
 
@@ -2968,7 +2935,7 @@ Gap Resolved
 
 # **79\. Main Workflow – Successor Takeover**
 
-Successor được Project Manager / Team Leader chỉ định
+Successor được Team Leader trong assigned scope hoặc reviewer được ủy quyền rõ ràng chỉ định
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓
 
@@ -3008,7 +2975,7 @@ Takeover Readiness Progress
 
 # **80\. Main Workflow – Member Handover / Offboarding**
 
-Project Manager / Team Leader khởi tạo handover
+Team Leader trong assigned scope hoặc reviewer được ủy quyền rõ ràng khởi tạo handover
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓
 
@@ -3040,7 +3007,7 @@ Knowledge Transfer Package được gán cho Successor
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓
 
-Successor xác nhận tiếp nhận; Project Manager / Team Leader đóng handover
+Successor xác nhận tiếp nhận; Team Leader trong assigned scope hoặc reviewer được ủy quyền rõ ràng đóng handover
 
 &nbsp;
 

@@ -16,6 +16,8 @@
 
 — DaNang, September 2026 —
 
+> **Governance amendment — 2026-10-02:** This approved access model supersedes conflicting role and Project-create statements in this September report. `PLATFORM_OPERATOR` is a platform-scoped actor; it provisions Organizations, bootstraps the first Organization Admin, and monitors platform health/configuration, but receives no default Organization membership or internal-content access. `ADMIN` manages Organization users/membership, roles/scopes and Organization settings, but receives no default confidential-content access. `TEAM_LEADER` manages only explicitly assigned Project/Team scope. `MEMBER` works within active membership, assigned scope and resource ACL. `OrganizationMembership=ACTIVE` is authoritative for Organization Context. Any authenticated User with active membership in the trusted matching Organization may create a `PRIVATE` Project; no role or `project.create` grant is required, and the creator receives active Project Membership plus project-scoped `MEMBER` assignment. See the current [Actors, Roles & Permissions](../../research-docs/02_ACTORS_ROLES_AND_PERMISSIONS.md), [Organization and Workspace Access Contract Readiness](../../research-docs/Workspace/00-organization-and-access-contract-readiness.md) and the approved BE decision records for DEC-016 and Project Foundation. Detailed action-level permissions, invitation/lifecycle states and any retained non-Project-create capability grants remain subject to their own contract decisions.
+
 ---
 
 ## Table of Contents
@@ -40,6 +42,7 @@
 | 22/09/2026 | A | [All Members] | Add the system's entity relationship diagram |
 | 22/09/2026 | A | [All Members] | Add use case diagrams and screen flows |
 | 22/09/2026 | A | [All Members] | Add functional requirements for all modules |
+| 02/10/2026 | M | [All Members] | Amend governance hierarchy, Organization Context, confidential-content boundary, and Project creation rule; this amendment supersedes conflicting grant-based Project requirements below |
 
 ---
 
@@ -49,14 +52,14 @@
 
 Continuum AI is an AI-powered platform designed to solve the critical problem of **knowledge loss** when team members leave a software project, change teams, or transfer responsibilities. Unlike traditional documentation tools, Continuum AI provides a structured workflow that captures, verifies, maintains, and transfers knowledge continuously throughout the project lifecycle.
 
-The platform integrates with external tools like Jira Cloud for task synchronization, uses AI (Gemini/OpenAI) for intelligent knowledge extraction and evidence-grounded question answering, and supports a formal handover process with audio interviews and successor learning paths.
+Continuum owns the canonical task lifecycle through its Task API. Work Notes and handover workflows may reference a task by `taskId`; they do not synchronize their canonical tasks from Jira. The platform uses AI (Gemini/OpenAI) for knowledge extraction and evidence-grounded question answering, and supports handover workflows with audio interviews and successor learning paths.
 
 **Key capabilities:**
-- Continuous daily knowledge capture with Jira integration
+- Continuous daily knowledge capture linked to Continuum-owned work context
 - Human-verified knowledge lifecycle (Proposed → Verified → Active)
 - Permission-aware AI chat assistant with mandatory citations
 - Structured handover workflow with gap analysis
-- Role-based access control with 3 persistent roles
+- Role-based access control with a separate platform operations actor and 3 Organization/Project roles
 
 **Context Diagram:**
 
@@ -70,9 +73,12 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 
 | # | Actor | Description |
 |---|-------|-------------|
-| 1 | **Admin** | Organization administrator responsible for managing users, projects, teams, role assignments, integration connectors (Jira), source ACL policies, and audit logs. Can grant the `project.create` capability to Team Leaders. Does not automatically have access to confidential project content. |
-| 2 | **Team Leader** | Team leader responsible for managing assigned team workspaces, members, knowledge requirements, reviewing/approving knowledge in the Verification Inbox, initiating and managing handover workflows, and conducting audio interviews. Can create projects only if granted `project.create` by an Admin. Also contributes knowledge as a regular team member. |
-| 3 | **Member** | Software engineer/contributor who creates daily work notes (What/How/Why), uploads documents, proposes knowledge objects, asks the AI assistant questions, reports knowledge gaps, and participates in handover as a successor. Access is limited to authorized resources within their team/project scope. |
+| 1 | **Platform Operator** | Platform-scoped operator who runs the platform, provisions Organizations, bootstraps the first Organization Admin, and monitors platform health/configuration. This actor is not an Organization role and has no default Organization membership or internal-content access. |
+| 2 | **Admin** | Organization administrator who manages Organization Users/Memberships, assigns Organization roles/scopes, and manages Organization settings/policy. The role alone grants no Project/Team Membership and no confidential-content access. |
+| 3 | **Team Leader** | Manages only explicitly assigned Project/Team scopes and the workflows delegated within those scopes. The role alone grants no access outside assigned scope and cannot self-expand its authority. Also contributes as a member where separately enrolled. |
+| 4 | **Member** | Contributor who works within active Organization/Project/Team Membership, explicit scope and resource ACL. May capture work, contribute evidence and use knowledge workflows only for resources they are authorized to access. |
+
+**Authorization rule:** Actor labels below identify possible workflow participants; they do not bypass active membership, assigned scope, resource ACL, lifecycle checks or explicit deny. An Admin or Platform Operator may access Project content only through a separate, explicit authorization path; the role itself does not provide it.
 
 ### 2.2 Use Cases
 
@@ -110,44 +116,44 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 | 06 | Enable/Disable 2FA | Admin, Team Leader, Member | Allows users to enable or disable TOTP-based two-factor authentication for enhanced security. |
 | 07 | View Personal Profile | Admin, Team Leader, Member | Allows users to view their personal profile information including name, email, avatar, and role assignments. |
 | 08 | Edit Personal Profile | Admin, Team Leader, Member | Allows users to update their profile information such as full name and avatar. |
-| 09 | Create Organization | Admin | Allows admin to create a new organization with name, slug, and plan settings. |
-| 10 | Create Project | Admin, Team Leader (with grant) | Allows creation of a new project within an organization. Team Leaders require explicit `project.create` capability grant from Admin. |
-| 11 | View Project List | Admin, Team Leader, Member | Displays list of projects the user has membership in, with filtering and pagination. |
-| 12 | View Project Detail | Admin, Team Leader, Member | Shows detailed project information including teams, members, and statistics. |
-| 13 | Update Project | Admin, Team Leader | Allows updating project name, description, and status (ACTIVE/ARCHIVED). |
-| 14 | Create Team | Admin, Team Leader | Creates a new team within an existing project with name and code. |
-| 15 | Add Team Member | Admin, Team Leader | Adds a user to a team with specified role and scope. |
-| 16 | Remove Team Member | Admin, Team Leader | Removes a user from a team (requires appropriate scope). |
-| 17 | Assign Role | Admin | Assigns persistent roles (ADMIN, TEAM_LEADER, MEMBER) to users within the organization. |
-| 18 | Grant project.create Capability | Admin | Grants the time-bounded, audited `project.create` capability to a specific Team Leader at organization scope. |
+| 09 | Provision Organization and Bootstrap First Admin | Platform Operator | Provisions an Organization and bootstraps its first Admin. This does not grant the operator Organization membership or content access. |
+| 10 | Create Project | Any authenticated User with active Organization Membership | Creates a `PRIVATE` Project in the matching trusted Organization Context. No role or `project.create` grant is required; creator bootstrap is defined in the Project Foundation decision. |
+| 11 | View Project List | User with active Project Membership | Displays only Projects the user is authorized to discover, with filtering and pagination. |
+| 12 | View Project Detail | User with active Project Membership and applicable ACL | Shows only Project details and content permitted by the user's scope and resource ACL. |
+| 13 | Update Project | Team Leader assigned to that Project, within explicit scope | Allows permitted Project updates; role without assignment does not authorize the operation. |
+| 14 | Create Team | Team Leader assigned to the Project, within explicit scope | Creates a Team within a Project when the applicable scope and policy authorize it. |
+| 15 | Add Team Member | Authorized Team Leader within the Project/Team scope | Adds a member only when the applicable membership and delegation policy authorize the operation. |
+| 16 | Remove Team Member | Authorized Team Leader within the Project/Team scope | Removes a member only when the applicable membership and delegation policy authorize the operation. |
+| 17 | Assign Organization Role / Scope | Admin | Assigns Organization-level roles/scopes within Organization administration authority; Project/Team membership and content access remain separately governed. |
+| 18 | Manage Organization Membership | Admin | Manages Organization membership lifecycle. Exact invitation, activation and removal transitions remain governed by the Organization Membership contract. |
 | 19 | Revoke Capability | Admin | Revokes a previously granted capability with audit trail. |
 | 20 | Assign SME / Knowledge Owner | Admin, Team Leader | Assigns scoped SME or Knowledge Owner assignments to team members for specific domains/modules. |
-| 21 | Configure Jira Connector | Admin | Sets up Jira Cloud integration with OAuth2/token credentials, project mapping, and webhook registration. |
-| 22 | Sync Jira Issues | Admin, Team Leader | Triggers manual synchronization of Jira issues or views automatic sync status. |
-| 23 | View Synced Jira Issues | Admin, Team Leader, Member | Displays Jira issues synchronized to the project with status, assignee, and metadata. |
-| 24 | Create Daily Work Note | Team Leader, Member | Creates a structured daily work note with What/How/Why fields, optional Jira prefill, and evidence links. |
+| 21 | Configure External Source Connector (Future) | Authorized Organization administrator | Third-party source connectors are outside the current task-management MVP and require a separate approved contract. Jira is not the canonical task source. |
+| 22 | Manage Continuum Tasks | Authorized Project member / Team Leader in assigned scope | Proposed task-management use case; Continuum Task API is the canonical task source. Exact task actions and permission matrix remain subject to approval in the Task Use Cases document. |
+| 23 | View Continuum Task | Task actor allowed by the approved Task policy | Proposed use case; shows only task details and history authorized by the Task API. No Jira issue synchronization is part of the current task-source decision. |
+| 24 | Create Daily Work Note | Team Leader, Member | Creates a structured daily work note with What/How/Why fields, optional `taskId` link, and evidence links. |
 | 25 | Edit Work Note | Team Leader, Member | Edits a previously created work note (only own notes, before confirmation). |
 | 26 | Confirm Work Note | Team Leader, Member | Author confirms the work note content, making it eligible for knowledge extraction. |
 | 27 | View Work Note History | Team Leader, Member | Displays version history of a work note with immutable audit trail. |
 | 28 | Propose Knowledge | Team Leader, Member | Creates a knowledge proposal from work notes, documents, or manual entry with evidence references. |
 | 29 | View Verification Inbox | Team Leader, SME | Displays pending knowledge proposals requiring review within the user's authorized scope. |
 | 30 | Verify/Reject Knowledge | Team Leader, SME | Reviews and approves or rejects a knowledge proposal with feedback. Uses ACID multi-document transaction. |
-| 31 | View Knowledge Objects | Admin, Team Leader, Member | Browses verified knowledge objects with filtering by domain, status, owner, and date range. |
-| 32 | View Knowledge Gaps | Admin, Team Leader, Member | Displays identified knowledge gaps from overdue reviews, insufficient AI responses, and missing coverage. |
+| 31 | View Knowledge Objects | Project/Team member with applicable scope and source ACL | Browses only knowledge objects the actor is authorized to access. |
+| 32 | View Knowledge Gaps | Project/Team member with applicable scope and source ACL | Displays only knowledge gaps within the actor's authorized scope. |
 | 33 | Supersede Knowledge | Team Leader, Knowledge Owner | Creates a new version of existing knowledge, moving the old version to SUPERSEDED status. |
-| 34 | Create Chat Session | Admin, Team Leader, Member | Initiates a new AI chat session with project scope and permission-aware context. |
-| 35 | Ask Question (with Citations) | Admin, Team Leader, Member | Sends a question to the AI assistant; receives an evidence-grounded answer with mandatory citations. If insufficient evidence, returns INSUFFICIENT_EVIDENCE. |
-| 36 | Report Knowledge Gap | Admin, Team Leader, Member | Creates a knowledge gap report from an unanswered or insufficiently answered chat question. |
-| 37 | View Chat History | Admin, Team Leader, Member | Browses previous chat sessions and messages with their citations and evidence references. |
-| 38 | Initiate Handover | Admin, Team Leader | Starts a handover process when a member departs or transfers responsibility. Analyzes responsibilities, ownership, and gaps. |
-| 39 | View Handover Package | Admin, Team Leader, Successor | Views the handover package including checklist, priorities, knowledge gaps, and unresolved questions. |
-| 40 | Sign-off Handover Item | Team Leader, Admin | Confirms completion of a specific handover checklist item. |
+| 34 | Create Chat Session | Project/Team member with applicable scope and source ACL | Initiates a chat session in an authorized Project scope with permission-aware retrieval. |
+| 35 | Ask Question (with Citations) | Project/Team member with applicable scope and source ACL | Receives evidence-grounded answers only from authorized evidence. If evidence is insufficient, returns `INSUFFICIENT_EVIDENCE`. |
+| 36 | Report Knowledge Gap | Project/Team member with applicable scope and source ACL | Creates a gap report from an unanswered or insufficiently answered question in the authorized scope. |
+| 37 | View Chat History | Session owner or separately authorized actor | Browses only chat history and citations the actor is permitted to access. |
+| 38 | Initiate Handover | Team Leader assigned to the relevant Project/Team, or another explicitly scoped actor | Starts a handover within authorized scope when a member departs or transfers responsibility. |
+| 39 | View Handover Package | Team Leader within scope, or assigned Successor | Views only the handover package and evidence authorized for that actor. |
+| 40 | Sign-off Handover Item | Team Leader within assigned scope or explicitly authorized reviewer | Confirms an item only when explicitly authorized; Admin role alone is not sufficient. |
 | 41 | Audio Interview Recording | Team Leader | Conducts an audio interview via WebSocket streaming, which is stored in Cloudflare R2 and transcribed via Whisper API. |
 | 42 | View Successor Learning Path | Member (Successor) | Views the auto-generated learning path tailored for the successor's onboarding scope. |
-| 43 | Upload Document | Admin, Team Leader, Member | Uploads a document (PDF, DOCX, MD, TXT, Image) via presigned URL to Cloudflare R2 for ingestion. |
-| 44 | View Documents | Admin, Team Leader, Member | Browses uploaded documents with metadata, ingestion status, and source ACL information. |
-| 45 | View Ingestion Status | Admin, Team Leader, Member | Checks the progress of document OCR, chunking, and vector indexing. |
-| 46 | Manage Source ACL | Admin, Team Leader | Configures access control lists for uploaded sources and documents. |
+| 43 | Upload Document | Project/Team member with applicable scope and upload policy | Uploads an authorized source via a time-limited upload URL for ingestion. |
+| 44 | View Documents | Project/Team member with applicable scope and source ACL | Browses only documents authorized by membership, scope and ACL. |
+| 45 | View Ingestion Status | Source owner or separately authorized actor | Checks processing status without exposing restricted source content. |
+| 46 | Manage Source ACL | Authorized policy administrator or Team Leader within assigned scope | Configures source access policy within delegated scope. This does not itself grant access to the protected content. |
 | 47 | View Notifications | Admin, Team Leader, Member | Displays in-app and email notifications including knowledge reviews, handover updates, and daily reminders. |
 | 48 | Mark Notification as Read | Admin, Team Leader, Member | Marks one or more notifications as read. |
 | 49 | Manage User Accounts | Admin | Views, creates, suspends, or activates user accounts. Includes invite flow for new users. |
@@ -180,21 +186,21 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 | 1 | Authentication | Login | Screen for users to enter email and password. Supports all three roles. Redirects to role-specific dashboard after successful authentication. |
 | 2 | Authentication | Forgot Password | Screen where users enter their registered email to receive a password reset link. |
 | 3 | Authentication | Change Password | Screen for authenticated users to update their password by entering current and new passwords. |
-| 4 | Dashboard | Admin Dashboard | Overview of system statistics: total users, active projects, pending knowledge reviews, recent audit events, and system health indicators. |
+| 4 | Dashboard | Admin Dashboard | Organization administration overview: Organization users/membership and policy events. It does not include Project content or platform health unless separately authorized. |
 | 5 | Dashboard | Team Leader Dashboard | Overview of team activity: pending verifications, knowledge gaps, handover status, recent work notes from team members, and daily note completion rates. |
 | 6 | Dashboard | Member Dashboard | Personal overview: today's work note status, recent notifications, knowledge contribution stats, assigned handover items, and quick access to AI chat. |
-| 7 | User Management | User List | Paginated table of all users with search, filter by status/role, and sorting. Admin can view user details, suspend/activate, or invite new users. |
-| 8 | User Management | User Detail / Edit | Detailed user profile with role assignments, team memberships, capability grants, and activity history. |
-| 9 | User Management | Invite User | Form to invite a new user by email with initial role assignment and team membership. |
+| 7 | User Management | User List | Paginated view of Organization membership and role/scope status. Admin can manage Organization membership within the approved lifecycle contract. |
+| 8 | User Management | User Detail / Edit | Organization-scoped identity and role/scope details. Project content and activity are not exposed solely by the Admin role. |
+| 9 | User Management | Invite User | Organization membership onboarding screen; invitation mechanism and status transitions remain to be decided. |
 | 10 | Organization | Organization Settings | View and edit organization name, slug, plan, and global settings. |
-| 11 | Project Management | Project List | Grid or table of projects with name, code, status, team count, and member count. |
-| 12 | Project Management | Project Detail | Detailed project view with teams, members, Jira connection status, and knowledge statistics. |
-| 13 | Team Management | Team List | Table of teams within a project with member counts and leader assignment. |
-| 14 | Team Management | Team Detail / Members | Team member list with roles, assignments (SME/Knowledge Owner), and activity status. |
-| 15 | Role & Grant | Role & Grant Management | Interface to assign roles, grant/revoke `project.create` capabilities, and assign SME/Knowledge Owner scoped assignments. |
-| 16 | Jira Integration | Jira Connector Config | Form to configure Jira Cloud connection with OAuth2/token, project mapping, and webhook URL. Shows sync status and last sync time. |
-| 17 | Daily Capture | Work Notes List | Chronological list of work notes with status (Draft/Confirmed), date, and linked Jira issues. |
-| 18 | Daily Capture | Create/Edit Work Note | Structured form with What/How/Why fields, Jira issue prefill, evidence links, and blocker/next-step fields. |
+| 11 | Project Management | Project List | Shows only Projects discoverable through the user's active Project Membership and access policy. |
+| 12 | Project Management | Project Detail | Displays Project details only within the user's active Project/Team scope and resource ACL. |
+| 13 | Team Management | Team List | Lists Teams only for Project/Team scopes the user is authorized to manage or view. |
+| 14 | Team Management | Team Detail / Members | Shows membership and scoped assignments only to actors authorized for that Project/Team scope. |
+| 15 | Role & Scope | Organization Role & Scope Management | Lets an Admin assign permitted Organization roles/scopes. It does not grant Project content access or make `project.create` a gate. |
+| 16 | External Sources (Future) | Connector Configuration | Future connector configuration, only if a separate source integration is approved; this does not make an external system the task source. |
+| 17 | Daily Capture | Work Notes List | Chronological list of work notes with status (Draft/Confirmed), date, and optional linked Continuum task. |
+| 18 | Daily Capture | Create/Edit Work Note | Structured form with What/How/Why fields, optional Continuum `taskId`, evidence links, and blocker/next-step fields. |
 | 19 | Daily Capture | Confirm Note | Confirmation dialog where the author reviews and confirms their work note content. |
 | 20 | Knowledge | Verification Inbox | Queue of pending knowledge proposals for the reviewer's authorized scope. Shows title, domain, proposer, and submitted date. |
 | 21 | Knowledge | Knowledge Review Detail | Detailed view of a knowledge proposal with content, evidence, proposer info, and approve/reject actions with feedback. |
@@ -216,44 +222,29 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 
 #### 3.1.3 Screen Authorization
 
-| Screen | Admin | Team Leader | Member |
-|--------|-------|-------------|--------|
-| Login | X | X | X |
-| Forgot Password | X | X | X |
-| Change Password | X | X | X |
-| Admin Dashboard | X | | |
-| Team Leader Dashboard | | X | |
-| Member Dashboard | | | X |
-| User List | X | | |
-| User Detail / Edit | X | | |
-| Invite User | X | | |
-| Organization Settings | X | | |
-| Project List | X | X | X |
-| Project Detail | X | X | X |
-| Team List | X | X | |
-| Team Detail / Members | X | X | |
-| Role & Grant Management | X | | |
-| Jira Connector Config | X | | |
-| Work Notes List | | X | X |
-| Create/Edit Work Note | | X | X |
-| Confirm Note | | X | X |
-| Verification Inbox | | X (scoped) | |
-| Knowledge Review Detail | | X (scoped) | |
-| Knowledge Objects | X | X | X |
-| Knowledge Gaps | X | X | X |
-| AI Chat Assistant | X | X | X |
-| Chat History | X | X | X |
-| Handover Management | X | X | |
-| Handover Package Detail | X | X | X (successor) |
-| Audio Interview | | X | |
-| Successor Learning Path | | | X (successor) |
-| Documents Library | X | X | X |
-| Upload Document | X | X | X |
-| Ingestion Status | X | X | X |
-| Notifications | X | X | X |
-| Personal Profile | X | X | X |
-| Edit Profile | X | X | X |
-| Audit Logs | X | X (scoped) | |
+An `X` below is only a role-eligible path, never authorization by role alone. Active Organization/Project/Team Membership, explicit scope, resource ACL, lifecycle state and explicit deny are still checked by the backend. Admin and Platform Operator do not gain confidential content access from their administrative/platform roles; an Admin who independently has Project membership and resource ACL acts under that separate authorization.
+
+| Screen | Platform Operator | Admin | Team Leader | Member |
+|--------|-------------------|-------|-------------|--------|
+| Login / password / personal profile | X | X | X | X |
+| Platform Operations Dashboard | X | | | |
+| Provision Organization / Bootstrap First Admin | X | | | |
+| Admin Dashboard (Organization administration only) | | X | | |
+| Team Leader Dashboard | | | X (scoped) | |
+| Member Dashboard | | | | X (scoped) |
+| Organization User / Membership Management | | X | | |
+| Organization Settings / Roles & Scopes | | X | | |
+| Project List / Detail | | | X (scoped) | X (membership + ACL) |
+| Team List / Detail / Membership | | | X (assigned scope) | X (membership + ACL) |
+| Work Notes / Knowledge / Chat / Documents | | | X (scoped + ACL) | X (membership + ACL) |
+| Verification Inbox / Knowledge Review | | | X (authorized reviewer) | X (only if separately assigned reviewer) |
+| Handover Management | | | X (assigned scope) | X (assigned predecessor/successor scope) |
+| Audio Interview | | | X (assigned scope) | |
+| Successor Learning Path | | | | X (assigned successor scope) |
+| Notifications / Personal Profile | X | X | X | X |
+| Audit Logs | X (platform events only) | X (Organization administration events) | X (authorized scope only) | |
+
+This table is a high-level screen map, not the final action-level permission matrix. Platform health/configuration and Organization content are separate data scopes.
 
 #### 3.1.4 Non-Screen Functions
 
@@ -265,8 +256,8 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 | 4 | Knowledge Capture | Daily Note Reminder | Cronjob at 17:30 that sends email reminders to team members who haven't confirmed their daily work note. |
 | 5 | Knowledge Lifecycle | Knowledge Gap Scanner | Periodic scanner that identifies modules/domains with overdue reviews (exceeding `cadenceDays`) and creates knowledge gap records. |
 | 6 | Knowledge Lifecycle | AI Knowledge Extraction | Background worker that extracts proposed knowledge objects from confirmed work notes and ingested documents using LLM. |
-| 7 | Jira Integration | Webhook Processing | BullMQ worker that processes incoming Jira webhook events with idempotency deduplication (Redis SETNX). |
-| 8 | Jira Integration | Reconciliation Cronjob | Scheduled job at 02:00 AM that reconciles missed webhook events by comparing local and remote Jira states. |
+| 7 | Task Management | Task Lifecycle Events | Task service publishes only events defined by the approved Task API/event contract; this report does not prescribe event names or payloads. |
+| 8 | Task Management | Task Event Consumption | Downstream services resolve tasks through Task API/event contracts and must not query Task collections directly. |
 | 9 | Document Ingestion | OCR & Chunking Worker | Background worker that processes uploaded documents through OCR (MarkItDown/MinerU), chunks text, generates embeddings, and indexes into vector store. |
 | 10 | Notification | Email Delivery Service | BullMQ consumer for `mail-queue` that sends transactional emails via SMTP/Resend for account activation, password reset, and knowledge alerts. |
 | 11 | Notification | Real-time Push | Redis Pub/Sub channel (`user:notify:{userId}`) that pushes in-app notifications to connected WebSocket clients. |
@@ -283,14 +274,14 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 |---|--------|-------------|
 | 1 | users | Represents a system user account with email, password hash (Bcrypt 12 rounds), full name, avatar, status (ACTIVE/SUSPENDED/PENDING_INVITE), and optional 2FA configuration. |
 | 2 | organizations | Represents a top-level organization (multi-tenant) with name, slug, plan (FREE/ENTERPRISE), and settings. |
-| 3 | projects | Represents a software project within an organization. Contains name, code, description, and status (ACTIVE/ARCHIVED). Created by a user with `project.create` grant. |
+| 3 | projects | Represents a Project within an Organization. Created by any authenticated User with `OrganizationMembership=ACTIVE` in the matching trusted Organization Context; starts `PRIVATE`, with creator Project Membership and project-scoped `MEMBER` assignment bootstrapped atomically. |
 | 4 | teams | Represents a team within a project. Contains name, code, and references to organization and project. |
-| 5 | work_notes | Represents a daily work note capturing What/How/Why, blockers, next steps, and evidence. Linked to author, project, team, and optionally to a Jira issue. Status: DRAFT or CONFIRMED. |
+| 5 | work_notes | Represents a daily work note capturing What/How/Why, blockers, next steps, and evidence. Linked to author, project and team, with an optional logical `taskId` reference to the Continuum Task API. Status: DRAFT or CONFIRMED. |
 | 6 | knowledge_objects | Represents a verified knowledge item with title, domain, category, content, lifecycle status (PROPOSED → UNDER_REVIEW → VERIFIED → ACTIVE → SUPERSEDED → DEPRECATED), version tracking, validity period, and review cadence. |
 | 7 | chat_sessions | Represents an AI chat conversation with user, project scope, title, status, and scope filter for permission-aware retrieval. |
 | 8 | handovers | Represents a handover process with predecessor/successor users, project/team scope, status (INITIATED → IN_PROGRESS → COMPLETED), reason, and timeline. |
 | 9 | sources | Represents an uploaded document/file with metadata (filename, mimeType, size), Cloudflare R2 object key, SHA-256 hash for deduplication, and uploader reference. |
-| 10 | jira_issues | Represents a synchronized Jira issue with external ID, issue key, summary, status, assignee, priority, and connection/project references. |
+| 10 | tasks | Canonical operational tasks owned by Continuum Task API and stored in MongoDB. Work Notes and handover flows may retain an optional logical `taskId`; SAG stores only permitted derived Work Note/evidence for retrieval. |
 | 11 | notifications | Represents an in-app or email notification with recipient, type, title, message, read status, and related resource reference. |
 | 12 | audit_logs | Immutable audit trail recording actions, actors, resource types/IDs, metadata, and timestamps. Append-only for SOC2/ISO compliance. |
 
@@ -304,7 +295,7 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 
 **Function description:**
 
-**Actors:** Admin, Team Leader, Member
+**Actors:** Authenticated User (including Platform Operator)
 
 **Purpose:** Allow users to authenticate and gain access to the system with JWT-based session management.
 
@@ -357,7 +348,7 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 
 **Function description:**
 
-**Actors:** Admin, Team Leader, Member
+**Actors:** Authenticated User (including Platform Operator)
 
 **Purpose:** Allow users to securely terminate their active session by invalidating tokens.
 
@@ -403,7 +394,7 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 
 **Function description:**
 
-**Actors:** Admin, Team Leader, Member
+**Actors:** User with an account
 
 **Purpose:** Allow users to reset their password securely when they forget it.
 
@@ -592,20 +583,20 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 
 #### 3.3.1 Create Project
 
-**Function trigger:** Admin or Team Leader (with `project.create` grant) clicks "Create Project" button.
+**Function trigger:** An authenticated user with an active Organization Membership in the selected trusted Organization Context clicks "Create Project".
 
 **Function description:**
 
-**Actors:** Admin, Team Leader (with grant)
+**Actors:** Any authenticated User with `OrganizationMembership=ACTIVE` in the matching trusted Organization Context
 
 **Purpose:** Create a new software project within the organization for knowledge management.
 
 **Data Processing:**
-1. Validate project name and code uniqueness within organization.
-2. If actor is Team Leader, verify `project.create` capability grant is active and not expired.
-3. Create project record with organizationId, name, code, description, status=ACTIVE.
-4. Create initial project membership for the creator.
-5. Log project creation in audit trail.
+1. Validate the authenticated subject, trusted Organization Context and active Organization Membership.
+2. Validate project name and code uniqueness within the Organization.
+3. Create the Project with `visibility=PRIVATE` and its Organization reference.
+4. In the same transaction, create the creator's `ACTIVE` Project Membership and project-scoped `MEMBER` RoleAssignment.
+5. Record the existing project-create audit event with Project and bootstrap references.
 
 **Screen layout:**
 
@@ -616,36 +607,37 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 **Validation:**
 - Project name must be 3-100 characters.
 - Project code must be 2-10 uppercase alphanumeric characters, unique within the organization.
-- Team Leader must have an active, non-expired `project.create` grant.
+- The request's Organization Context must be established by an active Organization Membership and match the trusted Organization selected for creation.
+- Project creation must not require an Admin, Team Leader or `project.create` grant.
 
 **Business Rules:**
-- Team Leaders can only create projects if explicitly granted `project.create` at organization scope by an Admin.
-- The creator is automatically added as a project member.
-- Creating a project does not make the creator an Admin or grant access to other projects.
-- The `project.create` grant usage is logged in the audit trail.
+- Every newly created Project starts `PRIVATE`.
+- The creator is atomically added as an active Project Member and receives only the project-scoped `MEMBER` assignment.
+- Creation does not make the creator a Team Leader, Organization Admin, Project owner or Team, and grants no access to other Projects.
+- Organization Admin and Platform Operator roles do not grant access to Project content; content checks remain membership/scope/ACL based.
 
 **Functionalities:**
 
 **Normal case:**
 1. User fills in project name, code, and description.
-2. System validates data and checks permissions.
-3. System creates the project and initial membership.
+2. System validates the trusted Organization Context and active Organization Membership, then validates the input.
+3. System atomically creates the private Project, creator membership, scoped `MEMBER` assignment and audit event.
 4. The system displays "Project created successfully."
 
 **Abnormal case:**
 1. If project code already exists: System shows error ("Project code already in use.")
-2. If Team Leader lacks grant: System shows error ("You do not have permission to create projects. Request a project.create grant from your Admin.")
-3. If grant expired: System shows error ("Your project.create grant has expired. Contact your Admin.")
+2. If Organization Membership is missing/inactive or the trusted context does not match: deny the request and do not create any Project/bootstrap record.
+3. If any transactional bootstrap write fails: roll back the Project and all associated membership/assignment/audit writes.
 
 ---
 
 #### 3.3.2 Manage Teams
 
-**Function trigger:** Admin or Team Leader navigates to the team management page within a project.
+**Function trigger:** A Team Leader assigned to the Project scope navigates to its team management page.
 
 **Function description:**
 
-**Actors:** Admin, Team Leader
+**Actors:** Team Leader assigned to the Project scope
 
 **Purpose:** Create, view, and manage teams within a project.
 
@@ -664,7 +656,7 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 **Validation:**
 - Team name must be 2-50 characters.
 - Team code must be 2-20 uppercase alphanumeric characters, unique within the project.
-- User must have Admin role or be Team Leader within the project.
+- User must have an explicit Team Leader assignment in the Project scope or an explicitly delegated management permission. Organization Admin role alone is not sufficient.
 
 **Business Rules:**
 - Team Leaders can only manage teams within their assigned project scope.
@@ -688,11 +680,11 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 
 #### 3.3.3 Add/Remove Team Members
 
-**Function trigger:** Admin or Team Leader clicks "Add Member" or "Remove" on the team member list.
+**Function trigger:** A Team Leader assigned to the relevant Project/Team scope, or a separately authorized delegate, changes team membership.
 
 **Function description:**
 
-**Actors:** Admin, Team Leader
+**Actors:** Team Leader assigned to the relevant Project/Team scope, or separately authorized delegate
 
 **Purpose:** Manage team membership by adding or removing users.
 
@@ -714,7 +706,7 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 - User to be added must exist in the system and be ACTIVE.
 - User must not already be a member of the team.
 - Cannot remove the last Team Leader from a team.
-- Admin or Team Leader of the specific team required.
+- Explicit authorization in the relevant Project/Team scope is required; Organization Admin role alone is not sufficient.
 
 **Business Rules:**
 - Adding a member grants them access to team-scoped resources immediately.
@@ -737,52 +729,22 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 
 ---
 
-#### 3.3.4 Grant / Revoke project.create Capability
+#### 3.3.4 Manage Organization Membership and Role/Scope Administration
 
-**Function trigger:** Admin navigates to the Role & Grant Management page and grants or revokes a capability.
-
-**Function description:**
+**Function trigger:** An Organization Admin manages a user's Organization Membership or assigns an Organization-level role/scope through the Organization administration interface.
 
 **Actors:** Admin
 
-**Purpose:** Grant or revoke the `project.create` capability to a Team Leader at organization scope.
+**Purpose:** Manage Organization membership and Organization-scoped role/scope assignments. This operation does not create Project Membership and does not grant Project content access by itself.
 
-**Data Processing:**
-1. Validate the target user is a Team Leader.
-2. Create/update organization_capability_grant record with subject, capability code, validity period, and issuing Admin.
-3. For revocation: mark the grant as revoked with reason.
-4. Log the grant/revocation in audit trail.
+**Approved authorization boundary:**
+- `OrganizationMembership` is the authoritative relationship between User and Organization; only `ACTIVE` establishes Organization Context.
+- Admin authority is limited to Organization user/membership, Organization roles/scopes and Organization settings/policy.
+- The exact invitation, activation, suspension, removal, role-transition and delegation workflows are not specified by this report and must follow the approved Organization Membership API contract.
+- Assigning an Organization role does not silently create a Project/Team membership or grant access to confidential Project content.
+- The former `project.create` grant workflow in this report is superseded. Project creation uses the separate active-membership rule in §3.3.1. This report does not decide whether remaining capability grants will be retained for other policies.
 
-**Screen layout:**
-
-> *[Screenshot placeholder: Grant Management Page]*
-
-**Function Details:**
-
-**Validation:**
-- Only Admin role can perform this action.
-- Target user must have TEAM_LEADER role.
-- Cannot self-grant (Admin cannot grant capabilities to themselves if they're also a Team Leader).
-- Validity period must be in the future.
-
-**Business Rules:**
-- The `project.create` grant is explicit, revocable, time-bounded, and audited.
-- A leader cannot self-grant it or pass it to another person.
-- The capability evaluator checks subject, issuing Admin, organization, expiry/revocation, and explicit deny.
-- No broad condition such as `role === "TEAM_LEADER"` may substitute for this check.
-- Grant/revocation immediately affects the user's effective permissions.
-
-**Functionalities:**
-
-**Normal case:**
-1. Admin selects a Team Leader and sets the capability validity period.
-2. System creates the capability grant record.
-3. The system displays "project.create capability granted to [user] until [date]."
-
-**Abnormal case:**
-1. If user is not a Team Leader: System shows error ("Capability can only be granted to Team Leaders.")
-2. If grant already active: System shows error ("User already has an active project.create grant.")
-3. If validity period in the past: System shows error ("Validity period must be in the future.")
+**Audit requirement:** Record the actor, subject, Organization, changed membership/assignment, scope, timestamp and reason where required by the final contract. Do not place sensitive content in audit metadata.
 
 ---
 
@@ -799,7 +761,7 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 **Purpose:** Capture structured daily work knowledge including what was done, how, why, blockers, and next steps.
 
 **Data Processing:**
-1. If a Jira issue is linked, prefill context fields (task/issue, status, assignee, dates).
+1. If a Continuum task is linked, resolve its permitted context by `taskId` through the Task API.
 2. Create work_note record with status=DRAFT.
 3. Auto-save draft periodically.
 4. Store evidence links (PR, commit, file references).
@@ -817,8 +779,8 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 
 **Business Rules:**
 - Work notes start as DRAFT and must be explicitly confirmed by the author.
-- Jira data prefills context but the person confirms the note.
-- Notes can be created without Jira linkage (manual capture is primary).
+- Linked task data is contextual only; the author reviews and confirms the Work Note.
+- Notes can be created without a task link (manual capture is supported).
 - Auto-save preserves drafts to prevent data loss.
 - A reminder follows up on missing required daily notes at 17:30.
 - Notes are scoped to the author's project/team.
@@ -826,15 +788,15 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 **Functionalities:**
 
 **Normal case:**
-1. User selects a date and optionally links a Jira issue.
-2. Jira context is prefilled if linked.
+1. User selects a date and optionally links a Continuum task.
+2. Permitted task context is loaded through Task API if linked.
 3. User fills in What/How/Why, blockers, next steps, and evidence.
 4. System saves as DRAFT.
 5. The system displays "Work note saved as draft."
 
 **Abnormal case:**
 1. If all fields empty: System shows error ("At least one content field is required.")
-2. If Jira connection fails: System shows warning ("Jira prefill unavailable. You can still create the note manually.")
+2. If task lookup fails: System shows a warning and allows the author to continue without task context, subject to final Work Note contract.
 3. If auto-save fails: System shows warning ("Auto-save failed. Please save manually.")
 
 ---
@@ -888,102 +850,13 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 
 ---
 
-### 3.5 Jira Integration
+### 3.5 Continuum Task Management
 
-#### 3.5.1 Connect Jira Cloud
+Continuum Task API is the canonical source for operational tasks. The Task service runs as a separate NestJS service within the existing backend repository and service topology and owns the logical MongoDB database `continuum_task`. This decision does not create a separate source repository or MongoDB cluster.
 
-**Function trigger:** Admin clicks "Configure Jira" in the integration settings.
+Work Notes and handover records may keep an optional logical `taskId` and resolve task data only through the Task API or its approved event contract. They must not query Task collections directly. Only permitted Work Notes and evidence flow into SAG retrieval/indexing; tasks themselves are not SAG knowledge sources. Jira issue synchronization is not part of the current task-source MVP.
 
-**Function description:**
-
-**Actors:** Admin
-
-**Purpose:** Establish a project-scoped connection to Jira Cloud for issue synchronization.
-
-**Data Processing:**
-1. Validate Jira site URL and credentials (OAuth2 or API token).
-2. Create `jira_connections` record with encrypted credentials.
-3. Register webhook URL for issue/comment events.
-4. Test connection by fetching project list from Jira API.
-5. Map Jira projects to Continuum AI projects.
-
-**Screen layout:**
-
-> *[Screenshot placeholder: Jira Configuration Page]*
-
-**Function Details:**
-
-**Validation:**
-- Jira site URL must be a valid Atlassian Cloud URL.
-- Credentials must be valid and have sufficient Jira permissions.
-- Webhook URL must be reachable from Jira Cloud.
-
-**Business Rules:**
-- Only Admin can configure Jira connections.
-- Credentials are stored encrypted in the secret store, never in MongoDB or logs.
-- Webhook payloads are treated as untrusted input.
-- Connection testing is required before activation.
-- Initial import reads permitted issues after connection is established.
-
-**Functionalities:**
-
-**Normal case:**
-1. Admin enters Jira site URL and credentials.
-2. System validates and tests the connection.
-3. System registers webhook and maps projects.
-4. The system displays "Jira connection established successfully."
-
-**Abnormal case:**
-1. If invalid credentials: System shows error ("Unable to authenticate with Jira. Please verify your credentials.")
-2. If Jira site unreachable: System shows error ("Cannot reach the Jira site. Please check the URL.")
-3. If webhook registration fails: System shows warning ("Connection established but webhook registration failed. Automatic sync may be delayed.")
-
----
-
-#### 3.5.2 Manual Sync Trigger
-
-**Function trigger:** Admin or Team Leader clicks "Sync Now" on the Jira integration page.
-
-**Function description:**
-
-**Actors:** Admin, Team Leader
-
-**Purpose:** Manually trigger synchronization of Jira issues to catch any missed webhook events.
-
-**Data Processing:**
-1. Enqueue a reconciliation job to BullMQ `jira-sync-queue`.
-2. Fetch issues from Jira Cloud API with latest changes.
-3. Compare with local `jira_issues` records.
-4. Perform idempotent upserts for new/changed issues.
-5. Mark deleted/restricted issues as withdrawn from retrieval.
-
-**Screen layout:**
-
-> *[Screenshot placeholder: Jira Sync Page]*
-
-**Function Details:**
-
-**Validation:**
-- Jira connection must be active and credentials valid.
-- Only Admin or Team Leader of the mapped project.
-
-**Business Rules:**
-- Duplicate event delivery does not duplicate issues, notes, or knowledge objects.
-- Idempotency uses Redis SETNX with key `jira:event:{eventId}` (TTL 86,400s).
-- Issues that become restricted in Jira are immediately withdrawn from Continuum retrieval.
-- Sync progress and errors are visible in the sync status dashboard.
-
-**Functionalities:**
-
-**Normal case:**
-1. User clicks "Sync Now."
-2. System enqueues a reconciliation job.
-3. System processes the sync and shows progress.
-4. The system displays "Sync completed. [N] issues updated."
-
-**Abnormal case:**
-1. If Jira connection expired: System shows error ("Jira connection credentials expired. Please re-authenticate.")
-2. If rate limited by Jira API: System shows error ("Jira API rate limit reached. Sync will retry automatically.")
+The Task use cases, exact field/status lifecycle, role-action matrix, API payloads and event schemas remain subject to the dedicated Task Management contract and review. This report does not invent those details.
 
 ---
 
@@ -995,7 +868,7 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 
 **Function description:**
 
-**Actors:** Admin, Team Leader, Member
+**Actors:** Project/Team member with applicable membership, scope and source ACL
 
 **Purpose:** Create a knowledge proposal from evidence (work notes, documents, or manual entry) for human review.
 
@@ -1097,7 +970,7 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 
 **Function description:**
 
-**Actors:** Admin, Team Leader, Member
+**Actors:** Project/Team member with applicable membership, scope and source ACL
 
 **Purpose:** Ask the AI assistant a question about project knowledge and receive an evidence-grounded answer with mandatory citations.
 
@@ -1152,7 +1025,7 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 
 **Function description:**
 
-**Actors:** Admin, Team Leader, Member
+**Actors:** Project/Team member with applicable membership, scope and source ACL
 
 **Purpose:** Create a knowledge gap report for missing or inadequate knowledge.
 
@@ -1195,11 +1068,11 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 
 #### 3.8.1 Initiate Handover
 
-**Function trigger:** Admin or Team Leader clicks "Initiate Handover" for a departing or transferring team member.
+**Function trigger:** A Team Leader assigned to the relevant Project/Team scope, or another actor with an explicit handover assignment, initiates handover for a departing or transferring member.
 
 **Function description:**
 
-**Actors:** Admin, Team Leader
+**Actors:** Team Leader assigned to the relevant Project/Team scope; explicitly assigned predecessor/successor as applicable
 
 **Purpose:** Start the handover process when a member departs or transfers responsibility.
 
@@ -1218,7 +1091,7 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 
 **Validation:**
 - The departing member must be an active member of the project/team.
-- Initiator must have Admin role or be Team Leader of the member's team.
+- Initiator must have the applicable Project/Team assignment and resource ACL. `ADMIN` or `PLATFORM_OPERATOR` role alone does not authorize viewing the handover's confidential content or initiating the Project workflow.
 - A successor must be a valid, active member (if assigned).
 
 **Business Rules:**
@@ -1226,7 +1099,7 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 - Missing or overdue knowledge creates follow-up items automatically.
 - Handover checklist items are prioritized by risk and coverage.
 - The departing member's status transitions to OFFBOARDING.
-- Team Leader or Admin must confirm completion of the handover.
+- Completion must be confirmed by a Team Leader in the assigned scope or another explicitly authorized reviewer. `ADMIN` role alone is not sufficient.
 
 **Functionalities:**
 
@@ -1302,7 +1175,7 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 
 **Function description:**
 
-**Actors:** Admin, Team Leader, Member
+**Actors:** Project/Team member with applicable membership, scope and upload policy
 
 **Purpose:** Upload a document for processing, indexing, and inclusion in the knowledge retrieval system.
 
@@ -1329,7 +1202,7 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 - Files are uploaded directly to Cloudflare R2 via presigned URL (server CPU is preserved).
 - SHA-256 hash verification ensures no duplicate files.
 - Metadata (filename, mimeType, size, hash, R2 key) is stored in MongoDB.
-- Source ACL defaults to team-scope but can be configured by Admin/Team Leader.
+- Source ACL is enforced for each read and retrieval. Policy changes require an authorized policy administrator or scoped Team Leader; configuration access does not reveal the protected content.
 - Ingestion pipeline starts automatically after upload confirmation.
 
 **Functionalities:**
@@ -1454,7 +1327,7 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 
 | Service | Technology | Purpose |
 |---------|-----------|---------|
-| **Jira Cloud** | REST v3 API + Webhooks | Issue and task synchronization for work note context prefill. |
+| **Jira Cloud (Future / Not in MVP)** | REST v3 API + Webhooks | Not the task source; any third-party connector requires a separate approved scope and contract. |
 | **Cloudflare R2** | S3-compatible API | Private object storage for uploaded documents, audio recordings, and OCR artifacts. |
 | **LLM Providers** | Gemini 2.5 Flash/Pro, OpenAI, Whisper | AI inference, text generation, embedding, and speech-to-text transcription. |
 | **Email** | SMTP / Resend API | Transactional email delivery for password resets, activation, and knowledge alerts. |
@@ -1476,9 +1349,9 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 - **Availability:** System uptime target of 99.5% during business hours.
 - **Data Durability:** MongoDB 3-node replica set ensures data durability with automatic failover.
 - **Transaction Integrity:** Knowledge verification uses ACID multi-document transactions.
-- **Idempotency:** Jira webhook processing uses event ID deduplication to prevent data corruption.
+- **Idempotency:** Asynchronous consumers deduplicate events according to the owning service's approved event contract.
 - **Error Recovery:** Failed ingestion jobs retain original files and expose retry state.
-- **Dead Letter Queue:** Failed async jobs (email, Jira sync, ingestion) are routed to DLQ for manual inspection.
+- **Dead Letter Queue:** Failed asynchronous jobs are routed to a DLQ according to service-specific retry and recovery policies.
 - **Backup:** Automated database backups with point-in-time recovery.
 
 #### 4.2.3 Performance
@@ -1497,7 +1370,7 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 - **Password Storage:** Bcrypt 12 rounds for all password hashes.
 - **Two-Factor Authentication:** Optional TOTP-based 2FA.
 - **Pre-Retrieval ACL:** Permission filtering before vector database retrieval to prevent data leakage.
-- **RBAC:** Three persistent roles with explicit capability grants and scoped assignments.
+- **Authorization:** `PLATFORM_OPERATOR` is a separate platform-scoped actor. The three persistent Organization/Project roles are `ADMIN`, `TEAM_LEADER` and `MEMBER`; effective access also requires active membership, assigned scope, resource ACL and lifecycle checks. Admin and Platform Operator receive no default confidential-content access.
 - **Rate Limiting:** API rate limiting to prevent abuse and brute-force attacks.
 - **Race Condition Prevention:** Redis Redlock for distributed locking.
 - **Input Validation:** Global input validation via NestJS pipes.
@@ -1519,10 +1392,10 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 | BR-04 | Source of Truth | MongoDB is the single source of truth for business data. LanceDB/pgvector are retrieval indexes only. |
 | BR-05 | Database-per-Service | Each bounded service owns its dedicated database. No cross-service JOINs or shared database connections. |
 | BR-06 | Deny Takes Precedence | Explicit deny overrides all grants, roles, and assignments in the permission model. |
-| BR-07 | project.create Grant | The `project.create` capability requires explicit, audited Admin grant. Team Leader role alone never implies this capability. |
+| BR-07 | Project Creation | Any authenticated User with `OrganizationMembership=ACTIVE` in the trusted matching Organization Context may create a `PRIVATE` Project. `project.create` is not required; creator Project Membership and project-scoped `MEMBER` assignment are bootstrapped atomically. |
 | BR-08 | Author-Confirmed Notes | Work notes only become knowledge sources after the author explicitly confirms them. |
 | BR-09 | No Performance Scoring | Missing daily notes trigger follow-up reminders, NOT employee performance scoring. |
-| BR-10 | Successor Cannot Self-Confirm | Handover completion requires Team Leader or Admin confirmation, not the successor. |
+| BR-10 | Scoped Handover Confirmation | A successor cannot self-confirm handover completion. Confirmation requires a Team Leader assigned to the relevant scope or another explicitly authorized reviewer; Admin authority alone does not grant it. |
 
 ### 5.2 Common Requirements
 
@@ -1553,7 +1426,7 @@ The platform integrates with external tools like Jira Cloud for task synchroniza
 | AUTH-008 | "Invalid two-factor authentication code." | Error | Wrong 2FA code |
 | PROJ-001 | "Project created successfully." | Success | After project creation |
 | PROJ-002 | "Project code already in use." | Error | Duplicate project code |
-| PROJ-003 | "You do not have permission to create projects." | Error | Missing project.create grant |
+| PROJ-003 | "An active Organization Membership is required to create a project." | Error | Organization membership missing/inactive or trusted context mismatch |
 | TEAM-001 | "Team created successfully." | Success | After team creation |
 | TEAM-002 | "Member added successfully." | Success | After adding team member |
 | TEAM-003 | "Cannot remove the last Team Leader." | Error | Removing last leader |
