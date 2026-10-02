@@ -1,6 +1,10 @@
 # [RESEARCH] Workspace - Project Membership
 
+> This document records implementation evidence and state-model gaps. Cross-document Organization/Project access decisions are indexed in [Organization and Workspace Access Contract Readiness](00-organization-and-access-contract-readiness.md); proposed membership flows are in [Project, Team and Membership Use Cases](05-project-team-access-use-cases.md).
+
 Status: Research only. No implementation was performed.
+
+> **Accepted Organization-context update — 2026-10-02:** `OrganizationMembership` is the authoritative User–Organization relationship; only its `ACTIVE` state establishes Organization Context. Project creation bootstraps the creator with an `ACTIVE` Project Membership and project-scoped `MEMBER` RoleAssignment. These rules are approved in BE decisions DEC-016 and Project Foundation. They do not settle the separate Project Membership lifecycle or invitation contract described below.
 
 ## Evidence classification
 
@@ -21,9 +25,9 @@ Status: Research only. No implementation was performed.
 
 `[PARTIAL]` The membership entity exists only as persistence scaffolding. No add/remove/update-role endpoint, service logic, authorization enforcement, invitation acceptance flow, frontend member-management flow or membership E2E was found.
 
-`[CONFLICT]` Leader/product documents describe a richer state model (`ACTIVE`, `INVITED`, `SUSPENDED`, `REMOVED`) and onboarding/offboarding states, while the current source schema exposes only `ACTIVE`/`INACTIVE`. This document records the mismatch without choosing a canonical model.
+`[GAP]` The Project Membership schema exposes only `ACTIVE`/`INACTIVE`, and the runtime lifecycle remains unimplemented. The accepted Organization Membership vocabulary (`PENDING_INVITE`, `ACTIVE`, `SUSPENDED`, `REMOVED`) is a distinct parent-level contract and must not be copied onto Project Membership without a separate decision.
 
-The proposed member use cases and lifecycle dependencies are catalogued in [Project, Team and Membership Use Cases](05-project-team-access-use-cases.md). This research remains the source-evidence and implementation-gap report; membership states and invitation semantics remain open for approval.
+The proposed member use cases and lifecycle dependencies are catalogued in [Project, Team and Membership Use Cases](05-project-team-access-use-cases.md). This research remains the source-evidence and implementation-gap report; Project Membership states and invitation semantics remain open for approval. Organization context and Project-creator bootstrap are already decided as linked above.
 
 ## 2. Business Goal
 
@@ -55,7 +59,7 @@ Excluded:
 - deciding the final role/capability matrix;
 - implementing Team Membership;
 - changing source schemas or indexes;
-- deciding organization membership policy not evidenced by the repository.
+- re-deciding the accepted Organization Membership/context policy; see [Organization and Workspace Access Contract Readiness](00-organization-and-access-contract-readiness.md).
 
 ## 4. Verified Requirements
 
@@ -67,6 +71,7 @@ Excluded:
 | Membership records join time | `project_memberships` schema | `[FACT]` | `joinedAt` is required. |
 | Project/user pair is unique | IAM persistence definition | `[FACT]` | Unique `(projectId, userId)` index declared. |
 | User must be eligible before membership | Product/leader flow and User domain | `[INFERENCE]` | Source has no database foreign key or service validation proving this. |
+| Active Organization Membership establishes eligibility for Project creation/context | BE DEC-016 and Project Foundation decisions | `[APPROVED POLICY]` | A RoleAssignment alone is not Organization Membership; the creator bootstrap grants Project Membership and project-scoped `MEMBER`. |
 | Add member is permission controlled | Leader breakdown; actors/permissions docs | `[DESIGN]` | Exact actor depends on Project policy and delegation. |
 | Remove member is permission controlled | Leader breakdown; actors/permissions docs | `[DESIGN]` | No source behavior. |
 | Update Project role is permission controlled | Leader breakdown; role assignment schema | `[DESIGN]` / `[PARTIAL]` | Role assignment data exists; mutation/evaluator does not. |
@@ -78,7 +83,7 @@ Excluded:
 
 ## 5. Membership Lifecycle
 
-The exact lifecycle is unresolved because the leader breakdown and source schema differ.
+The **Project Membership** lifecycle remains unresolved because the leader breakdown and source schema differ. This is separate from Organization Membership, whose accepted states and context rules are defined by DEC-016.
 
 ### Documented target direction
 
@@ -120,25 +125,27 @@ This is only the current schema enum and does not prove transition behavior.
 | `ONBOARDING` | Incoming member lifecycle state | Product docs | `[DESIGN]`, relation to membership record unresolved |
 | `OFFBOARDING` | Departing/transferring member lifecycle state | Product docs | `[DESIGN]`, relation to membership record unresolved |
 
-`[DECISION REQUIRED]` Product/leader must choose the canonical state vocabulary and transition matrix. `INACTIVE` must not be silently treated as `REMOVED` or `SUSPENDED`.
+`[DECISION REQUIRED]` Product/leader must choose the canonical **Project Membership** state vocabulary and transition matrix. `INACTIVE` must not be silently treated as `REMOVED` or `SUSPENDED`, and Organization Membership states must not be assumed to map 1:1 to Project Membership states.
 
 ## 7. Business Rules
 
 ### Evidence-supported/design rules
 
 1. `[DESIGN]` A Project Membership must be scoped to an Organization and Project.
-2. `[DESIGN]` Only authorized actors may add, remove or change a member's Project role.
-3. `[DESIGN]` User access to Project resources requires active membership plus applicable role/capability/ACL checks.
-4. `[DESIGN]` A User must be a Project Member before being added to a Team.
-5. `[DESIGN]` A Project Membership must not be removed while an active Team Membership remains.
-6. `[DESIGN]` Cross-Project access must be denied unless explicitly authorized.
-7. `[DESIGN]` Membership/role changes must be audited.
-8. `[DESIGN]` Removing membership should preserve historical records rather than hard-delete them.
+2. `[APPROVED]` Organization Context is established only by an authenticated User's `ACTIVE` Organization Membership; a RoleAssignment alone is insufficient.
+3. `[APPROVED]` Project creation requires active Organization Membership in the trusted Organization. The creator receives active Project Membership and project-scoped `MEMBER` assignment as part of the atomic bootstrap.
+4. `[DESIGN]` Only authorized actors may add, remove or change a member's Project role.
+5. `[DESIGN]` User access to Project resources requires active Organization and Project membership plus applicable role/scope/ACL checks.
+6. `[DESIGN]` A User must be a Project Member before being added to a Team.
+7. `[DESIGN]` A Project Membership must not be removed while an active Team Membership remains.
+8. `[DESIGN]` Cross-Project access must be denied unless explicitly authorized.
+9. `[DESIGN]` Membership/role changes must be audited.
+10. `[DESIGN]` Removing membership should preserve historical records rather than hard-delete them.
 
 ### Not established
 
 - Whether adding a member immediately creates `ACTIVE` or first creates `INVITED`.
-- Whether a user must be `ACTIVE` at organization level to receive an invitation.
+- Whether a user must have `ACTIVE` Organization Membership before Project/Team member management can add them; the governance tree requires Org-scoped membership, but the invite/activation contract remains open.
 - Whether Project Membership itself stores a role or only references `role_assignments`.
 - Whether changing a role terminates or preserves Team Membership.
 - Whether removing a Project Member automatically removes scoped SME/Knowledge Owner assignments.
@@ -148,7 +155,8 @@ This is only the current schema enum and does not prove transition behavior.
 
 ```text
 Organization
-    ├── User / organization identity
+    ├── OrganizationMembership (authoritative User–Organization relationship)
+    │     └── User
     └── Project
           └── Project Membership
                 ├── userId → User
@@ -161,6 +169,7 @@ Organization
 `[FACT]` Source fields:
 
 - Project Membership: `organizationId`, `projectId`, `userId`, `status`, `joinedAt`.
+- Organization Membership policy: `organizationId` + `userId` are the unique association; statuses are `PENDING_INVITE`, `ACTIVE`, `SUSPENDED`, `REMOVED` (see DEC-016). This is an accepted contract; verify schema/runtime implementation separately.
 - Role Assignment: `organizationId`, optional `projectId`, `userId`, `roleId`, `roleCode`, `assignedBy`.
 - Team Membership separately stores `organizationId`, `projectId`, `teamId`, `userId`, `joinedAt`.
 
@@ -209,12 +218,12 @@ Organization
 
 Membership authorization depends on:
 
-1. authenticated subject and current session;
-2. Organization context;
-3. Project existence and state;
-4. actor's role/capability in the relevant scope;
-5. target user's organization/user state;
-6. Project policy and explicit deny;
+1. authenticated active subject and Organization Context resolved from `ACTIVE` Organization Membership;
+2. Project existence, Organization parent and Project state;
+3. active Project Membership for Project-scoped actions;
+4. actor's role/delegation in the relevant explicit scope;
+5. target user's Organization and Project membership state;
+6. Project policy, resource ACL and explicit deny;
 7. Team Membership constraints before removal.
 
 `[DESIGN]` Admin can manage organization membership policy. Team Leader may manage members only within assigned/delegated Project/Team scope and must not escalate permissions.
@@ -253,7 +262,7 @@ Required audit candidates from the leader/product documents:
 ## 15. FE / BE Mismatch
 
 1. `[GAP]` No FE membership API usage exists, while backend has no membership endpoint.
-2. `[CONFLICT]` The source status enum does not match the leader/product status vocabulary.
+2. `[GAP]` Organization Membership status is accepted by DEC-016, but this report's earlier source snapshot and the current Project Membership schema need separate verification/alignment; Project Membership still has only `ACTIVE`/`INACTIVE` in the inspected model.
 3. `[UNKNOWN]` FE role/member types are not defined as a workspace contract.
 4. `[UNKNOWN]` Invitation acceptance has no FE route or backend contract.
 5. `[DESIGN]` FE permission checks cannot replace backend authorization, but no backend evaluator currently exists.
@@ -263,7 +272,7 @@ Required audit candidates from the leader/product documents:
 - Official Project Membership status list and transitions.
 - Whether invitation is a User state, Membership state or both.
 - Whether add-member creates an invitation or active membership.
-- User eligibility requirements and organization membership prerequisite.
+- Project member eligibility and the exact Organization Membership prerequisite for add/invite/activate operations.
 - Exact actor allowed to add/remove/change role.
 - Whether a Team Leader can change a Project role.
 - Effective-from/effective-to semantics.

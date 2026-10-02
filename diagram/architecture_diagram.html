@@ -1863,7 +1863,7 @@
 
             <g transform="translate(605, 310)">
               <rect x="0" y="0" width="240" height="42" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
-              <text x="12" y="18" font-size="9.5" font-weight="800" fill="#0f172a">Tier 2: Team Leader & Admin</text>
+              <text x="12" y="18" font-size="9.5" font-weight="800" fill="#0f172a">Tier 2: Assigned Team Leader & Authorized Reviewer</text>
               <text x="12" y="33" font-size="8.5" fill="#475569">Max 300 requests / minute</text>
             </g>
 
@@ -2279,7 +2279,7 @@
         w: 250,
         h: 145,
         title: "Auth & Identity (IAM)",
-        sub: "JWT • Bcrypt • 3 Roles & Grants",
+        sub: "JWT • Bcrypt • Platform Operator + 3 Org/Project Roles",
         file: "backend/src/modules/auth/",
         icon: "isx-server",
         bg: "#f0fdf4",
@@ -3074,13 +3074,14 @@
       },
       svc_iam: {
         title: "Authentication & Identity Governance Service (Auth & IAM)",
-        sub: "Xác thực tập trung (JWT, Bcrypt, Refresh Token Rotation) & 3 Persistent Roles",
+        sub: "Xác thực tập trung (JWT, Bcrypt, Refresh Token Rotation) • Platform Operator + 3 Org/Project Roles",
         category: "Domain Microservice (NestJS Core)",
         rules: [
           "Centralized Authentication: Đăng nhập, Đăng ký, Quên/Đổi mật khẩu, Bcrypt hashing 12 rounds, Scoped JWT Claims.",
           "Refresh Token Rotation & Reuse Detection: Lưu hash an toàn trong refresh_sessions; thu hồi toàn bộ session gia đình khi phát hiện token bị đánh cắp.",
-          "3 Persistent Roles: ADMIN (quản trị tổ chức), TEAM_LEADER (quản lý team), MEMBER (thành viên đóng góp).",
-          "Explicit project.create Capability Grant: TEAM_LEADER chỉ được tạo project khi có Admin cấp quyền cấp tổ chức; không mặc định theo role.",
+          "Platform Operator vận hành nền tảng và provision Organization; không mặc định có membership hay quyền đọc nội dung Organization.",
+          "3 Organization/Project Roles: ADMIN (quản trị Organization), TEAM_LEADER (quản lý Project/Team được gán), MEMBER (tham gia trong membership và ACL). ADMIN không mặc định đọc nội dung confidential.",
+          "Tạo Project: mọi User đã xác thực có OrganizationMembership ACTIVE trong trusted Organization Context đều được tạo; không yêu cầu role hoặc project.create grant. Project mới PRIVATE; creator được bootstrap thành Project MEMBER.",
           "Scoped Assignments: SME (chuyên gia domain), KNOWLEDGE_OWNER (chịu trách nhiệm tri thức), SUCCESSOR (kế nhiệm) là assignment có thời hạn."
         ],
         code: `// Auth & Scoped JWT Issuance\nasync login(dto: LoginDto): Promise<AuthTokens> {\n  const user = await this.userRepo.validateUser(dto.email, dto.password);\n  const familyId = crypto.randomUUID();\n  const refreshToken = this.jwt.signRefreshToken({ sub: user._id, familyId });\n  await this.sessionRepo.create({ tokenHash: sha256(refreshToken), familyId, userId: user._id });\n  return { accessToken: this.jwt.signAccessToken(user), refreshToken };\n}`,
@@ -3174,7 +3175,7 @@
           "Responsibility Ownership: Quản lý trách nhiệm (Module/Service/Process) độc lập và lịch sử phân công theo khoảng thời gian.",
           "Scoped Successor Package: Tạo gói bàn giao (handovers, handover_items, handover_assignments); Successor chỉ thấy nội dung được duyệt.",
           "WebSocket Real-Time Collaboration: Lắng nghe tiến trình phỏng vấn, kiểm tra mức độ sẵn sàng (Readiness Checklist).",
-          "Team Leader Confirmation: Bàn giao chỉ hoàn tất khi Team Leader hoặc Admin có thẩm quyền xác nhận nghiệm thu."
+          "Handover Confirmation: Chỉ Team Leader trong assigned scope hoặc reviewer được ủy quyền rõ ràng mới xác nhận; Admin role alone không cấp quyền đọc gói hoặc nghiệm thu."
         ],
         code: `@WebSocketGateway({ path: '/ws/handover' })\nexport class HandoverGateway {\n  @SubscribeMessage('voice_chunk')\n  async handleAudioStream(client: Socket, chunk: Buffer) {\n    this.redisPubSub.publish(\`handover:interview:\${client.data.sessionId}\`, chunk);\n  }\n}`,
         file: "backend/src/modules/handover/handover.gateway.ts"

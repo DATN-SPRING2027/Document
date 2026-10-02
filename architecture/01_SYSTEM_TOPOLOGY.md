@@ -38,7 +38,7 @@ Dữ liệu đi một chiều từ ngoài Internet vào Client ➔ Biên mạng 
 │ 3. VÙNG MẠNG NỘI BỘ BẢO MẬT (ISOLATED VPC SUBNET)                     │
 │                                                                        │
 │   [CỘT A: QUẢN TRỊ & THU THẬP]       [CỘT B: TRUY XUẤT & BÀN GIAO]     │
-│   ├── svc_iam (Auth & 3 Roles)       ├── svc_chat (Assistant & RAG)    │
+│   ├── svc_iam (Platform Ops + 3 Org Roles) ├── svc_chat (Assistant & RAG)│
 │   ├── svc_capture (Work Notes)       ├── svc_handover (Audio & Roadmaps)│
 │   ├── svc_task (NestJS service)        ├── svc_ingestion (Upload)        │
 │   ├── svc_lifecycle (Verify Inbox)   └── svc_ai_engine (SAG - FastAPI) │

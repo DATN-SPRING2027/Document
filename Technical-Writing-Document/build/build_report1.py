@@ -36,7 +36,8 @@ def build():
         "projects using Next.js, NestJS, and SAG-based retrieval",
         "Project code: Continuum AI",
         "Group name: [[TBD]]",
-        "Software type: Web application (Next.js), backend API (NestJS modular monolith), AI retrieval service "
+        "Software type: Web application (Next.js), backend API (NestJS domain services including a separately deployed "
+        "Task service within the existing backend repository), AI retrieval service "
         "(FastAPI + SAG)",
     ])
     r.h3("1.2 Project Team")
@@ -51,7 +52,7 @@ def build():
     # ---- 2
     r.h2("2. Product Background")
     r.para("In a software project, the knowledge needed to keep the work running lives in many places at once: "
-           "design decisions in chat threads, procedures in wikis, task history in Jira, and—most importantly—in the "
+           "design decisions in chat threads, procedures in wikis, Continuum task history, and—most importantly—in the "
            "heads of a few experienced people. When a team leader or member leaves the project, moves to another team, "
            "or hands over a responsibility, the code and documents usually remain, but the reasoning behind decisions, "
            "the workarounds, the incident lessons, and the operating know-how do not. The successor is then left to work out "
@@ -63,11 +64,12 @@ def build():
            "departure, when it is already too late.", align="justify")
     r.label("Key user groups:")
     r.bullets([
-        "**Administrators (ADMIN):** manage users, projects, teams, roles, connectors and source policies at "
-        "organization scope, and control audit—without automatic access to confidential content.",
-        "**Team Leaders (TEAM_LEADER):** lead assigned teams, track who owns each domain or module, follow up on missing "
-        "knowledge, and review handovers. Creating a new project requires an explicit, audited `project.create` grant "
-        "from an Admin.",
+        "**Platform Operators (PLATFORM_OPERATOR):** operate the platform, provision Organizations, bootstrap the first "
+        "Organization Admin, and monitor platform health/configuration. They receive no default Organization-content access.",
+        "**Organization Administrators (ADMIN):** manage Organization users and membership, assign permitted roles/scopes, "
+        "and manage Organization settings/policy. The role does not grant Project/Team membership or confidential-content access.",
+        "**Team Leaders (TEAM_LEADER):** manage only explicitly assigned Projects/Teams, track knowledge responsibility, "
+        "follow up on missing knowledge, and coordinate scoped handovers. The role alone grants no unassigned Project access.",
         "**Members (MEMBER):** record what they did and why during normal work, upload sources, maintain assigned "
         "knowledge, ask the assistant, and flag knowledge gaps.",
         "**SMEs and Knowledge Owners (scoped assignments):** verify, reject or supersede knowledge inside a domain, "
@@ -77,7 +79,8 @@ def build():
     ])
     r.para("Continuum AI addresses this gap with a continuous loop rather than a one-off migration. Members and leaders "
            "capture knowledge while the project is running—through manual notes, short daily or task notes, uploaded "
-           "documents, and task context imported from Jira Cloud. The system indexes these sources with a "
+           "documents, and optional task context resolved from Continuum's Task API. Continuum owns the canonical task "
+           "lifecycle; Jira is not the task source. The system indexes permitted sources with a "
            "retrieval engine (SAG) and lets AI propose structured knowledge together with its evidence. AI output "
            "always stays in the PROPOSED state until an authorized human verifies it, after which it becomes "
            "versioned, owned, time-bounded organizational knowledge. Missing or overdue knowledge creates visible "
@@ -139,7 +142,7 @@ def build():
     ])
     r.label("Key Features and Benefits")
     r.table(["Feature", "Benefit"], [
-        ["**Continuous Knowledge Capture**", "Manual and daily notes plus Jira-linked context reduce reporting effort "
+        ["**Continuous Knowledge Capture**", "Manual and daily notes plus optional Continuum task context reduce reporting effort "
                                              "while keeping the author in control of what is recorded."],
         ["**AI-Proposed, Human-Verified Knowledge**", "AI drafts structured knowledge with evidence; only authorized "
                                                       "people can make it verified and active."],
@@ -153,7 +156,8 @@ def build():
 
     # ---- 5
     r.h2("5. Software Product Vision")
-    r.para("For software project teams—administrators, team leaders, members and successors—who need to keep project "
+    r.para("For software project teams—platform operators, organization administrators, assigned team leaders, members "
+           "and successors—who need to keep project "
            "knowledge alive when people join, leave or change responsibility, Continuum AI is a knowledge continuity "
            "platform that turns everyday notes, documents and task context into verified, traceable and reusable "
            "project knowledge. Unlike document storage and generic “chat with your files” tools, Continuum AI "
@@ -162,7 +166,7 @@ def build():
            align="justify")
     r.label("Continuum AI empowers users with:")
     r.bullets([
-        "**Continuous capture:** structured knowledge entries, daily/task notes and Jira Cloud sync, with files "
+        "**Continuous capture:** structured knowledge entries and daily/task notes linked optionally to Continuum tasks, with files "
         "(PDF, DOCX, Markdown, TXT, images) stored privately.",
         "**Evidence-based AI extraction:** proposed knowledge that always points back to its source evidence.",
         "**Human verification and lifecycle:** proposed, under-review, verified, active, superseded, deprecated and "
@@ -180,20 +184,25 @@ def build():
     # ---- 6
     r.h2("6. Project Scope & Limitations")
     r.para("The Continuum AI MVP demonstrates the full knowledge continuity loop for one software project that contains "
-           "several teams. It is designed as a 10-week vertical slice: an Admin configures the project, teams and grants; "
-           "members add manual or Jira-linked notes and documents; files are processed and indexed; AI proposes "
+           "several teams. It is designed as a 10-week vertical slice: a Platform Operator provisions the Organization "
+           "and bootstraps its first Admin; the Admin manages Organization users/membership, roles/scopes and settings; "
+           "any authenticated active Organization member can create a private Project and receives initial Project MEMBER "
+           "membership; assigned Team Leaders manage their Project/Team scope; members add manual or task-linked notes "
+           "and documents; files are processed and indexed; AI proposes "
            "knowledge for human review; and a successor asks the cited assistant with permission checks. Dataset-based "
            "evaluation is required. This section lists the features of the initial release and the limitations that "
            "set realistic expectations and help manage change requests.", align="justify")
     r.h3("6.1 Major Features")
     feats = [
-        ("FE-01", "Project, Team and Role Management with three persistent roles (ADMIN, TEAM_LEADER, MEMBER), scoped "
-                  "SME / Knowledge Owner / Successor assignments, onboarding/offboarding states and an audited "
-                  "`project.create` grant."),
+        ("FE-01", "Platform provisioning and Organization administration, plus three persistent Organization/Project "
+                  "roles (ADMIN, TEAM_LEADER, MEMBER). The separate PLATFORM_OPERATOR bootstraps the first Admin; active "
+                  "Organization Membership allows Project creation, and the creator is bootstrapped as Project MEMBER. "
+                  "Team Leaders manage only explicitly assigned Project/Team scopes."),
         ("FE-02", "Continuous Knowledge Capture through structured knowledge entries, short daily/task notes, "
                   "required-knowledge templates and reminders for missing or overdue notes."),
-        ("FE-03", "Jira Cloud Sync: initial import, webhook updates, de-duplication and reconciliation of issues, "
-                  "comments and status, with the author confirming the resulting note."),
+        ("FE-03", "Continuum Task API owns canonical task data. Work Notes and handover may hold an optional logical "
+                  "`taskId`; task details are resolved through the Task API or approved event contract. Jira task sync "
+                  "is not part of the current MVP."),
         ("FE-04", "Source Upload and Ingestion for PDF, DOCX, Markdown, TXT and image files, with private originals in "
                   "Cloudflare R2, metadata in MongoDB, parsing/OCR jobs and status tracking."),
         ("FE-05", "AI Knowledge Extraction using SAG retrieval and a provider-agnostic LLM Gateway to produce "
@@ -207,8 +216,9 @@ def build():
                   "visible follow-up actions (no employee performance scoring)."),
         ("FE-09", "Handover Workflow: initiate departure or responsibility transfer, analyse responsibilities and gaps, "
                   "create handover items, assign a successor, track unresolved questions and confirm completion."),
-        ("FE-10", "Audit Trail and Governance for membership, role and capability changes, source ACL changes, "
-                  "Jira sync failures, knowledge reviews, sensitive retrieval and handover approvals."),
+        ("FE-10", "Audit Trail and Governance for Organization provisioning, membership, role/scope changes, Project "
+                  "creator bootstrap, source ACL changes, task changes, knowledge reviews, sensitive retrieval and scoped "
+                  "handover approvals."),
         ("FE-11", "Evaluation and Benchmark: a labeled dataset, versioned baselines (vector RAG, SAG, Continuum) and "
                   "retrieval, answer, citation, permission and handover metrics."),
     ]
@@ -219,8 +229,8 @@ def build():
     lims = [
         ("LI-01", "The MVP covers one software project with multiple teams; enterprise-wide knowledge management, HR "
                   "hierarchy and Learning Management System features are excluded."),
-        ("LI-02", "Only Jira Cloud is integrated as a task source. GitHub, Google Drive, Confluence, MCP-based and "
-                  "meeting-note connectors are stretch goals."),
+        ("LI-02", "Continuum Task API is the task source of truth. Jira issue synchronization and other third-party "
+                  "task-source connectors are outside the current MVP."),
         ("LI-03", "AI-generated interview questions and interview-to-knowledge conversion are stretch capabilities; the "
                   "MVP records unresolved questions for human follow-up."),
         ("LI-04", "AI output is never verified automatically: knowledge stays PROPOSED until an authorized human verifies "

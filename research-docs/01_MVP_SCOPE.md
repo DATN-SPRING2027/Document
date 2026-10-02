@@ -30,8 +30,9 @@ Knowledge capture begins while the project is active. The system must not wait u
 
 Persistent roles:
 
-- `ADMIN`: manages users, projects, teams, roles, connectors and policy at organization scope, without automatic access to confidential content.
-- `TEAM_LEADER`: leads assigned teams and their knowledge workflow. Creating a **new project** requires an explicit organization-level `project.create` grant from an Admin.
+- `PLATFORM_OPERATOR`: platform-level operations actor that provisions Organizations, bootstraps the first Organization Admin, and monitors system health/configuration. This actor is not an Organization role and has no default access to Organization content.
+- `ADMIN`: manages Users and Organization Memberships, assigns roles/scopes, and manages Organization settings/policy. The role alone does not grant Project Membership, Team Leader scope, or access to confidential Project content; Project/Team operations require the applicable explicit scope and policy.
+- `TEAM_LEADER`: leads assigned Projects/Teams and their knowledge workflow. The assignment scope must be explicit; the role alone grants no access outside that scope.
 - `MEMBER`: contributes notes/documents and maintains, searches, and transfers knowledge related to assigned work.
 
 Scoped assignments and lifecycle states:
@@ -43,6 +44,8 @@ Scoped assignments and lifecycle states:
 - `OFFBOARDING`: membership state for a departing or transferring member.
 
 The canonical authorization model is defined in [02_ACTORS_ROLES_AND_PERMISSIONS.md](02_ACTORS_ROLES_AND_PERMISSIONS.md).
+
+Organization membership, not an Organization-level RoleAssignment, is the authoritative association between a User and an Organization. Only an `ACTIVE` Organization Membership establishes Organization Context. An authenticated User with that active membership may create a Project in the trusted Organization; `project.create` is not required for this operation. Creation makes the Project `PRIVATE` and atomically gives the creator an `ACTIVE` Project Membership plus project-scoped `MEMBER` assignment. See [Organization and Workspace Access Contract Readiness](Workspace/00-organization-and-access-contract-readiness.md).
 
 ## 4. Required ongoing knowledge input
 
@@ -103,10 +106,11 @@ Successor asks evidence-grounded questions and reports gaps
 
 - One software project containing multiple teams.
 - Project membership and team membership.
-- Three persistent roles and project/team membership scope; Admin grants `project.create` separately to selected Team Leaders.
+- Three persistent Organization/Project roles (`ADMIN`, `TEAM_LEADER`, `MEMBER`), plus the separate platform-scoped `PLATFORM_OPERATOR`; Organization, Project and Team memberships determine scope. Project creation requires authenticated active Organization Membership, not a `project.create` grant.
 - SME, Knowledge Owner, and Successor assignments.
 - Onboarding and offboarding membership states.
 - Project, Team and membership use-case flows are proposed in [Project, Team and Membership Use Cases](Workspace/05-project-team-access-use-cases.md); unresolved lifecycle and permission details remain subject to review.
+- Organization context, Organization membership gaps, cross-document access decisions, and the readiness gates for implementation are tracked in [Organization and Workspace Access Contract Readiness](Workspace/00-organization-and-access-contract-readiness.md). This register does not expand the accepted one-Project MVP boundary or approve unresolved multi-Organization behavior.
 
 ### 6.2. Continuous knowledge capture
 
@@ -143,7 +147,7 @@ Successor asks evidence-grounded questions and reports gaps
 - Assign a successor and a scoped handover package.
 - An authorized Team Leader reads open-task candidates from the Continuum Task API, selects tasks, and assigns them to a scoped successor. The Task API updates the canonical assignee; Handover stores the `taskId` and its own acknowledgement/readiness state. Successor access is limited to the selected tasks and permitted evidence, not the entire project.
 - Track task references, successor questions, unresolved gaps, and readiness.
-- Require the assigned Team Leader or Admin to confirm completion according to scope.
+- Require the Team Leader assigned to the handover's Project/Team scope, or another explicitly authorized reviewer, to confirm completion. Organization Admin role alone does not grant access to the confidential handover package or approval action.
 
 ### 6.6. Evaluation
 
@@ -191,4 +195,4 @@ The MVP is successful when it demonstrates:
 
 ## 10. Delivery boundary: 10 weeks
 
-The demonstrable vertical slice is: Admin configures project/team and grants, members manage internal project tasks and add manual or task-linked Work Notes/documents, files are processed/indexed, AI proposes knowledge for human review, and a successor uses a scoped handover package and cited chat assistant with permission checks. Dataset-based evaluation is required. Do not treat every possible dashboard, connector, interview, or enterprise workflow as mandatory in this period. See [Daily work capture and internal task management](03_DAILY_WORKFLOW_AND_JIRA_SYNC.md).
+The demonstrable vertical slice is: a `PLATFORM_OPERATOR` provisions the Organization and first Admin; the Admin manages Organization users, membership and scoped assignments; any authenticated active Organization member can create a private Project and becomes its initial `MEMBER`; assigned Team Leaders manage their Project/Team scope; members manage internal tasks and add manual or task-linked Work Notes/documents; files are processed/indexed; AI proposes knowledge for human review; and a successor uses a scoped handover package and cited chat assistant with permission checks. Dataset-based evaluation is required. Do not treat every possible dashboard, connector, interview, or enterprise workflow as mandatory in this period. See [Daily work capture and internal task management](03_DAILY_WORKFLOW_AND_JIRA_SYNC.md).

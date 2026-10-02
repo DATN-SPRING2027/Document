@@ -71,13 +71,15 @@ TailAdmin replaces shadcn/ui, Material UI, Ant Design, Chakra UI, Mantine, and u
 
 ## Actor and authorization model
 
-The MVP uses three persistent human roles:
+The MVP uses three persistent Organization/Project human roles:
 
 - `ADMIN`
 - `TEAM_LEADER`
 - `MEMBER`
 
-`SME`, `KNOWLEDGE_OWNER`, and `SUCCESSOR` are scoped assignments rather than unrestricted global roles. `ONBOARDING` and `OFFBOARDING` are membership lifecycle states. A `TEAM_LEADER` can create a new project only when an `ADMIN` separately grants the organization-level `project.create` capability. All members, including leaders, are responsible for contributing and maintaining project knowledge during normal work.
+`SME`, `KNOWLEDGE_OWNER`, and `SUCCESSOR` are scoped assignments rather than unrestricted global roles. `ONBOARDING` and `OFFBOARDING` are workflows, not Organization-context eligibility. A `TEAM_LEADER` manages only explicitly assigned Project/Team scope. Project creation follows active Organization Membership and trusted context, not the legacy `project.create` grant. All members, including leaders, are responsible for contributing and maintaining project knowledge during normal work.
+
+`PLATFORM_OPERATOR` is a separate platform-scoped operations actor, not a fourth Organization role. It provisions Organizations, bootstraps the first Organization `ADMIN`, and monitors platform health/configuration; it has no default Organization content access. Organization Membership is the authoritative User–Organization association. An authenticated User with `ACTIVE` Organization Membership may create a `PRIVATE` Project without a role or `project.create` grant; creation atomically adds an `ACTIVE` Project Membership and a project-scoped `MEMBER` RoleAssignment for the creator. Project/Team Leader assignments remain separate and scoped.
 
 Effective permission is calculated from persistent role, project/team membership, scoped assignment, resource ACL, lifecycle state, and explicit deny. The canonical model and permission matrix are defined in [02_ACTORS_ROLES_AND_PERMISSIONS.md](../research-docs/02_ACTORS_ROLES_AND_PERMISSIONS.md).
 
@@ -176,7 +178,7 @@ ingestion_jobs
 - Resolve the allowed source and knowledge scope before retrieval.
 - Restricted evidence must never be retrieved and then removed after it has already entered the LLM context.
 - The backend is authoritative. Frontend route guards are only a user-experience layer.
-- `project.create` requires a separately granted, revocable, audited organization capability; TEAM_LEADER alone is insufficient.
+- Project creation requires authenticated active subject, trusted matching Organization Context, and `ACTIVE` Organization Membership; no role or `project.create` grant is required. The legacy grant schema is not removed by this policy change.
 
 ## Task, daily note, chat, and object-storage constraints
 
@@ -251,6 +253,13 @@ Do not leave `SAG pipeline / MarkItDown / MinerU` as an unresolved runtime choic
 - Task Service owns `tasks`, `task_events` and an optional transactional outbox in logical MongoDB database `continuum_task`, using the existing replica set. This supersedes the earlier shared-database placement; it does not provision a new physical cluster.
 - Work Notes may optionally reference a task; only authorized Work Notes/evidence are eligible for SAG indexing. Handover uses the Task API and does not become another writable task store.
 - The Task decision does not change the SAG retrieval engine decision.
+
+## Decision amendment — 2026-10-02
+
+- Platform operations are separated from Organization administration: `PLATFORM_OPERATOR` provisions Organizations and bootstraps the first Organization Admin, without default access to Organization content.
+- `OrganizationMembership` is the authoritative User–Organization relationship. Only `ACTIVE` membership establishes Organization Context; zero active memberships means no context, one is selected automatically, and multiple require explicit user selection validated by the backend. The HTTP transport contract still needs to be documented in OpenAPI.
+- Any authenticated User with active Organization Membership can create a Project in that Organization. This supersedes the 2026-09-18 `project.create` grant gate for Project creation only. The new Project is private; its creator receives active Project Membership and the project-scoped `MEMBER` RoleAssignment, but not Team Leader/owner status.
+- See the [Project Foundation decisions](../research-docs/Workspace/00-organization-and-access-contract-readiness.md) and the accepted Organization Membership decision DEC-016 in DATN_BE.
 
 ## Documentation consistency rule
 

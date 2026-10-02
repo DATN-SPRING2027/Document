@@ -2,20 +2,22 @@
 
 **Trạng thái:** Conceptual research; không phải schema hay requirement được chấp thuận.
 
+> **Decision amendment — 2026-10-02:** Continuum Task API/Task Service is the approved canonical source for DATN task lifecycle in the MVP. Work Notes and handover records may link to a task using an optional logical `taskId`; they resolve task details through the Task API/event contract. Task records themselves are not SAG knowledge sources. Only authorized Work Notes/evidence that satisfy the ingestion policy may enter retrieval/indexing. Jira is not the task source for this MVP.
+
 ## Bài toán khái niệm
 
 Work/task trả lời “đang làm gì, ai chịu trách nhiệm, trạng thái/điều kiện hoàn tất là gì”; knowledge trả lời “đã học/xác minh được gì, bằng chứng ở đâu, ai tin cậy/duyệt, người sau dùng thế nào”. Hai loại thông tin liên quan nhưng không đồng nhất.
 
-- `[DOCUMENTED]` Continuum MVP liên kết Jira task context với Work Note/Capture được user xác nhận; knowledge proposal phải có evidence và human review trước verified state. Knowledge continuity và handover là mục tiêu MVP hiện hữu.
+- `[DOCUMENTED]` Continuum MVP links Continuum task context with user-confirmed Work Note/Capture; a knowledge proposal requires evidence and human review before reaching verified state. Knowledge continuity and handover are the current MVP goals.
 - `[UNKNOWN]` “Work Item”, “Decision”, “Document”, “Discussion” và “Evidence” như unified platform objects chưa được phê duyệt trong Continuum scope.
 
 ## Conceptual graph để nghiên cứu
 
 ```text
-Work item (canonical source TBD)
+Continuum task (canonical in MVP)
   ├── assigned to → person/team (scope TBD)
   ├── references → requirement / decision / document / discussion
-  ├── linked from → commit / pull request / Jira issue
+  ├── linked from → commit / pull request / optional future external source reference
   └── has context → capture / work note
                          └── may propose → knowledge object
                                               ├── supported by → evidence/source
@@ -29,8 +31,9 @@ Arrows are conceptual links, not foreign keys or approved product relationships.
 
 | Information | Possible canonical source | DATN evidence/status |
 |---|---|---|
-| Operational records/users/projects/work notes | MongoDB 7.0, per-service logical databases on the existing cluster per ADR-003/DEC-011 | `[ACCEPTED DECISION]`; active BE runtime inventory is eight domain databases plus `continuum_audit`; verify migration/cutover separately |
-| Task/issue lifecycle | Jira Cloud in current Continuum MVP framing | `[DOCUMENTED]` task context sync; task-authority boundary for new work manager still needs decision |
+| Operational records/users/projects/work notes | MongoDB 7.0 on the existing cluster; one logical database per active bounded service; cross-cutting audit in `continuum_audit` | `[ACCEPTED DECISION / CURRENT RUNTIME]` Active BE inventory is eight domain databases plus audit, including `continuum_jira`; `continuum_task` and `continuum_ai_adapter` are not yet active runtime databases. Migration/cutover is separate. `continuum_db` is a migration source, not an active runtime target. |
+| Task lifecycle | Continuum Task API/Task Service; target database `continuum_task` | `[APPROVED TARGET, NOT CURRENT RUNTIME]` Canonical task source for the MVP, separately deployed from source in the existing `DATN_BE` repository. ADR-003 excludes `continuum_task` from the current active runtime database inventory until its runtime owner and migration contract are implemented. |
+| Jira runtime/integration | Current BE runtime inventory includes `continuum_jira`; product docs mark Jira historical | `[CURRENT RUNTIME / PRODUCT SCOPE RECONCILIATION]` Jira is not the canonical task source in the approved MVP. Runtime presence does not establish a Jira task-sync requirement or a complete connector. |
 | Code and review events | GitHub repository/PR | `[INFERENCE]` source type, not integrated work product evidence |
 | Files/docs | Drive/Confluence or other user-selected repository | `[UNKNOWN]` current DATN connector/use agreement |
 | Verified knowledge facts/proposals | Continuum persistence + provenance model | `[DOCUMENTED]` conceptual lifecycle; end-to-end completeness not proven by schemas |
@@ -49,7 +52,7 @@ For retrieval: verify permissions before model context construction, carry citat
 - `[UNKNOWN]` Whether users need one product UI or only reliable links across tools.
 - `[UNKNOWN]` Whether a knowledge object may have multiple project/team scopes or versions.
 - `[UNKNOWN]` Decision/document/discussion lifecycle, ownership, approval, retention and deletion policy.
-- `[DECISION REQUIRED]` Which source is canonical for tasks if an internal Work Management hypothesis proceeds; whether tasks are linked/mirrored or owned internally.
+- `[DECISION REQUIRED]` Exact Task API/event fields, lifecycle and authorization contract; the canonical task source is already decided.
 - `[DECISION REQUIRED]` Which content classes may be indexed by SAG, with ACL and retention behavior.
 
 ## References

@@ -1,10 +1,14 @@
 # [RESEARCH] Governance - Organization Context
 
+> This is an evidence and gap report. Its `[DESIGN]` statements and non-binding recommendations are not product approval. Cross-document Organization/Workspace decisions are indexed in [Organization and Workspace Access Contract Readiness](../Workspace/00-organization-and-access-contract-readiness.md).
+
 **Ticket**: `DATN-15`  
 **Assignee**: Nguyen Hong Phuc  
 **Due Date**: Sep 26, 2026  
 **Status**: Research Only (No implementation, no code changes, no configuration/dependency changes)  
 **Target System**: DATN / Continuum AI Baseline  
+
+> **Policy update — 2026-10-02:** This report's source inventory is a dated implementation snapshot. The accepted governance model now places `PLATFORM_OPERATOR` at platform scope (provisioning/bootstrap/health/configuration; no default Organization-content access), `ADMIN` at Organization scope (Users/membership/role/scope/Organization administration; no default confidential-content access), and `TEAM_LEADER`/`MEMBER` at explicitly assigned Project/Team scope. BE DEC-016 makes `OrganizationMembership` the authoritative User–Organization relationship and defines `ACTIVE` as the only state that establishes Organization Context. The Project Foundation decision allows any authenticated User with active Organization Membership in the trusted Organization to create a `PRIVATE` Project and bootstraps the creator as Project `MEMBER`; `project.create` is not required. Older role-assignment linkage and grant-gate descriptions below are historical snapshots, not current policy. Runtime implementation still requires verification against these decisions.
 
 ---
 
@@ -54,7 +58,7 @@ This report strictly adheres to the project's evidence classification and truth 
 | **Organization is the top-level isolation boundary** | `05_SECURITY_AND_GOVERNANCE.md`; `02_ACTORS_ROLES_AND_PERMISSIONS.md` | `[DESIGN]` | All projects, teams, documents, and knowledge assets belong to an Organization. |
 | **Organizations collection exists in persistence** | `DATN-BE/src/services/iam/infrastructure/mongodb/mongodb.schemas.ts` | `[FACT]` | Collection `organizations` defines `name`, `slug` (unique index), `plan` (`FREE` \| `ENTERPRISE`), and `settings`. |
 | **Users schema does not hardcode `organizationId`** | `DATN-BE/src/services/iam/infrastructure/mongodb/mongodb.schemas.ts` | `[FACT]` | `users` schema defines `email`, `passwordHash`, `fullName`, `avatarUrl`, `status`, `twoFactorEnabled`, `twoFactorSecretEncrypted`, and `lastLoginAt` (without `organizationId`). User-to-Organization relationship is Many-to-Many via intermediate collections. |
-| **User ➔ Organization linkage via Role & Capability** | `DATN-BE/.../mongodb.schemas.ts` | `[FACT]` | Bound through `role_assignments` (unique compound index `{ organizationId: 1, projectId: 1, userId: 1 }`) and `organization_capability_grants`. |
+| **User ➔ Organization linkage** | BE DEC-016; prior `DATN-BE/.../mongodb.schemas.ts` inventory | `[APPROVED POLICY]` / `[IMPLEMENTATION GAP]` | `OrganizationMembership` is authoritative; an Organization-scoped RoleAssignment alone is insufficient. The cited schema inventory predates or does not implement the accepted contract; verify current schema/API/backfill. |
 | **Resources carry mandatory `organizationId` in scoped collections** | All `persistence.ts` across `DATN-BE/src/services/*` | `[FACT]` | `projects`, `teams`, `jira_connections`, `documents` (and `document_versions`), and `knowledge_objects` require `organizationId` with compound indexes. (Note: `audit_logs` declares optional `organizationId?: string`). |
 | **Session model binds to Organization** | `refresh_sessions` schema in IAM service | `[FACT]` | Schema explicitly declares `userId: ObjectId` and `organizationId: ObjectId`. |
 | **Request Context Resolution via JWT Claims** | `05_SECURITY_AND_GOVERNANCE.md` (Section 2) | `[DESIGN]` | Pre-Retrieval ACL specifies decoding JWT to extract `userId`, `roles`, and `teamIds`. |
@@ -73,9 +77,10 @@ This report strictly adheres to the project's evidence classification and truth 
 2. **BR-ORG-02 (Hierarchical Containment)**: `[FACT]` / `[DESIGN]` Strict hierarchy is enforced:
    $$\text{Organization} \longrightarrow \text{Project} \longrightarrow \text{Team} \longrightarrow \text{Domain / Resource ACL}$$
    No standalone Project or Team can exist without an owning Organization.
-3. **BR-ORG-03 (Explicit Project Creation Capability)**: `[FACT]` / `[DESIGN]` To create a Project, a `TEAM_LEADER` must hold an active grant in `organization_capability_grants` with `capability = 'project.create'`. Leadership alone never confers this capability.
-4. **BR-ORG-04 (Admin Content Boundary)**: `[DESIGN]` An `ADMIN` manages organizational users, settings, and integrations, but does **not** have default access to view or verify confidential project/team knowledge without explicit project membership.
-5. **BR-ORG-05 (Audit Provenance)**: `[FACT]` High-privilege mutations at organization scope (role assignment, capability grant, project creation) must emit immutable records to `audit_logs` including `organizationId`, `actorUserId`, `action`, and `targetResourceId`.
+3. **BR-ORG-03 (Active Membership and Project Creation)**: `[APPROVED POLICY]` Only an authenticated User with `ACTIVE` Organization Membership in the trusted matching Organization Context may create a Project. The Project is `PRIVATE`; creator bootstrap adds active Project Membership and project-scoped `MEMBER` RoleAssignment with the Project-create audit event. No Organization role or `project.create` grant is required. The legacy grant schema is not removed by this rule.
+4. **BR-ORG-04 (Platform and Organization Admin Boundaries)**: `[APPROVED POLICY]` `PLATFORM_OPERATOR` provisions Organizations, bootstraps the first `ADMIN`, and monitors platform health/configuration, but has no default Organization-content access. `ADMIN` manages Organization membership, role/scope and Organization settings, but does **not** have default access to view or verify confidential Project/Team content.
+5. **BR-ORG-05 (Scoped Project/Team Leadership)**: `[APPROVED POLICY]` `TEAM_LEADER` manages only explicitly assigned Project/Team scope and cannot self-grant broader scope. `MEMBER` access remains bounded by membership and resource ACL.
+6. **BR-ORG-06 (Audit Provenance)**: `[APPROVED POLICY]` Project creation and other high-privilege mutations must emit auditable records with actor, Organization/scope, action and target. Exact event/schema alignment remains an implementation contract gap.
 
 ### 5.2. Open Rules & Discrepancies (`[UNKNOWN]` / `[DECISION REQUIRED]`)
 - **BR-ORG-UN01**: Does an invalid cross-organization resource request return HTTP `403 Forbidden` or HTTP `404 Not Found`?
@@ -88,7 +93,7 @@ This report strictly adheres to the project's evidence classification and truth 
 | Architectural Layer | Requirement | Specification Evidence | Source Implementation | Technical Gap |
 | :--- | :--- | :--- | :--- | :--- |
 | **Database Schema** | Store Organization entities & metadata | `05_SECURITY...md`, `SPEC.md` | Schema `organizations` exists in `DATN-BE` (`continuum_iam`) | `[PARTIAL]` Initial database seed migration for default organization is missing. |
-| **Database Schema** | User-Organization Membership & Roles | `02_ACTORS...md` | `role_assignments` and `organization_capability_grants` | `[PARTIAL]` Index on `role_assignments` is `{ organizationId: 1, projectId: 1, userId: 1 }`. When assigning an Org-level role (`projectId = null`), null handling in compound unique index must be verified. |
+| **Database Schema** | User-Organization Membership & Roles | BE DEC-016; `02_ACTORS...md` | Historical inventory cited `role_assignments` and `organization_capability_grants` | `[IMPLEMENTATION GAP]` The accepted model requires authoritative `OrganizationMembership`; verify its collection/API, unique `(organizationId, userId)` pair, status vocabulary and idempotent historical backfill. RoleAssignment remains role data, not membership proof. |
 | **API Contract** | Transport protocol for Organization Context | `05_SECURITY...md` | No business endpoints implemented beyond `/health` | `[GAP]` No contract established: Header `X-Organization-Id` vs. JWT claim vs. URL path parameter. |
 | **Business Logic** | Extract and validate Organization Context | `05_SECURITY...md` (Section 2) | `DATN-BE/src/common/http` only contains `request-id` | `[GAP]` Missing `OrgContextMiddleware` or Interceptor to populate `request.orgContext`. |
 | **Security / Guard** | Prevent Cross-Organization Access | `02_ACTORS...md` (Section 2) | No Guards found in `DATN-BE/src` | `[GAP]` Missing `OrgScopeGuard` to reject requests where `request.orgId !== resource.orgId`. |
@@ -164,7 +169,7 @@ Project and Team authorization strictly depend on Organization Context via the f
 $$\text{Authentication (Identity Verified)} \longrightarrow \mathbf{\text{Organization Context}} \longrightarrow \text{Project Scope} \longrightarrow \text{Team Scope}$$
 
 1. **Project Entry Gate**: A user must possess a valid, active association within the target Organization before any project-level access can be evaluated. If the organization status is suspended or invalid, all downstream access is denied immediately.
-2. **Project Creation Gate**: Creation is gated by an active `organization_capability_grants` entry (`capability = 'project.create'`) at organizational scope.
+2. **Project Creation Rule**: Require authenticated active subject, trusted matching Organization Context, and `ACTIVE` Organization Membership. Do not gate on `ADMIN`, `TEAM_LEADER`, or `organization_capability_grants.project.create`. Bootstrap the new Project as `PRIVATE` with creator Project Membership, project-scoped `MEMBER`, and audit atomically.
 3. **Team Boundary**: Teams inherit the composite key `(organizationId, projectId)`. Team access control checks cannot execute without validating the parent organization context.
 
 ---

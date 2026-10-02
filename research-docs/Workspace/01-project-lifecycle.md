@@ -1,6 +1,10 @@
 # [RESEARCH] Workspace - Project Lifecycle
 
+> This document records implementation evidence and gaps. Cross-document Organization/Project access decisions are indexed in [Organization and Workspace Access Contract Readiness](00-organization-and-access-contract-readiness.md); proposed user flows are in [Project, Team and Membership Use Cases](05-project-team-access-use-cases.md).
+
 Status: Research only. No implementation was performed.
+
+> **Accepted policy update — 2026-10-02:** Project creation and creator bootstrap follow the BE Project Foundation decisions: any authenticated User with `ACTIVE` Organization Membership in the trusted Organization Context may create a `PRIVATE` Project; the same transaction creates an `ACTIVE` Project Membership and project-scoped `MEMBER` RoleAssignment for the creator and records the existing audit event. Neither an Organization role nor `organization_capability_grants.project.create` is required. The creator is not thereby a Team Leader, owner, or Team. This policy supersedes earlier statements in this research snapshot; it does not imply that a working endpoint or authorization guard has been verified.
 
 ## Evidence classification
 
@@ -21,7 +25,7 @@ Status: Research only. No implementation was performed.
 
 `[PARTIAL]` The current repository has the Project data model and persistence scaffold, but no Project HTTP API, application business logic, authorization guard, DTO layer, frontend Project management flow, or Project E2E flow. The current IAM controller exposes only health behavior.
 
-`[DECISION REQUIRED]` The repository does not establish the complete Project lifecycle policy, including who may create/read/update/archive/restore a Project, what archive does to Teams and Memberships, and whether restore is part of MVP.
+`[PARTIAL]` Project-create authorization and creator bootstrap are decided. The remaining Project lifecycle gaps include read/update/archive/restore policy, archive effects on Teams and Memberships, and whether restore is in MVP.
 
 The proposed product flows are catalogued in [Project, Team and Membership Use Cases](05-project-team-access-use-cases.md). This research remains the source-evidence and implementation-gap report for Project lifecycle.
 
@@ -66,11 +70,11 @@ Excluded:
 | Project belongs to an Organization | `DATN-BE/src/services/iam/infrastructure/mongodb/mongodb.schemas.ts`; product authorization docs | `[FACT]` / `[DESIGN]` | Source requires `organizationId` on Project. |
 | Project has name, code and optional description | IAM `projects` schema | `[FACT]` | These are source-supported fields; no additional fields are inferred. |
 | Project has lifecycle status `ACTIVE` or `ARCHIVED` in current schema | IAM `projects` schema | `[FACT]` | This is a schema enum, not proof of working transitions. |
-| Project records creator | IAM `projects` schema | `[FACT]` | `createdBy` exists. Its business ownership meaning is not fully defined. |
+| Project records creator | IAM `projects` schema; Project Foundation decision | `[FACT]` / `[APPROVED]` | `createdBy` records provenance; it does not make the creator an owner or Team Leader. Creator bootstrap grants Project Membership and `MEMBER`. |
 | Project code is unique inside an Organization | IAM `persistence.ts` | `[FACT]` / `[DESIGN]` | Current index is unique on `(organizationId, code)`. |
-| Create Project is permission controlled | `02_ACTORS_ROLES_AND_PERMISSIONS.md`; `organization_capability_grants` schema | `[DESIGN]` / `[PARTIAL]` | `project.create` is an explicit organization-level capability grant for a Team Leader. No evaluator exists. |
-| Admin can create/manage Projects within organization policy | `02_ACTORS_ROLES_AND_PERMISSIONS.md` | `[DESIGN]` | The exact policy boundary is not implemented. |
-| Team Leader may create a new Project only with `project.create` | Actors/roles document; SPEC-002 | `[DESIGN]` | Leadership alone must not imply the capability. |
+| Create Project is permission controlled | BE Project Foundation decisions | `[APPROVED POLICY]` / `[IMPLEMENTATION GAP]` | Requires authenticated active subject, trusted matching Organization Context, and `ACTIVE` Organization Membership; no role or `project.create` grant is required. |
+| Creator receives initial Project access | Project creator Member bootstrap decision | `[APPROVED POLICY]` / `[IMPLEMENTATION GAP]` | Project is `PRIVATE`; creator receives active Project Membership and project-scoped `MEMBER`, not owner/Team Leader/Team. Writes and audit are atomic. |
+| `project.create` grant schema | IAM schema; BE Project Foundation decision | `[FACT]` / `[POLICY SUPERSEDED FOR THIS OPERATION]` | The schema is retained, but this grant does not authorize or gate Project creation. Other grant policy remains separate. |
 | Project list/detail/update/search/filter/pagination/sort are required by leader breakdown | `Danh Chia Task.docx`, Project section | `[DESIGN]` | No implemented API was found. |
 | Project access is limited by active membership and ACL/policy | `02_ACTORS_ROLES_AND_PERMISSIONS.md`; `docs/architecture/target-state.md` | `[DESIGN]` | Backend enforcement is required. |
 | Archive/soft delete is preferred over hard delete | `Danh Chia Task.docx`; product research docs | `[DESIGN]` | Exact cascade/reference semantics are not defined. |
@@ -86,17 +90,17 @@ Excluded:
 2. `[DESIGN]` Project code must be unique within that Organization.
 3. `[DESIGN]` A user outside the authorized Project scope must not access Project resources.
 4. `[DESIGN]` Backend authorization is the security boundary; frontend checks are UX only.
-5. `[DESIGN]` Team Leaders need an explicit organization-level `project.create` grant to create a new Project.
-6. `[DESIGN]` Project and Membership data should be archived/disabled rather than hard-deleted when historical references must remain.
-7. `[DESIGN]` Important Project mutations must create audit records.
+5. `[APPROVED]` Any authenticated User with `ACTIVE` Organization Membership may create a `PRIVATE` Project in the trusted matching Organization; no role or `project.create` grant is required.
+6. `[APPROVED]` Creator bootstrap atomically adds active Project Membership, a project-scoped `MEMBER` RoleAssignment, and the existing Project-create audit event. The creator does not become a Team Leader, owner, or Team.
+7. `[DESIGN]` Project and Membership data should be archived/disabled rather than hard-deleted when historical references must remain.
+8. `[DESIGN]` Important Project mutations must create audit records.
 
 ### Not established by current evidence
 
 - Whether a Project must have exactly one owner, one leader or multiple owners.
-- Whether `createdBy` is merely provenance or establishes ownership.
-- Whether Project creation automatically creates a Project Membership for the creator.
-- Whether Project creation automatically creates an initial Team.
-- Whether Admin access to a Project's confidential content is automatic; product docs indicate it is not automatic.
+- How the creator's provenance field maps to the Project Membership and RoleAssignment identifiers in the actual persistence/API contract.
+- Whether Project creation automatically creates an initial Team. The accepted bootstrap decision says it does not.
+- `[APPROVED]` Admin has no default access to confidential Project content. Any exceptional access procedure remains to be separately approved.
 - Whether archived Projects remain readable, searchable or retrievable.
 - Whether archive cascades to Teams, Memberships, Jira connections, documents, knowledge or handovers.
 
@@ -106,7 +110,7 @@ The following is the lifecycle evidenced by the current schema plus documented d
 
 | State/action | Evidence | Status | Consequence/unknown |
 |---|---|---|---|
-| Create | `projects` schema and leader breakdown | `[DESIGN]` / `[GAP]` | Must validate Organization, code uniqueness and `project.create`/Admin policy. |
+| Create | Project Foundation BE decisions and `projects` schema | `[APPROVED POLICY]` / `[GAP]` | Validate authenticated subject, trusted matching Organization Context, active Organization Membership and unique code; create `PRIVATE` Project, active creator membership, `MEMBER` assignment and audit atomically. |
 | `ACTIVE` | Schema enum | `[FACT]` | Current code does not implement transition logic. |
 | Update | Leader Project requirements | `[DESIGN]` / `[GAP]` | Fields and allowed changes are not specified. |
 | Archive | Schema enum and leader breakdown | `[DESIGN]` / `[GAP]` | Must preserve references; impact on child resources is unknown. |
@@ -211,14 +215,14 @@ The exact Project endpoint paths, request DTOs, response envelope, pagination fi
 
 `[DESIGN]` Project access depends on:
 
-1. authenticated user/session;
-2. Organization context;
-3. active organization/project membership;
-4. persistent role and scoped capability;
+1. authenticated active subject and Organization Context validated against `ACTIVE` Organization Membership;
+2. Project existence, Organization parent and Project lifecycle;
+3. active Project Membership for Project-scoped access;
+4. persistent role, explicit assignment/delegation and any applicable capability;
 5. Project policy and resource/source ACL where applicable;
 6. explicit deny precedence.
 
-`[DESIGN]` The minimum relevant capabilities include `project.create`, `project.read` and `project.manage`. The exact mapping for read/update/archive is not fully approved in source.
+`[APPROVED]` `project.create` is not a gate for Project creation. `project.read` remains separately governed by the Private Project policy. `[DECISION REQUIRED]` Exact permissions for Project update/archive and delegated Team management are not fully approved.
 
 `[GAP]` No backend Project authorization evaluator or guard is currently implemented.
 
@@ -229,7 +233,7 @@ The exact Project endpoint paths, request DTOs, response envelope, pagination fi
 - Project creation;
 - Project update;
 - Project archive/restore if restore exists;
-- use, grant or revoke of `project.create`;
+- any capability grant action that remains in scope under a separately approved policy;
 - sensitive Project access where policy requires it.
 
 `[PARTIAL]` IAM audit schema/service scaffolding exists. `[GAP]` No Project mutation exists to prove event wiring, actor/scope capture, idempotency or audit visibility.
@@ -240,7 +244,7 @@ The exact Project endpoint paths, request DTOs, response envelope, pagination fi
 |---|---|---|---|
 | Project belongs to Organization | Product docs; Project schema | `organizationId` field exists | No runtime scope validation |
 | Project code unique per Organization | Persistence index | Unique index declaration exists | No API conflict behavior or test |
-| Authorized Project creation | Actors/permissions docs; capability schema | Grant schema exists | No evaluator, guard or create service |
+| Authorized Project creation | BE Project Foundation decisions | Earlier research snapshot recorded no complete Project runtime flow | Accepted rule is active Organization Membership, not `project.create`; verify current route/evaluator implementation against that contract |
 | Project list/detail | Leader/API docs | No endpoint | Entire business capability missing |
 | Project update | Leader docs | No endpoint | Allowed fields and audit missing |
 | Project archive | Leader docs; status enum | `ARCHIVED` enum exists | Transition logic and cascade policy missing |
@@ -260,8 +264,6 @@ The exact Project endpoint paths, request DTOs, response envelope, pagination fi
 
 ## 16. UNKNOWN
 
-- Is Project creation organization-wide, Admin-only, or delegated to Team Leaders with `project.create`?
-- Is a Project creator automatically a member, leader or owner?
 - Is there one owner or multiple responsibility owners?
 - Which Project fields are mutable after creation?
 - Is Project code immutable after creation?
@@ -274,12 +276,11 @@ The exact Project endpoint paths, request DTOs, response envelope, pagination fi
 
 ## 17. DECISION REQUIRED
 
-1. Approve the Project authorization matrix for create/read/update/archive.
-2. Approve Project bootstrap behavior and initial membership/leader assignment.
-3. Approve archive/restore cascade semantics for Teams, Memberships and downstream data.
-4. Approve whether restore is MVP or later scope.
-5. Approve the canonical Project API and response/error contract.
-6. Follow the accepted database-per-service topology on the existing MongoDB cluster. Use the active BE runtime inventory in ADR-003; preserve `continuum_db` as migration source until a clean dry-run, verified backup and separately authorized cutover. Resolve Task/AI Adapter/Jira inventory differences before provisioning additional targets.
+1. Align the Project API/evaluator with the accepted create rule and atomic creator bootstrap.
+2. Approve remaining read/update/archive permissions and archive/restore effects for Teams, Memberships and downstream data.
+3. Approve whether restore is MVP or later scope.
+4. Approve the canonical Project API and response/error contract.
+5. Follow the accepted database-per-service topology on the existing MongoDB cluster. Use the active BE runtime inventory in ADR-003; preserve `continuum_db` only as the migration source until a clean dry-run, verified backup and separately authorized cutover. Resolve Task/AI Adapter/Jira inventory differences before provisioning additional targets.
 
 ## 18. Dependencies
 
@@ -308,7 +309,7 @@ Proposal only for a later planning phase:
 1. Freeze Project business rules and API contract.
 2. Implement repository/data access against the accepted persistence topology.
 3. Implement create/list/detail/update/archive with organization-scope validation.
-4. Integrate the approved authorization evaluator and `project.create` rule.
+4. Integrate the approved authorization evaluator: require active Organization Membership for create; do not require `project.create` for this operation; keep read/update/archive policies separate.
 5. Add audit/outbox events for Project mutations.
 6. Add Project FE pages, query/mutation hooks and permission-aware UX.
 7. Add unit, persistence/index, authorization and Project E2E tests.

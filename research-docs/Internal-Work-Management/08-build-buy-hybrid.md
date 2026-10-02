@@ -2,6 +2,8 @@
 
 **Trạng thái:** Comparative analysis, no ranking or selection. Options are not mutually exclusive across time.
 
+> **Decision amendment — 2026-10-02:** Continuum has approved an internal Task API/Task Service as the canonical task source for its current MVP, using the existing BE and FE repositories and a separate backend service deployment. The current options below remain useful for comparing mature external products and possible future connectors; they do not reopen the accepted task-source or repository/deployment boundary. The approved Task Service is a focused Continuum work capability, not a full enterprise replacement for Jira/Atlassian.
+
 ## Options in scope
 
 - **A — Continue Jira:** retain task system; resolve friction through workflow/configuration, plan, training or governance changes.
@@ -10,7 +12,7 @@
 - **D — Internal above Jira:** Jira remains task source; internal layer aggregates context, decisions/verified knowledge or management views.
 - **E — Internal + multiple external systems:** integration layer connects Jira/GitHub/docs/chat/calendar and internal knowledge capabilities.
 
-`[DOCUMENTED]` Option D is conceptually closest to the existing Continuum framing (Jira task context + knowledge continuity), but that is not a decision to build an enterprise work platform or expand MVP.
+`[SUPERSEDED]` The earlier claim that Option D (internal above Jira) matched the current task-source decision is obsolete. Continuum owns tasks in the MVP. Options A, B and D are retained as external SaaS comparators or possible future integration choices only.
 
 ## Qualitative trade-off matrix
 
@@ -23,7 +25,7 @@
 | Governance | Jira project/issue/role controls, plan dependent | Cross-product permission design | Fully custom responsibility and risk | Must preserve source ACL and internal ACL | Complex multi-provider ACL equivalence problem |
 | Knowledge | Issue context; Confluence adds content system | Stronger document link ecosystem | Can own knowledge but requires lifecycle/search quality | Continuum knowledge continuity aligns conceptually | Can connect diverse sources but content rights/ACL hard |
 | Migration/lock-in | Low change | Moderate content/project coupling | High migration and user retraining | Lower if mostly links/read-only | Medium-high mapping/reconciliation |
-| DATN MVP fit | `[UNKNOWN]` until actual pain/config audit | `[UNKNOWN]`; test if document pain is proven | Not supported by current Continuum scope | Consistent with current research framing, not enterprise expansion | Future hypothesis; broad scope unproven |
+| DATN MVP fit | External alternative only; does not define the accepted task source | Future alternative/connector question; not an MVP dependency | The focused Continuum Task API is approved; a full enterprise replacement remains out of scope | Future-only; cannot become a competing writable task authority | Future hypothesis; broad scope unproven |
 
 No column is universally superior. Scores are intentionally not assigned because there is no agreed use-case weighting or observed baseline.
 
@@ -63,7 +65,9 @@ This is a feature-area scan, not an apples-to-apples pricing, security, usabilit
 
 ## DATN engineering feasibility
 
-- `[DOCUMENTED]` Backend runtime uses bounded NestJS service entrypoints and Next.js BFF; accepted persistence topology is MongoDB 7.0 database-per-service on the existing cluster, with `continuum_audit` for cross-cutting audit (ADR-003/DEC-011). LanceDB remains auxiliary SAG store; PostgreSQL/pgvector is a separate future SAG scaling option.
+- `[DOCUMENTED TARGET]` DATN-BE retains the Modular Monolith source architecture (DEC-013/SPEC-003). The accepted Task API/Service is an independently deployed target in the existing BE repository and owns logical database `continuum_task` on the existing MongoDB replica set when implemented (ADR-009/010).
+- `[CURRENT RUNTIME FACT]` The active BE deployment uses bounded-context entrypoints and database-per-service logical databases on the same cluster; its inventory is eight domain databases plus `continuum_audit`, including `continuum_jira`. `continuum_task` and `continuum_ai_adapter` are not in the active runtime inventory (ADR-003/DEC-011). Jira's runtime presence is separate from its status as an MVP task source.
+- `[DOCUMENTED]` LanceDB remains the auxiliary SAG store; PostgreSQL/pgvector is a separate future SAG scaling option.
 - `[FACT]` Current source has domain schemas/scaffolding and health controllers, but workspace research states no end-to-end Project/Team CRUD or FE workflows; source search did not find completed Jira integration or LanceDB runtime implementation.
 - `[INFERENCE]` Extending current architecture is technically plausible but engineering capacity, quality/security bar, operations ownership, and full lifecycle scope make a Jira replacement a major product/operational commitment. Plausible does not mean economical or approved.
 - `[DOCUMENTED]` Historical `.sage` inventory/current-state contains drift on accepted decisions; current decision register and SPEC are controlling evidence for accepted target. This report does not reconcile/edit those files.

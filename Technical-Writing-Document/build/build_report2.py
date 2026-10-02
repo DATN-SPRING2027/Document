@@ -20,9 +20,10 @@ TBD = "[[TBD]]"
 WBS = [
     ("Feature 1: Identity, Access & Project Management", [
         "Authentication and session (JWT access token, rotating refresh token)",
-        "Three-role RBAC and scoped assignments (SME, Knowledge Owner, Successor)",
-        "Project, team and membership management; onboarding/offboarding states",
-        "`project.create` capability grant (issue, revoke, expire, audit)",
+        "Platform Operator and Organization Admin boundaries plus three Organization/Project roles",
+        "Platform provisioning and first-Admin bootstrap; Organization memberships and roles/scopes",
+        "Private Project creation by any authenticated active Organization member; creator Member bootstrap",
+        "Assigned Team Leader scope for Project/Team work; project and source ACL checks",
         "Effective-permission evaluation and source/resource ACL",
     ]),
     ("Feature 2: Knowledge Capture", [
@@ -30,11 +31,11 @@ WBS = [
         "Daily / task notes (what, how, why, blockers, next steps)",
         "Reminders for missing or overdue notes and required knowledge",
     ]),
-    ("Feature 3: Jira Cloud Integration", [
-        "Connection and Jira-project mapping",
-        "Backfill of issues, comments and status",
-        "Idempotent webhook updates",
-        "Reconciliation and sync-failure handling",
+    ("Feature 3: Continuum Task Management", [
+        "Continuum Task API owns canonical task records and lifecycle",
+        "Task service runs within existing BE repository and service topology, with logical MongoDB database continuum_task",
+        "Work Notes and handover records keep an optional logical taskId",
+        "Downstream services use the approved Task API/event contract; no direct Task database access",
     ]),
     ("Feature 4: Source Upload & Ingestion", [
         "File upload (PDF, DOCX, Markdown, TXT, image) and Cloudflare R2 storage",
@@ -185,16 +186,16 @@ def build():
            "with real data; P1 features are accepted only when P0 is stable.", align="justify")
     r.table(["Phase", "Week", "Deliverables"], [
         ["P0 – Foundation", "1", "Scope/actor decisions, DB/API contracts, dataset design, Docker baseline and module ownership"],
-        ["P1 – Access & project", "2–3", "Auth, 3 roles, `project.create` grant, project/team membership, ACL and audit"],
-        ["P2 – Capture & integration", "3–5", "Manual note, Jira backfill/webhook/reconciliation, R2 upload, parse/OCR/job status"],
+        ["P1 – Access & project", "2–3", "Platform provisioning, active Organization Membership, 3 Org/Project roles, assigned scope, ACL and audit"],
+        ["P2 – Capture & task service", "3–5", "Continuum Task API, manual/task-linked notes, R2 upload, parse/OCR/job status"],
         ["P3 – Knowledge lifecycle", "5–7", "SAG index/trace, Proposed Knowledge, human verification, immutable version/evidence"],
         ["P4 – Chat & handover", "7–8", "Permission-aware chat with citation and insufficient evidence, gap, scoped handover checklist"],
         ["P5 – Evaluation & hardening", "9–10", "Dataset benchmark, leak tests, failure analysis, bug fixes, reproducible demo and report"],
     ], [4.3, 1.6, 10.0], center_cols=(1,))
     r.figure(os.path.join(FIG, "fig3_schedule.png"), 15.8, "Delivery phases over the 10-week plan.")
-    r.para("Every task follows the workflow defined in AI_WORKFLOW.md: receive the Jira task, read the rules and "
+    r.para("Every task follows the workflow defined in AI_WORKFLOW.md: use its Continuum task record as work context, read the rules and "
            "architecture, create a new branch from the latest `origin/main`, implement, test locally, commit, push, "
-           "open a pull request into `main`, link it to Jira, get review and approval, and merge by an authorized "
+           "open a pull request into `main`, link the pull request to the Continuum task, get review and approval, and merge by an authorized "
            "teammate (Figure 2, section 6.2). API behavior is contract-first: request, response, error, scope, pagination "
            "and streaming semantics are approved in OpenAPI before implementation.", align="justify")
     r.para(f"Development methodology (for example Scrum), iteration length and ceremonies: {TBD} – not defined in the "
@@ -221,7 +222,7 @@ def build():
         "Pytest (AI service).",
         "**Quality gates:** backend `npm run check` runs lint, typecheck, unit tests, e2e tests and build; frontend "
         "`npm run check` runs lint, typecheck, tests and build. GitHub Actions CI checks run on pull requests.",
-        "**Rules:** write a failing test before adding behavior; treat files, webhooks, Jira data, user input and AI "
+        "**Rules:** write a failing test before adding behavior; treat files, webhooks, task input, user input and AI "
         "output as untrusted; permission filtering happens before evidence is sent to the AI engine.",
     ])
     r.label("Quality Metrics (from the evaluation methodology)")
@@ -248,8 +249,8 @@ def build():
     r.table(["#", "Deliverable", "Due", "Notes"], [
         ["1", "Foundation: scope and actor decisions, DB/API contracts, dataset design, Docker baseline", "Week 1",
          "MVP scope and actor/role model are accepted baselines; backend repository has CI checks and the IAM v1 OpenAPI contract; frontend is bootstrapped from TailAdmin (repository history)"],
-        ["2", "Access & project: auth, 3 roles, `project.create` grant, membership, ACL, audit", "Week 2–3", ""],
-        ["3", "Capture & integration: manual note, Jira sync, R2 upload, parse/OCR/job status", "Week 3–5", ""],
+        ["2", "Access & project: platform provisioning, active membership, 3 Org roles, scope, ACL and audit", "Week 2–3", ""],
+        ["3", "Capture & task service: Continuum Task API, manual/task-linked notes, R2 upload, parse/OCR/job status", "Week 3–5", ""],
         ["4", "Knowledge lifecycle: SAG index/trace, Proposed Knowledge, human verification, versions", "Week 5–7", ""],
         ["5", "Chat & handover: permission-aware chat with citations, gaps, handover checklist", "Week 7–8", ""],
         ["6", "Evaluation & hardening: dataset benchmark, leak tests, failure analysis, reproducible demo and report", "Week 9–10", ""],
@@ -272,7 +273,7 @@ def build():
     # ------------------------------------------------------------------ 5
     r.h2("5. Project Communications")
     r.table(["Communication Item", "Who / Target", "Purpose", "When, Frequency", "Type, Tool, Method(s)"], [
-        ["Task tracking", "All team members", "Backlog, status and PR links per task", "Continuous", "Jira"],
+        ["Task tracking", "All team members", "Continuum-owned backlog, task status and PR links", "Continuous", "Continuum Task API and GitHub pull requests"],
         ["Pull request review", "Developers, teammate reviewers", "Code review, approval before merge", "Per pull request", "GitHub pull requests"],
         ["Database change notice", "All team members", "Announce collection/field/index/migration changes and data impact", "Per database change", "Team chat, standard [DATABASE CHANGE] template"],
         ["Team meetings", TBD, TBD, TBD, TBD],
@@ -287,7 +288,7 @@ def build():
            "and specifications under `docs/` and `tasks/`. The folder structure of the `Document` repository is:",
            align="justify")
     r.table(["Folder", "Meaning"], [
-        ["research-docs", "MVP scope, actors/roles/permissions, daily workflow and Jira sync, and the Graduation Project Specification."],
+        ["research-docs", "MVP scope, actors/roles/permissions, daily work capture and internal task management, and the Graduation Project Specification."],
         ["research-tech", "Approved technology stack and architecture decisions."],
         ["architecture", "System architecture: topology, frontend, services, storage/messaging/AI, security, orchestration, reliability."],
         ["database-design", "Schema documents for each service and the schema catalogue."],
@@ -304,7 +305,7 @@ def build():
         "**Branching:** every task uses a new branch created from the latest `origin/main`; no direct or force pushes "
         "to `main`; feature branches open pull requests into `main` only.",
         "**Branch names:** `feat/<Name>-<task>-be-api` (backend), `feat/<Name>-<task>-fe-ui` (frontend), "
-        "`feat/<Name>-<task>-db` (database); `fix/` or `chore/` prefixes for bugs and chores when the team or Jira requires.",
+        "`feat/<Name>-<task>-db` (database); `fix/` or `chore/` prefixes for bugs and chores when the team workflow requires.",
         "**Separation of concerns:** database, backend and frontend changes use separate branches and pull requests "
         "(Figure 2).",
         "**Commit standards:** atomic commits following Conventional Commits (for example `feat:`, `fix:`, `docs:`, `ci:`).",
@@ -318,12 +319,12 @@ def build():
     r.label("Repositories")
     r.table(["Repository", "Content", "Main technology"], [
         ["Document", "Specification, architecture, database design, deployment references, workflow rules", "Markdown, YAML"],
-        ["DATN-BE", "Continuum `backend-core` modular monolith with eight domain boundaries: iam, capture, jira, lifecycle, chat, handover, ingestion, notification; OpenAPI contracts", "NestJS, TypeScript, Jest, Swagger"],
+        ["DATN-BE", "Continuum backend repository with IAM, capture, task, lifecycle, chat, handover, ingestion and notification domains; the Task service runs as a separate deployment; OpenAPI contracts", "NestJS, TypeScript, Jest, Swagger"],
         ["DATN-FE", "Web application built on TailAdmin (dashboard shell, knowledge, assistant, verification, handover, administration screens)", "Next.js 16, React 19, Tailwind CSS, TanStack Query, Vitest"],
         ["AI service", f"FastAPI service integrating a pinned SAG version behind `integrations/ai-engine`; repository not present in the workspace: {TBD}", "Python, FastAPI, Pytest"],
     ], [3.0, 8.6, 4.3])
     r.figure(os.path.join(FIG, "fig4_git_flow.png"), 15.8,
-             "Task delivery flow: Jira task, new branch, separate DB/BE/FE pull requests and review gate.")
+             "Task delivery flow: Continuum task, new branch, separate DB/BE/FE pull requests and review gate.")
 
     r.h3("6.3 Tools & Infrastructures")
     r.table(["Category", "Tools / Infrastructure"], [
@@ -331,12 +332,12 @@ def build():
         ["**Database and storage**", "MongoDB with Mongoose (source of truth), LanceDB via SAG (initial retrieval index), Redis, Cloudflare R2 (S3-compatible adapter as fallback)"],
         ["**AI / Retrieval**", "Pinned zleap-sag, provider-agnostic LLM Gateway, SAG pipeline with MarkItDown or MinerU for parsing and OCR"],
         ["**Background jobs**", "Redis and BullMQ"],
-        ["**Integrations**", "Jira Cloud REST API, webhooks and reconciliation"],
+        ["**Task management**", "Continuum Task API as canonical task source; MongoDB logical database continuum_task"],
         ["**UI foundation**", "TailAdmin (Next.js edition, MIT license) with Tailwind CSS; TanStack Query and Zustand for state"],
         ["**Testing**", "Jest, Vitest, React Testing Library, Playwright, Pytest"],
         ["**API documentation**", "Swagger and OpenAPI"],
         ["**Version control**", "Git and GitHub (source code and documents)"],
-        ["**Project management**", "Jira"],
+        ["**Project management**", "Continuum Task API and GitHub pull requests"],
         ["**CI/CD**", "GitHub Actions"],
         ["**Deployment**", "Docker Compose; Kubernetes manifests are kept in `Document/deploy/k8s`"],
     ], [4.2, 11.7])
