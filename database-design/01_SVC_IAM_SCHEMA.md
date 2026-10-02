@@ -9,15 +9,20 @@
 
 ## 1. Ranh Giới Nghiệp Vụ & Quyền Hạn (Bounded Context)
 
+> **Governance contract update — 2026-10-02:** `PLATFORM_OPERATOR` is platform-scoped and separate from the Organization roles. `OrganizationMembership` is the authoritative User–Organization relationship, and only `ACTIVE` establishes Organization Context (BE DEC-016). Any authenticated User with active membership in trusted matching context may create a `PRIVATE` Project; the creator receives active ProjectMembership and project-scoped `MEMBER` RoleAssignment atomically. Project creation does not require the legacy `project.create` grant. This is a documentation-level target contract; confirm the implementation/schema and handle any database changes in a separate DB review.
+
 `svc_iam` là dịch vụ nền tảng chịu trách nhiệm về toàn bộ danh tính, cấu trúc doanh nghiệp và phân quyền:
 1. **Quản lý Danh tính:** Tài khoản người dùng, băm mật khẩu Bcrypt (12 rounds), phiên đăng nhập an toàn với Refresh Token xoay vòng (Token Rotation) chống replay attack.
 2. **Cấu trúc Tổ chức Đa Người Thuê (Multi-Tenant Hierarchy):** `organizations ➔ projects ➔ teams`.
-3. **Mô hình 3 Vai Trò Cố Định (Fixed 3-Tier Roles):**
-   - `ADMIN`: Quản trị viên toàn tổ chức.
-   - `TEAM_LEADER`: Trưởng nhóm kỹ thuật/dự án.
-   - `MEMBER`: Kỹ sư phần mềm đóng góp.
-4. **Cấp quyền đặc biệt có kiểm toán (`organization_capability_grants`):** Quyền `project.create` được Admin cấp riêng cho Team Leader có thời hạn.
-5. **Phân công chuyên môn lâm thời (Scoped Assignments):** `SME` (Chuyên gia nghiệp vụ) và `KNOWLEDGE_OWNER` (Người phụ trách module) có phạm vi theo từng domain/module cụ thể.
+3. **Mô hình role và actor:**
+   - `PLATFORM_OPERATOR`: actor vận hành nền tảng; provision Organization và bootstrap Admin đầu tiên; không có mặc định đọc Organization content.
+   - `ADMIN`: quản lý User/membership, role/scope và Organization; không mặc định đọc nội dung confidential.
+   - `TEAM_LEADER`: quản lý đúng Project/Team scope được gán.
+   - `MEMBER`: tham gia theo membership, scope và ACL.
+   - Ba role Organization/Project là `ADMIN`, `TEAM_LEADER`, `MEMBER`; `PLATFORM_OPERATOR` không phải role thứ tư trong Organization.
+4. **Organization Membership:** `OrganizationMembership` là nguồn chuẩn User–Organization; trạng thái `ACTIVE` duy nhất tạo Organization Context. Unique pair `(organizationId, userId)`; trạng thái được chốt là `PENDING_INVITE`, `ACTIVE`, `SUSPENDED`, `REMOVED`.
+5. **Capability grants:** `organization_capability_grants` là schema riêng. Grant `project.create` không còn là điều kiện tạo Project; quyết định này không tự xóa collection hay chốt chính sách cho capability khác.
+6. **Phân công chuyên môn lâm thời (Scoped Assignments):** `SME` (Chuyên gia nghiệp vụ) và `KNOWLEDGE_OWNER` (Người phụ trách module) có phạm vi theo từng domain/module cụ thể.
 
 ---
 
@@ -60,6 +65,13 @@ export interface IOrganization {
   updatedAt: Date;
 }
 
+// Organization membership and User account status are separate concepts.
+export interface IOrganizationMembership {
+  organizationId: Types.ObjectId;
+  userId: Types.ObjectId;
+  status: 'PENDING_INVITE' | 'ACTIVE' | 'SUSPENDED' | 'REMOVED';
+}
+
 export interface IProject {
   _id: Types.ObjectId;
   organizationId: Types.ObjectId;
@@ -67,7 +79,7 @@ export interface IProject {
   code: string;                  // VD: "CONT", "PAYMENT"
   description?: string;
   status: 'ACTIVE' | 'ARCHIVED';
-  createdBy: Types.ObjectId;     // User tạo (Phải có grant 'project.create')
+  createdBy: Types.ObjectId;     // Provenance only; creator bootstrap is Project MEMBER, not owner/Team Leader
   createdAt: Date;
   updatedAt: Date;
 }
@@ -85,6 +97,7 @@ export interface ITeam {
 ```
 * **Chỉ mục:**
   - `organizations`: `slug` (unique)
+  - `organization_memberships`: `(organizationId, userId)` (unique)
   - `projects`: `(organizationId, code)` (unique)
   - `teams`: `(organizationId, projectId, code)` (unique)
 
@@ -143,14 +156,14 @@ export interface IRoleAssignment {
 
 ---
 
-### 2.5. `organization_capability_grants` (Cấp quyền tạo dự án cho Team Leader)
+### 2.5. `organization_capability_grants` (Capability grants — Project-create grant is not required)
 ```typescript
 export interface IOrganizationCapabilityGrant {
   _id: Types.ObjectId;
   organizationId: Types.ObjectId;
-  userId: Types.ObjectId;        // Phải là TEAM_LEADER
-  capability: 'project.create';
-  grantedBy: Types.ObjectId;     // ADMIN cấp
+  userId: Types.ObjectId;        // Subject of an existing capability grant
+  capability: 'project.create'; // Legacy schema value; not a Project-create authorization gate
+  grantedBy: Types.ObjectId;     // Issuer recorded for audit
   reason: string;
   expiresAt?: Date;              // Thời hạn hiệu lực
   revokedAt?: Date;

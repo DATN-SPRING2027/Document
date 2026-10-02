@@ -18,7 +18,7 @@ Trong kiến trúc Microservices của Continuum AI:
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │              HỆ THỐNG 9 DATABASE DỊCH VỤ + AUDIT + SAG POST-EXTRACTION STORAGE         │
 │                                                                                        │
-│  [01. continuum_iam]          ➔ svc_iam (Auth, Users, 3 Roles, Orgs, Grants)           │
+│  [01. continuum_iam]          ➔ svc_iam (Auth, Users, Platform Ops + 3 Org Roles)      │
 │  [02. continuum_capture]      ➔ svc_capture (Work Notes What/How/Why, Requirements)     │
 │  [03. continuum_task]         ➔ svc_task (Canonical task lifecycle, history, outbox)     │
 │  [04. continuum_lifecycle]    ➔ svc_lifecycle (Verified Knowledge, Snapshots, Evidence) │
@@ -43,7 +43,7 @@ Tất cả các thành phần cơ sở dữ liệu đều có **1 tài liệu đ
 
 | STT | File Tài Liệu Schema | Bounded Context / Tầng | Tên Database / Công Nghệ | Mục Đích Lưu Trữ & Nghiệp Vụ Chính |
 | :---: | :--- | :--- | :--- | :--- |
-| **01** | [01_SVC_IAM_SCHEMA.md](01_SVC_IAM_SCHEMA.md) | **`svc_iam`** | `continuum_iam` (MongoDB) | Xác thực, 3 roles tĩnh (`ADMIN`, `TEAM_LEADER`, `MEMBER`), cấp quyền `project.create`, xoay vòng Refresh Token. |
+| **01** | [01_SVC_IAM_SCHEMA.md](01_SVC_IAM_SCHEMA.md) | **`svc_iam`** | `continuum_iam` (MongoDB) | Xác thực, OrganizationMembership, actor PLATFORM_OPERATOR riêng, 3 role Organization/Project (`ADMIN`, `TEAM_LEADER`, `MEMBER`), scoped assignments và refresh-token rotation. Project creation dựa trên active Organization Membership; grant `project.create` không bắt buộc. |
 | **02** | [02_SVC_CAPTURE_SCHEMA.md](02_SVC_CAPTURE_SCHEMA.md) | **`svc_capture`** | `continuum_capture` (MongoDB) | Ghi nhận What/How/Why, autosave drafts, bắt buộc tác giả tự xác nhận (`authorConfirmedAt`). |
 | **03** | [12_TASK_MANAGEMENT_SCHEMA.md](12_TASK_MANAGEMENT_SCHEMA.md) | **`svc_task`** | `continuum_task` (MongoDB) | Task canonical, history append-only và outbox tùy chọn; API là đường đọc/ghi duy nhất. |
 | **04** | [04_SVC_LIFECYCLE_SCHEMA.md](04_SVC_LIFECYCLE_SCHEMA.md) | **`svc_lifecycle`** | `continuum_lifecycle` (MongoDB) | Vòng đời tri thức bất biến (`v1 → v2`), Verification Inbox, ACID Transaction, truy vết Evidence. |
