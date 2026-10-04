@@ -2,7 +2,7 @@
 
 **Trạng thái:** Working contract tổng hợp phần baseline đã duyệt và phần
 UNKNOWN; chưa phải Task V1 contract được phê duyệt đầy đủ.
-**Revision:** R2 — tiếp tục bản báo cáo tại commit `0ec12fc`.
+**Revision:** R3 — tiếp tục working contract R2 tại commit `dd334ca`.
 **Ngày kiểm tra lại:** 04/10/2026 (Asia/Saigon).
 **Task owner:** Nguyen Hong Phuc.
 
@@ -11,8 +11,12 @@ là có contract được duyệt **hoặc danh sách blocker cụ thể**. Báo
 hiện phương án thứ hai: phân biệt quyết định hiện hành với proposal, đặt câu
 hỏi có thể review và ánh xạ chúng tới công việc phụ thuộc. Việc ưu tiên ticket,
 tạo tài liệu hoặc merge tài liệu báo cáo không tự phê duyệt product policy.
-R2 đối chiếu từng Q1–Q9 với quyết định hiện hành, bổ sung contract checklist
-và acceptance traceability; không đóng một Q chỉ vì đã biết một phần boundary.
+Q1–Q9 là các nhóm câu hỏi do báo cáo tổng hợp từ Jira và nguồn S1–S12;
+Jira không ghi nguyên văn chín câu này. Chúng giúp thực hiện yêu cầu UNKNOWN
+có named decision questions trong AC2. Không cần trả lời hết các Q để chuẩn
+bị blocker list theo ticket; cần đóng phần tương ứng trước implementation.
+R2 đã bổ sung đối chiếu và acceptance traceability. R3 làm rõ kết quả từng
+subtask, các loại blocker và nhu cầu công cụ; không tạo phê duyệt product mới.
 
 ## 1. Vì sao làm DATN-93 trước
 
@@ -122,7 +126,7 @@ Không thay thế Q3–Q4 bằng các giá trị proposal `ObjectId`, `TODO`,
 hoặc UI enum như requirement. Tương tự, không dùng lỗi/pagination của IAM để
 tự quyết contract Task, hoặc coi port đề xuất `3009` là port đã được chốt.
 
-### 5.1. Kết quả đối chiếu Q1–Q9 ở revision R2
+### 5.1. Kết quả đối chiếu Q1–Q9
 
 **Chưa có Q nào được đóng đầy đủ** bằng bằng chứng đã đọc. Bảng dưới ghi
 phần đã biết và artifact còn thiếu, không thay đổi trạng thái Jira. Owner
@@ -196,14 +200,19 @@ Danh là owner implementation DATN-95/96, không tự suy ra là người phê d
 
 ## 7. Mapping nghiệm thu và điều kiện mở chặn
 
-| Subtask | Kết quả trong báo cáo | Bằng chứng cần bổ sung để đóng quyết định |
+| Subtask | Kết quả nội dung đã chuẩn bị | Phần còn chờ / giới hạn sử dụng |
 | --- | --- | --- |
 | DATN-105 | Actor/use-case/scope được phân biệt baseline và proposal; Q1 | V1 UC/scope được product owner duyệt |
-| DATN-106 | Boundary B1–B7 có nguồn; target/runtime khác nhau; Q9 | Xác nhận runtime contract/owner, không tự coi target đã chạy |
+| DATN-106 | Ownership và service target đã được xác nhận bởi B1–B7/ADR-009/010; source/API/event/database boundary explicit | Team review kết quả đối chiếu; Q9 chặn cấu hình/runtime thuộc DATN-96, không làm ownership/service target thành UNKNOWN |
 | DATN-107 | Field/relationship chưa được tự phê duyệt; Q2–Q3 | Data dictionary và references/constraints đã chốt |
 | DATN-108 | Lifecycle/version/idempotency gaps Q4, Q7 | Transition matrix và operation/conflict contract được duyệt |
 | DATN-109 | Governance B8–B10; quyền creator Member có căn cứ nhưng action matrix vẫn thiếu Q2, Q5 | Actor/scope/ACL/deny/concurrency matrix được duyệt |
 | DATN-110 | API/audit/history/outbox gaps Q6–Q9 | Task OpenAPI, event/history và unresolved-item decisions có authority |
+
+Các ô “đã chuẩn bị” mô tả artifact để reviewer kiểm tra, không phải kết quả
+phê duyệt hay status Jira. DATN-106 có căn cứ cho boundary đã chốt; việc chưa
+có runtime không đòi duyệt lại boundary. DATN-105/107/108/109/110 đã có câu hỏi
+và nguồn truy vết, nhưng chưa có đầy đủ quyết định product chi tiết để approve.
 
 Contract closure cần lưu: decision ID, người duyệt, thời điểm, owning document/
 contract revision, nội dung quyết định, các câu Q được đóng và tests/acceptance
@@ -241,7 +250,7 @@ ghi rõ. Khi chỉ duyệt một phần, ghi PARTIAL cùng phần còn thiếu.
 
 ### 9.1. DATN-93
 
-| Acceptance criterion đọc từ Jira | Artifact trong revision R2 | Kết luận |
+| Acceptance criterion đọc từ Jira | Artifact trong revision R3 | Kết luận |
 | --- | --- | --- |
 | AC1: authority tách khỏi research/inference | Mục 2–4, B1–B10; mục 5.1–5.2 đối chiếu từng Q | Có source/authority map; không tạo phê duyệt mới |
 | AC2: fields/transitions/API/authorization/audit explicit hoặc UNKNOWN có câu hỏi | Q1–Q9 và contract surfaces ở mục 8 | Đã mô tả blocker cụ thể; detailed implementation contract vẫn UNKNOWN |
@@ -277,7 +286,36 @@ Blocker list của DATN-93 được review/merge cũng không thay approval các
 | AT-08 | Runtime qua existing BFF/Gateway, database đúng owner/config fail-fast; health, trusted correlation và upstream timeout/failure quan sát được | B2/B3/B4, DATN-96 AC; Q6/Q9 chốt exact values và mappings |
 | AT-09 | Nếu Q9 duyệt async consumer, outbox cùng mutation/history transaction, relay sau commit và consumer dedup event ID | B4/S2 Decision 7; Q8/Q9 chốt event/delivery semantics; không bật nhánh scenario này khi consumer chưa được duyệt |
 
-## 10. Phạm vi bàn giao R2
+## 10. Nhu cầu công cụ và phần bàn giao còn chờ
+
+### 10.1. Kiểm tra tải/cài thêm ngày 04/10/2026
+
+| Hạng mục | Kết quả kiểm tra | Hành động cho DATN-93 |
+| --- | --- | --- |
+| Git/source và Jira | Git/rg/PowerShell có sẵn; fetch được cả bốn repo; trình duyệt hiện có đọc được Jira/subtasks | Đủ cho đối chiếu và kiểm tra tài liệu; không cần connector hay package mới |
+| Runtime ứng dụng/database | Ticket D-01 là product/API contract hoặc blocker list; không có runtime/schema/migration change | Không cần tải Node dependencies, Docker, MongoDB hoặc khởi tạo database để nghiệm thu phần tài liệu |
+| Review skill bắt buộc | Không có `code-review-and-quality` trong catalog/local đã kiểm tra. [Danh mục curated chính thức](https://github.com/openai/skills/tree/main/skills/.curated) đọc qua helper `skill-installer` không có tên này. Plugin search có kết quả review khác nhưng chưa xác minh cung cấp đúng skill | Chưa có nguồn tải đúng skill được xác minh; không tự cài framework/plugin khác để coi gate đã đạt. Cần nguồn skill do workflow sử dụng hoặc quyết định thay gate từ người có thẩm quyền |
+| Persistence authority | ADR-003/SPEC-001 gốc vẫn chưa tìm thấy trong checkout/workspace GitHub/Downloads đã tìm; AGENTDB dẫn path khác | Đây là thiếu tài liệu authority cho persistence; tải công cụ không giải quyết Q2/Q3/Q8 hay cho phép DATN-95 apply/migration |
+
+Không tải/cài package, plugin hoặc skill mới trong lần này. Chỉ đọc danh mục
+và kiểm tra khả năng hiện có. Kiểm tra tài liệu gồm links, Q/subtask coverage,
+source SHAs, cấu trúc bảng và diff whitespace; không gọi chúng là application
+tests hoặc invoke `code-review-and-quality`.
+
+### 10.2. Phân loại phần còn chờ
+
+| Loại | Item cụ thể | Ảnh hưởng |
+| --- | --- | --- |
+| Product/API decisions | Q1–Q9 theo mục 5.1/8; mỗi item cần nội dung quyết định, authority/người duyệt, revision và acceptance mapping | Chặn phần implementation tương ứng; không chặn việc bàn giao precise blocker list theo DATN-93 |
+| Source authority | Bản ADR-003/SPEC-001 hiện hành và owning artifacts nhất quán | Chặn policy persistence chưa có căn cứ; không làm mất hiệu lực B1–B10 đã truy vết |
+| Review workflow | [Document AGENTS](../../AGENTS.md), mục Mandatory post-implementation review gate, yêu cầu “invoke the `code-review-and-quality` skill” trước khi coi review-ready | Gate này chưa đạt. Manual diff check và việc push không thay skill invocation |
+| Human review / Jira / PR | Người dùng xem artifact; team review quyết định và kết quả; PR chỉ khi người dùng yêu cầu | Chưa tự đổi Jira/subtask Done, gỡ dependency, mở PR hoặc merge |
+
+Phần công việc tài liệu được chuẩn bị để bàn giao theo expected result
+**precise blocker list**. Contract đầy đủ được duyệt, review gate và nghiệm
+thu của team là các trạng thái riêng, vẫn còn chờ như bảng trên.
+
+## 11. Phạm vi bàn giao R3
 
 Chỉ tài liệu working contract/readiness và link trong README. Không có
 schema/API/UI/runtime/migration/data change; không provision database, seed,
