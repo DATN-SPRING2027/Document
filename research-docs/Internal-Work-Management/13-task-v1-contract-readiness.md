@@ -2,8 +2,8 @@
 
 **Trạng thái:** Working contract tổng hợp phần baseline đã duyệt và phần
 UNKNOWN; chưa phải Task V1 contract được phê duyệt đầy đủ.
-**Revision:** R3 — tiếp tục working contract R2 tại commit `dd334ca`.
-**Ngày kiểm tra lại:** 04/10/2026 (Asia/Saigon).
+**Revision:** R4 — tiếp tục bản R3 tại commit `c639a01`, cập nhật evidence và review tooling.
+**Ngày kiểm tra lại:** 05/10/2026 (Asia/Saigon).
 **Task owner:** Nguyen Hong Phuc.
 
 Mục tiêu của [DATN-93](https://trankimthang0207.atlassian.net/browse/DATN-93)
@@ -17,6 +17,8 @@ có named decision questions trong AC2. Không cần trả lời hết các Q đ
 bị blocker list theo ticket; cần đóng phần tương ứng trước implementation.
 R2 đã bổ sung đối chiếu và acceptance traceability. R3 làm rõ kết quả từng
 subtask, các loại blocker và nhu cầu công cụ; không tạo phê duyệt product mới.
+R4 xác minh lại Git/Jira và ghi nhận review skill đã được cài từ nguồn người
+dùng cung cấp; giữ nguyên các quyết định product và các item UNKNOWN.
 
 ## 1. Vì sao làm DATN-93 trước
 
@@ -51,7 +53,7 @@ DATN-86 và DATN-89 là các lane contract có thể chuẩn bị độc lập. 
 | S9 | [DATN-93](https://trankimthang0207.atlassian.net/browse/DATN-93) và DATN-105–110 | Scope, acceptance criteria và checklist phê duyệt; ticket không tự điền quyết định đang thiếu |
 | S10 | BE [Project creator Member bootstrap](https://github.com/DATN-SPRING2027/DATN-BE/blob/56036d13ed86f5db47ba7cbcb02256f02eab80ae/docs/decisions/project-creator-member-bootstrap-v1.md), Decision; [Project Foundation read policy](https://github.com/DATN-SPRING2027/DATN-BE/blob/56036d13ed86f5db47ba7cbcb02256f02eab80ae/docs/decisions/project-foundation-read-mvp.md), Contract used; [Project Access & Visibility V1](https://github.com/DATN-SPRING2027/DATN-BE/blob/56036d13ed86f5db47ba7cbcb02256f02eab80ae/docs/decisions/project-access-visibility-v1.md), role mapping, Visibility, Membership operations và Tests and boundaries | Quyết định có nhãn requester-approved/accepted trên main; quyền creator Member, giới hạn metadata và thu hồi Project access; không phải Task action matrix |
 | S11 | [MVP scope](../01_MVP_SCOPE.md), mục 6.2; [Daily workflow](../03_DAILY_WORKFLOW_AND_JIRA_SYNC.md), Status và mục 2–3; [Graduation specification](../Continuum_AI_Graduation_Project_Specification_v1.0.docx.md), scope amendment và FR-24 | Xác minh Task feature scope chi tiết vẫn là proposal; statement field/state ở workflow không tự đóng Q2–Q4 |
-| S12 | [DATN-94](https://trankimthang0207.atlassian.net/browse/DATN-94), [DATN-95](https://trankimthang0207.atlassian.net/browse/DATN-95), [DATN-96](https://trankimthang0207.atlassian.net/browse/DATN-96), descriptions và linked work items đọc lại ngày 04/10/2026 | Downstream acceptance criteria và dependency gate; nghiệm thu trong ticket không chứng minh implementation đã đạt |
+| S12 | [DATN-94](https://trankimthang0207.atlassian.net/browse/DATN-94), [DATN-95](https://trankimthang0207.atlassian.net/browse/DATN-95), [DATN-96](https://trankimthang0207.atlassian.net/browse/DATN-96), descriptions và linked work items đọc lại ngày 05/10/2026 | Downstream acceptance criteria và dependency gate; nghiệm thu trong ticket không chứng minh implementation đã đạt |
 
 Các nhãn trong báo cáo: **APPROVED** chỉ cho quyết định có nguồn chấp thuận;
 **FACT** chỉ là trạng thái source/Jira đã quan sát; **UNKNOWN** là chưa có
@@ -162,7 +164,7 @@ Danh là owner implementation DATN-95/96, không tự suy ra là người phê d
 
 ## 6. Evidence runtime trên main và chênh lệch cần xử lý
 
-| Repo | SHA được đối chiếu local và remote main ngày 04/10/2026 |
+| Repo | SHA origin/main sau fetch ngày 05/10/2026; đối chiếu checkout tương ứng |
 | --- | --- |
 | Document | `654c8b16ecc7c3becdfd29ee2a7fa6ef7f437755` |
 | DATN-BE | `56036d13ed86f5db47ba7cbcb02256f02eab80ae` |
@@ -191,6 +193,12 @@ Danh là owner implementation DATN-95/96, không tự suy ra là người phê d
   sạch; tiếp tục nhánh theo yêu cầu người dùng, không tạo nhánh task mới.
   DATN-93/94/95/96 và DATN-105–110 vẫn To Do khi đọc lại; Comments hiển thị
   chưa có phê duyệt bổ sung. DATN-95/96 cùng chặn DATN-97; DATN-94 chặn DATN-100.
+- **FACT (R4):** Fetch cả bốn repo ngày 05/10/2026 thành công; main SHA vẫn
+  như bảng trên. Nhánh tài liệu bắt đầu ở `c639a01`, sạch và đồng bộ upstream;
+  tiếp tục đúng nhánh DATN-93 theo yêu cầu người dùng. DATN-93/94/95/96 và sáu
+  subtasks vẫn To Do; subtasks chưa có description/comment bổ sung quyết định.
+  DATN-94 yêu cầu documented state-machine contract và tests theo quyết định
+  đã duyệt, không cho phép tự chọn states/transitions từ proposal.
 - **Nguồn còn thiếu:** S7 dẫn workspace ADR-003/DEC-011; không tìm thấy file
   ADR-003/SPEC-001 riêng trong bốn checkout. Trước implementation persistence,
   owner cần cung cấp bản authority hiện hành hoặc repository copy đã duyệt.
@@ -250,7 +258,7 @@ ghi rõ. Khi chỉ duyệt một phần, ghi PARTIAL cùng phần còn thiếu.
 
 ### 9.1. DATN-93
 
-| Acceptance criterion đọc từ Jira | Artifact trong revision R3 | Kết luận |
+| Acceptance criterion đọc từ Jira | Artifact trong revision R4 | Kết luận |
 | --- | --- | --- |
 | AC1: authority tách khỏi research/inference | Mục 2–4, B1–B10; mục 5.1–5.2 đối chiếu từng Q | Có source/authority map; không tạo phê duyệt mới |
 | AC2: fields/transitions/API/authorization/audit explicit hoặc UNKNOWN có câu hỏi | Q1–Q9 và contract surfaces ở mục 8 | Đã mô tả blocker cụ thể; detailed implementation contract vẫn UNKNOWN |
@@ -288,19 +296,21 @@ Blocker list của DATN-93 được review/merge cũng không thay approval các
 
 ## 10. Nhu cầu công cụ và phần bàn giao còn chờ
 
-### 10.1. Kiểm tra tải/cài thêm ngày 04/10/2026
+### 10.1. Kiểm tra công cụ và cập nhật ngày 05/10/2026
 
 | Hạng mục | Kết quả kiểm tra | Hành động cho DATN-93 |
 | --- | --- | --- |
 | Git/source và Jira | Git/rg/PowerShell có sẵn; fetch được cả bốn repo; trình duyệt hiện có đọc được Jira/subtasks | Đủ cho đối chiếu và kiểm tra tài liệu; không cần connector hay package mới |
 | Runtime ứng dụng/database | Ticket D-01 là product/API contract hoặc blocker list; không có runtime/schema/migration change | Không cần tải Node dependencies, Docker, MongoDB hoặc khởi tạo database để nghiệm thu phần tài liệu |
-| Review skill bắt buộc | Không có `code-review-and-quality` trong catalog/local đã kiểm tra. [Danh mục curated chính thức](https://github.com/openai/skills/tree/main/skills/.curated) đọc qua helper `skill-installer` không có tên này. Plugin search có kết quả review khác nhưng chưa xác minh cung cấp đúng skill | Chưa có nguồn tải đúng skill được xác minh; không tự cài framework/plugin khác để coi gate đã đạt. Cần nguồn skill do workflow sử dụng hoặc quyết định thay gate từ người có thẩm quyền |
+| Review skill bắt buộc | Ngày 05/10 người dùng cung cấp [trang skill](https://agentskillsfinder.com/vi/skills/code-review-and-quality), dẫn tới [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills/tree/1401c8b8030e023baeebb31781a6653fe8e93026/skills/code-review-and-quality). Đã cài bằng helper `skill-installer`, pin revision `1401c8b8030e023baeebb31781a6653fe8e93026`, xác minh manifest trùng upstream; skill đã có trong catalog phiên R4 | Đã giải quyết việc thiếu nguồn/skill. Review final diff theo skill và Document AGENTS; việc cài thành công không thay kết quả review và không phê duyệt product |
 | Persistence authority | ADR-003/SPEC-001 gốc vẫn chưa tìm thấy trong checkout/workspace GitHub/Downloads đã tìm; AGENTDB dẫn path khác | Đây là thiếu tài liệu authority cho persistence; tải công cụ không giải quyết Q2/Q3/Q8 hay cho phép DATN-95 apply/migration |
 
-Không tải/cài package, plugin hoặc skill mới trong lần này. Chỉ đọc danh mục
-và kiểm tra khả năng hiện có. Kiểm tra tài liệu gồm links, Q/subtask coverage,
-source SHAs, cấu trúc bảng và diff whitespace; không gọi chúng là application
-tests hoặc invoke `code-review-and-quality`.
+Lần kiểm tra 04/10 chưa cài thêm; đó là snapshot R3. Ngày 05/10 đã cài riêng
+review skill theo yêu cầu người dùng, không cài dependency ứng dụng/database.
+Kiểm tra tài liệu gồm links, Q/subtask coverage, source SHAs, cấu trúc bảng
+và diff whitespace; chúng không phải application tests. Kết quả invocation
+`code-review-and-quality` cho final diff được ghi riêng trong bàn giao review;
+review tài liệu không chứng minh runtime hoặc Task contract đã được duyệt.
 
 ### 10.2. Phân loại phần còn chờ
 
@@ -308,14 +318,14 @@ tests hoặc invoke `code-review-and-quality`.
 | --- | --- | --- |
 | Product/API decisions | Q1–Q9 theo mục 5.1/8; mỗi item cần nội dung quyết định, authority/người duyệt, revision và acceptance mapping | Chặn phần implementation tương ứng; không chặn việc bàn giao precise blocker list theo DATN-93 |
 | Source authority | Bản ADR-003/SPEC-001 hiện hành và owning artifacts nhất quán | Chặn policy persistence chưa có căn cứ; không làm mất hiệu lực B1–B10 đã truy vết |
-| Review workflow | [Document AGENTS](../../AGENTS.md), mục Mandatory post-implementation review gate, yêu cầu “invoke the `code-review-and-quality` skill” trước khi coi review-ready | Gate này chưa đạt. Manual diff check và việc push không thay skill invocation |
+| Review workflow | [Document AGENTS](../../AGENTS.md), mục Mandatory post-implementation review gate, yêu cầu “invoke the `code-review-and-quality` skill” trước khi coi review-ready | Skill đã khả dụng; phải kiểm tra kết quả review cho đúng final diff ở bàn giao. Findings cần báo severity/evidence/file-line/fix; không tự sửa hoặc push review-driven fixes trước khi người dùng duyệt |
 | Human review / Jira / PR | Người dùng xem artifact; team review quyết định và kết quả; PR chỉ khi người dùng yêu cầu | Chưa tự đổi Jira/subtask Done, gỡ dependency, mở PR hoặc merge |
 
 Phần công việc tài liệu được chuẩn bị để bàn giao theo expected result
-**precise blocker list**. Contract đầy đủ được duyệt, review gate và nghiệm
-thu của team là các trạng thái riêng, vẫn còn chờ như bảng trên.
+**precise blocker list**. Contract đầy đủ được duyệt, kết quả review final diff
+và nghiệm thu của team là các trạng thái riêng, theo bảng và bàn giao tương ứng.
 
-## 11. Phạm vi bàn giao R3
+## 11. Phạm vi bàn giao R4
 
 Chỉ tài liệu working contract/readiness và link trong README. Không có
 schema/API/UI/runtime/migration/data change; không provision database, seed,
