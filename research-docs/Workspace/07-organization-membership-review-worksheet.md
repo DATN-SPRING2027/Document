@@ -4,7 +4,7 @@
 
 - Revision: **R3, 2026-10-05 (Asia/Saigon)**; prepared by Nguyen Hong Phuc.
 - Companion to the [working contract](06-organization-membership-contract.md)
-  (B1–B7, E1–E11, Q1–Q8, AT-01–09) and [PR #23](https://github.com/DATN-SPRING2027/Document/pull/23).
+  (B1–B7, E1–E12, Q1–Q8, AT-01–09) and [PR #23](https://github.com/DATN-SPRING2027/Document/pull/23).
 - **All alternatives, command mappings, HTTP/DTO examples and proposed outcomes
   below are [PROPOSED]. No option has been selected or approved.** An explicit
   exclusion/deferment also requires a decision; blank approval is UNKNOWN.
@@ -19,6 +19,13 @@ Review each option against the named Q gate, record the exact adopted/amended
 rule and authority in section 6, then update the working contract. Until human
 contract review closes the required decisions, DATN-86's expected result is
 **NOT MET** and DATN-87/88 remain blocked. Technical review is a separate check.
+
+R4 [external research and leader proposal](08-organization-membership-external-research-and-proposal.md)
+adds vendor evidence and a recommended package for these choices. Recommendations
+are PROPOSED; no option in this worksheet is selected or approved by that research.
+E12 confirms the separately approved first-ADMIN provisioning boundary and denies
+ordinary membership management through platform authority alone. It does not
+select any Organization administration alternative below.
 
 ## 1. DATN-231 — invitation and activation alternatives
 

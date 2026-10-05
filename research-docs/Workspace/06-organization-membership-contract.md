@@ -2,13 +2,16 @@
 
 ## Status and authority
 
-- Revision: **R3, 2026-10-05 (Asia/Saigon)**; owner: Nguyen Hong Phuc.
+- Revision: **R4, 2026-10-05 (Asia/Saigon)**; owner: Nguyen Hong Phuc.
 - R2 applies the user-approved P2 correction preserving the existing IAM/audit
   atomicity requirement; this approval is not a product/lifecycle contract sign-off.
 - Status: **Working contract for human review; lifecycle/API decisions incomplete**.
 - R3 adds a [decision worksheet with concrete alternatives, API examples and
   validation cases](07-organization-membership-review-worksheet.md). None is an
   accepted lifecycle/API policy; the approved baseline and UNKNOWN grid stay intact.
+- R4 adds [external research and a leader proposal](08-organization-membership-external-research-and-proposal.md)
+  and reconciles E12's bounded A-04 policy record. Research recommendations remain
+  PROPOSED; A-04 does not approve ordinary membership lifecycle/API decisions.
 - Jira: [DATN-86](https://trankimthang0207.atlassian.net/browse/DATN-86).
   Expected result is a **reviewed Organization Membership contract for implementation**.
   This draft, its question register, technical checks, or an agent diff review do
@@ -83,6 +86,14 @@ decision/evidence corrections, including audit connection concerns. These dated
 comments are neither current runtime evidence nor a replacement for E9's invariant
 or canonical authority. No other research report or ticket was changed.
 
+R4 re-read parent, all six children and dependencies, with no new membership
+approval comments or PR reviews displayed. The R3 child records/statuses remain
+as above; parent moved In Review to In Progress while researching. Document base
+is unchanged. BE origin/main advanced to `7f5737399a4e997f3229e858219eb08daddf994a`
+with A-04 decision documents only; E5/E6/E10/E11 runtime/API evidence is unchanged.
+FE/SAG revisions remain R3's. E12 records a bounded platform policy decision;
+the remaining Organization/Project/Team matrix is explicitly open.
+
 ## 2. Source and approval boundaries
 
 E1–E8 remain pinned to the verified R1 BE SHA, not a moving branch. R2 inspected
@@ -104,6 +115,7 @@ test inspection establish facts; they do not prove a deployment or passing suite
 | E9 | Workspace-local `AGENTDB.md` §6 (outside this repository), re-read for R2 | Existing instruction: Project/IAM mutations with audit in `continuum_audit` must preserve atomicity per ADR-003, with MongoDB replica-set commit/rollback proof before cutover. Canonical ADR-003/SPEC-001 authority and exact Organization scope still need verification; no exception or implementation detail is approved here. |
 | E10 | R3 [authentication service](https://github.com/DATN-SPRING2027/DATN-BE/blob/1f28bb3143bd216b2a7a107b4ef527ee127baf58/src/services/iam/application/authentication/authentication.application.service.ts), [controller](https://github.com/DATN-SPRING2027/DATN-BE/blob/1f28bb3143bd216b2a7a107b4ef527ee127baf58/src/services/iam/controllers/authentication.controller.ts), [service tests](https://github.com/DATN-SPRING2027/DATN-BE/blob/1f28bb3143bd216b2a7a107b4ef527ee127baf58/src/services/iam/application/authentication/authentication.application.service.spec.ts) | Refresh now re-resolves the persisted owner's selected Organization before signing/rotation; no-context failure returns generic 401 AUTH_REFRESH_INVALID and does not rotate. This does not prove a suspend/remove mutation, concurrency fence, global revocation or deployment. Tests inspected, not executed here. |
 | E11 | R3 [IAM OpenAPI](https://github.com/DATN-SPRING2027/DATN-BE/blob/1f28bb3143bd216b2a7a107b4ef527ee127baf58/docs/openapi/iam-v1.openapi.json) | Adds auth refresh; still no Organization Membership administration path/DTO. E5 resolver and E6 OrganizationMembership schema/persistence files are unchanged at this revision. |
+| E12 | R4 [DEC-ACCESS-09 / approved A-04 sub-scope](https://github.com/DATN-SPRING2027/DATN-BE/blob/7f5737399a4e997f3229e858219eb08daddf994a/docs/decisions/dec-access-09-platform-operator-authorization.md) | Records Leader approval conveyed in A-04 closure request; name not supplied. `organization.create` includes only first-ADMIN bootstrap in provisioning, with required consistency/audit. Platform authority alone explicitly denies ongoing Organization membership/role mutation and content access. Overall matrix stays PARTIAL; no runtime, Organization administration API or audit mechanics are approved by that docs change. |
 
 E1 references canonical `projects/DATN/docs/decisions/ORGANIZATION-MEMBERSHIP-CONTEXT-DECISION-V1.md`
 and `decision-register.md`; AGENTDB references ADR-003 and SPEC-001. Those owning
@@ -122,7 +134,7 @@ and `deploy/` remain untouched; reconciliation needs the owning workflow.
 | B2 | `[APPROVED BASELINE]` Exactly `PENDING_INVITE`, `ACTIVE`, `SUSPENDED`, `REMOVED`; only `ACTIVE` establishes Organization Context. ONBOARDING/OFFBOARDING are workflows. | E1; no added state or transition approval |
 | B3 | `[APPROVED BASELINE]` Zero active memberships: no context; one: auto-select; multiple: explicit selection; server validates a supplied Organization ID against the authenticated User's active membership. | E1; DATN-274 |
 | B4 | `[APPROVED BASELINE]` Organization-scoped access checks identity, active membership and trusted matching context, then the operation's approved scope/permission/ACL; client selection/title is not authorization. | E2/E3; invitation redemption exception, if any, requires Q1/Q2 |
-| B5 | `[APPROVED BASELINE]` ADMIN administers membership within its Organization; platform authority alone creates no membership/content right; TEAM_LEADER/MEMBER/scoped assignments do not gain Organization administration. | E2; precise permissions/guards and constraints remain Q1 |
+| B5 | `[APPROVED BASELINE]` ADMIN administers membership within its Organization; platform authority alone grants no ongoing membership administration/content right, with first-ADMIN bootstrap limited to separate provisioning; TEAM_LEADER/MEMBER/scoped assignments do not gain Organization administration. | E2/E12; precise Organization operation permissions/guards and constraints remain Q1 |
 | B6 | `[APPROVED BASELINE]` Governance membership/role changes require audit provenance; secrets and protected content bodies must not enter logs. Existing workflow instruction E9 requires IAM mutation + audit in `continuum_audit` to preserve atomicity per ADR-003. | E2/E9; preserve the requirement while canonical authority/scope is reconciled. Collection, event fields, transaction mechanism and failure/retry details remain UNKNOWN in Q7; no exception selected. |
 | B7 | `[APPROVED BASELINE]` E1's historical backfill creates missing ACTIVE pairs from eligible Organization-level legacy assignments only, preserves existing records, and requires deterministic/idempotent dry-run and a unique pair index. | Migration-specific exception; never a runtime RoleAssignment fallback, general add/activation policy, or permission to rerun migration here |
 
@@ -160,8 +172,10 @@ outcome. UNKNOWN is a contract gap, not a fifth stored status.
 | SUSPENDED | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN |
 | REMOVED | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN |
 
-Creation of the first membership record is a separate undecided command, not
-a state or transition from a new enum value. The pair index does not settle
+Creation of an ordinary membership record in this C-01 scope is a separate
+undecided command, not a state or transition from a new enum value. First-ADMIN
+bootstrap belongs to the separate E12 provisioning workflow; its bounded policy
+does not decide C-01 invitation/activation. The pair index does not settle
 whether re-invitation updates a REMOVED row, rejects, or uses another approved
 design. Expiry/cancellation/rejection must be decided within the four-state
 model; no EXPIRED/CANCELLED/REJECTED membership states may be introduced here.
