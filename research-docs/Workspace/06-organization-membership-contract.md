@@ -2,10 +2,13 @@
 
 ## Status and authority
 
-- Revision: **R2, 2026-10-05 (Asia/Saigon)**; owner: Nguyen Hong Phuc.
+- Revision: **R3, 2026-10-05 (Asia/Saigon)**; owner: Nguyen Hong Phuc.
 - R2 applies the user-approved P2 correction preserving the existing IAM/audit
   atomicity requirement; this approval is not a product/lifecycle contract sign-off.
 - Status: **Working contract for human review; lifecycle/API decisions incomplete**.
+- R3 adds a [decision worksheet with concrete alternatives, API examples and
+  validation cases](07-organization-membership-review-worksheet.md). None is an
+  accepted lifecycle/API policy; the approved baseline and UNKNOWN grid stay intact.
 - Jira: [DATN-86](https://trankimthang0207.atlassian.net/browse/DATN-86).
   Expected result is a **reviewed Organization Membership contract for implementation**.
   This draft, its question register, technical checks, or an agent diff review do
@@ -26,7 +29,7 @@ and [Audit/Outbox research](../Governance/03-audit-outbox-contract.md) contain
 dated inventories and non-binding recommendations. Their older “no resolver/
 guards/tests” findings do not describe the current BE snapshot below.
 
-## 1. Initial R1 snapshot and R2 revalidation
+## 1. Initial R1 snapshot and subsequent revalidation
 
 Jira was read directly on 2026-10-05: parent DATN-86 is **To Do**, assigned to
 Nguyen Hong Phuc, Medium, without a due date. All six children DATN-229–234 are
@@ -62,6 +65,24 @@ origin/main and base were unchanged. After fetch, BE origin/main was
 `fc488a7ced952fc51fc4615dff9917d78c118010`, FE unchanged, and SAG origin/main
 `0102e1ec003be3f41923c6923f9333ea5875fa23`; source checkouts were not altered.
 
+R3 re-read all six children, parent, DATN-274 and DATN-87/88 on the same date.
+Parent was In Review and moved to **In Progress** while preparing R3; DATN-229/230
+were In Review and DATN-231–234 In Progress. Each child now has an R2 work record;
+no new approval comments or separate accepted child policy was displayed. PR
+[#23](https://github.com/DATN-SPRING2027/Document/pull/23) was Open with no reviews
+or comments. Dependency links and downstream To Do statuses were unchanged.
+Fetched BE origin/main advanced to `1f28bb3143bd216b2a7a107b4ef527ee127baf58`
+(A-02 refresh), FE to `e38fe695f1007a9ae2aa15b4e2dc4a5e06f927aa` (auth/BFF changes).
+Document base and SAG SHA stayed unchanged; source checkouts were not altered.
+
+R3 also read governance research tickets [DATN-15](https://trankimthang0207.atlassian.net/browse/DATN-15),
+[DATN-16](https://trankimthang0207.atlassian.net/browse/DATN-16) and
+[DATN-17](https://trankimthang0207.atlassian.net/browse/DATN-17). Their Done statuses
+do not approve membership writes: the displayed September research reviews retain
+decision/evidence corrections, including audit connection concerns. These dated
+comments are neither current runtime evidence nor a replacement for E9's invariant
+or canonical authority. No other research report or ticket was changed.
+
 ## 2. Source and approval boundaries
 
 E1–E8 remain pinned to the verified R1 BE SHA, not a moving branch. R2 inspected
@@ -81,6 +102,8 @@ test inspection establish facts; they do not prove a deployment or passing suite
 | E7 | [Database names](https://github.com/DATN-SPRING2027/DATN-BE/blob/56036d13ed86f5db47ba7cbcb02256f02eab80ae/src/common/mongodb/database-names.ts), [Project audit decision](https://github.com/DATN-SPRING2027/DATN-BE/blob/56036d13ed86f5db47ba7cbcb02256f02eab80ae/docs/decisions/project-audit-collection-mvp.md), [generic audit adapter](https://github.com/DATN-SPRING2027/DATN-BE/blob/56036d13ed86f5db47ba7cbcb02256f02eab80ae/src/services/iam/infrastructure/audit/audit.service.ts) | IAM runtime `continuum_iam`; cross-cutting `continuum_audit`; Project transaction/collection approval has Project scope; generic adapter writes `audit_logs` without a session argument |
 | E8 | [User directory repository](https://github.com/DATN-SPRING2027/DATN-BE/blob/56036d13ed86f5db47ba7cbcb02256f02eab80ae/src/services/iam/infrastructure/mongodb/user-directory.repository.ts) | ACTIVE member directory and global User status update; not Organization Membership list/lifecycle API |
 | E9 | Workspace-local `AGENTDB.md` §6 (outside this repository), re-read for R2 | Existing instruction: Project/IAM mutations with audit in `continuum_audit` must preserve atomicity per ADR-003, with MongoDB replica-set commit/rollback proof before cutover. Canonical ADR-003/SPEC-001 authority and exact Organization scope still need verification; no exception or implementation detail is approved here. |
+| E10 | R3 [authentication service](https://github.com/DATN-SPRING2027/DATN-BE/blob/1f28bb3143bd216b2a7a107b4ef527ee127baf58/src/services/iam/application/authentication/authentication.application.service.ts), [controller](https://github.com/DATN-SPRING2027/DATN-BE/blob/1f28bb3143bd216b2a7a107b4ef527ee127baf58/src/services/iam/controllers/authentication.controller.ts), [service tests](https://github.com/DATN-SPRING2027/DATN-BE/blob/1f28bb3143bd216b2a7a107b4ef527ee127baf58/src/services/iam/application/authentication/authentication.application.service.spec.ts) | Refresh now re-resolves the persisted owner's selected Organization before signing/rotation; no-context failure returns generic 401 AUTH_REFRESH_INVALID and does not rotate. This does not prove a suspend/remove mutation, concurrency fence, global revocation or deployment. Tests inspected, not executed here. |
+| E11 | R3 [IAM OpenAPI](https://github.com/DATN-SPRING2027/DATN-BE/blob/1f28bb3143bd216b2a7a107b4ef527ee127baf58/docs/openapi/iam-v1.openapi.json) | Adds auth refresh; still no Organization Membership administration path/DTO. E5 resolver and E6 OrganizationMembership schema/persistence files are unchanged at this revision. |
 
 E1 references canonical `projects/DATN/docs/decisions/ORGANIZATION-MEMBERSHIP-CONTEXT-DECISION-V1.md`
 and `decision-register.md`; AGENTDB references ADR-003 and SPEC-001. Those owning
@@ -161,7 +184,9 @@ Organization suspend/remove, and those protections cannot be copied as policy.
 
 The candidate commands below are `[PROPOSED]` review surfaces from DATN-87 and
 the readiness register, not enabled APIs. Method/path, success status and DTO
-are **UNKNOWN for every row**; do not generate controller/UI contracts from them.
+are **UNKNOWN for every row in the accepted contract**; worksheet section 3
+provides concrete candidates, not approved replacements. Do not generate
+controller/UI contracts from either document until the decision gate is closed.
 
 | Candidate operation | Established constraint | Payload / validation / outcome decisions |
 |---|---|---|
@@ -191,6 +216,7 @@ under the workflow. Concrete fields/limits remain pending Q5 approval.
 | Surface | Current evidence / rule | Remaining decision |
 |---|---|---|
 | Login / current identity | `[FACT]` E5: zero eligible context or invalid login selection gives generic 401 `AUTHENTICATION_FAILED`; multiple choices gives 409 `ORGANIZATION_SELECTION_REQUIRED` with eligible IDs/names; current identity rechecks active User and membership and rejects a stale token with 401 | This implements auth context, not new member-management denial policy or a zero-context session/UI |
+| Refresh / selected Organization | `[FACT]` E10/E11: CSRF check precedes token-state access; eligible session owner/account and selected ACTIVE context are resolved before signing/rotation; no-context failure gives generic 401 `AUTH_REFRESH_INVALID`, without rotation | Not an invitation-recipient authentication route or proof of mutation-time fencing, in-flight cancellation, cache propagation or full revocation; Q1/Q2/Q6/Q8 remain open |
 | Body validation | `[FACT]` Login validates a whitelist and rejects extra fields with 422 `VALIDATION_FAILED`; E4 documents 422 field/business validation | Q5/Q6 exact validation/error details for each membership command |
 | Scope / resource denial | B4 denies access without matching active scope; E4 has 403 permission and 404 absent/not-visible responses | Q6 explicit mapping for inactive actor, cross-Organization target, nonexistent membership and invite failure; no blanket 403/404 choice |
 | Duplicate / lifecycle / concurrency | E4 contains 409 conflict convention, not Organization Membership outcomes | Q2/Q3/Q6 duplicate invites, stale state/version, illegal transition, same-state retry and partial failures |
@@ -217,6 +243,11 @@ sufficient. No async invitation/offboarding consumer, outbox envelope or deliver
 guarantee is approved by this artifact; Q2/Q7/Q8 must identify any such consumer.
 
 ## 7. Decision register — all questions remain UNKNOWN
+
+The [R3 review worksheet](07-organization-membership-review-worksheet.md) turns
+these questions into alternatives and per-command/API/test review records. It
+does not close a Q item; choose, amend or explicitly defer each candidate with
+the owning authority before promoting it into this accepted contract.
 
 Authority below names required roles, not invented reviewer accounts. Phuc is
 the verified contract/BE owner, Danh the context implementer/reporter, and Tien
@@ -248,10 +279,10 @@ Task effects require the eventual accepted Task contract, not DATN-93's draft.
 |---|---|---|
 | [DATN-229](https://trankimthang0207.atlassian.net/browse/DATN-229) — Define Organization Membership states | B2; section 4 exact enum/context table | E1/E6; enum preserved; no new state |
 | [DATN-230](https://trankimthang0207.atlassian.net/browse/DATN-230) — Define ACTIVE membership semantics | B1/B3/B4; sections 3/4/6 context vs roles/account/HTTP | E1/E5/E6; baseline settled; new operation grants/transport/error policy still Q1/Q5/Q6 |
-| [DATN-231](https://trankimthang0207.atlassian.net/browse/DATN-231) — Define Organization invitation behavior | Candidate surfaces, payload boundaries and Q2 | Invitation contract not approved; Q1–Q3/Q5–Q7 required |
-| [DATN-232](https://trankimthang0207.atlassian.net/browse/DATN-232) — Define suspend and remove semantics | Context denial; all transition cells; Q3/Q8 | Commands, reasons, safeguards, revocation/descendant effects unresolved |
-| [DATN-233](https://trankimthang0207.atlassian.net/browse/DATN-233) — Define Membership API contract | Actor/scope; section 5 payload/validation; section 6 errors/audit; Q1–Q7 | Review surface complete enough to request decisions; exact API not frozen/build-ready |
-| [DATN-234](https://trankimthang0207.atlassian.net/browse/DATN-234) — Validate lifecycle rules | Full transition grid; scenarios below; evidence limits | Context tests exist; accepted lifecycle rules and their verification remain blocked by Q1–Q8 |
+| [DATN-231](https://trankimthang0207.atlassian.net/browse/DATN-231) — Define Organization invitation behavior | Candidate surfaces, Q2; worksheet section 1 identity/activation/delivery alternatives | Invitation contract not approved; Q1–Q3/Q5–Q7 required |
+| [DATN-232](https://trankimthang0207.atlassian.net/browse/DATN-232) — Define suspend and remove semantics | Context denial; UNKNOWN grid; worksheet section 2 command/transition/effect alternatives | Commands, reasons, safeguards, revocation/descendant effects unresolved |
+| [DATN-233](https://trankimthang0207.atlassian.net/browse/DATN-233) — Define Membership API contract | Sections 3/5/6; worksheet section 3 candidate paths/DTO/errors and section 4 audit gate | Concrete proposal available for review; exact API not frozen/build-ready |
+| [DATN-234](https://trankimthang0207.atlassian.net/browse/DATN-234) — Validate lifecycle rules | UNKNOWN grid; scenarios below; worksheet section 5 detailed review cases and section 6 decision record | Documentation consistency can be checked now; accepted lifecycle outcomes and runtime verification remain pending Q1–Q8 |
 
 | Parent acceptance criterion / result | Assessment |
 |---|---|
@@ -286,7 +317,7 @@ Required review/implementation scenarios, **not executed acceptance tests**:
 | AT-05 — every transition cell, same-state repeat, duplicate pair and concurrent/stale write | Q3/Q5/Q6: test accepted outcomes, atomic duplicate/partial-write safety |
 | AT-06 — allowed/denied actor, self/peer/last-admin target | Q1/Q3; no copied account or Project grants |
 | AT-07 — audit persistence, state/audit failure and retry | Preserve B6/E9 atomicity; Q7 authority/scope and specific transaction/dedup/error rules must be closed before implementation. E9 requires MongoDB replica-set commit/rollback evidence before cutover; no concrete mechanism/outcome is selected here. |
-| AT-08 — suspend/remove/resume across tokens, caches, descendants and responsibilities | Parent context denial B2/B4; stored/cascade/offboarding behavior only after Q6/Q8 |
+| AT-08 — suspend/remove/resume across tokens, caches, descendants and responsibilities | Parent context denial B2/B4; E10 refresh revalidation is a source fact, not executed mutation evidence; stored/cascade/offboarding behavior only after Q6/Q8 |
 | AT-09 — member list projection/pagination and FE list/actions/errors | Q4–Q6; four states and backend authority; DATN-88 after accepted BE API |
 
 ## 9. Review exit and downstream handoff
@@ -303,5 +334,6 @@ the Jira dependency. Once the contract gate and required reviewed changes are
 merged to main, use fresh task branches: DB changes in a separate DB lane first
 when needed, then BE, then FE after its dependency is ready. Do not alter frozen
 baselines, run migrations, add permission seeds, or change application behavior
-to make this documentation task appear complete. Human review/approval, later PR
-creation, Jira completion and team communication remain separate actions.
+to make this documentation task appear complete. PR #23 is already Open; human
+contract review/approval, Jira completion and team communication remain separate
+actions. A technical review of R3 is not product contract approval.
