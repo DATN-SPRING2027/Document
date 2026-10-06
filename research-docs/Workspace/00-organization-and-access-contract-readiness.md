@@ -6,6 +6,9 @@
 - Product boundary: Continuum is the source of truth for workspace and task records. The accepted MVP centers on one software Project with multiple Teams; full self-service Organization administration and multi-Organization switching are not assumed MVP features.
 - Audience: product owner, backend, frontend, database, AI/SAG, and handover implementers.
 - This document is the index for cross-cutting Organization/Project/Team access decisions. Detailed source evidence remains in the linked research reports; accepted role vocabulary remains in [Actors, roles and permissions](../02_ACTORS_ROLES_AND_PERMISSIONS.md).
+- [DATN-86 Organization Membership working contract](06-organization-membership-contract.md) reconciles the accepted four-state/context baseline with current IAM source and maps unresolved lifecycle/API decisions to DATN-229–234. It is pending human contract review and does not clear DATN-87/DATN-88 dependencies.
+- [DATN-86 review worksheet](07-organization-membership-review-worksheet.md) supplies concrete invitation, transition, API and validation alternatives for DATN-231–234; all candidates remain proposals pending named authority decisions.
+- [DATN-86 external research and leader proposal](08-organization-membership-external-research-and-proposal.md) compares official vendor behavior and recommends a review package for the open decisions; it grants no lifecycle or implementation authority.
 
 ## 1. Purpose and conclusion
 
