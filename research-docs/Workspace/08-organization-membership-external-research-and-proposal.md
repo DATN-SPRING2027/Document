@@ -2,7 +2,9 @@
 
 ## Trạng thái và cách sử dụng
 
-- R4 research, **2026-10-05 (Asia/Saigon)**; người chuẩn bị: Nguyen Hong Phuc.
+- Revision **R5, 2026-10-06 (Asia/Saigon)**; người chuẩn bị: Nguyen Hong Phuc.
+  Research R4 đọc nguồn ngoài ngày 2026-10-05; R5 sửa bốn finding đã được người
+  dùng duyệt sửa, không phải approval cho các đề nghị nghiệp vụ.
 - Jira: [DATN-86](https://trankimthang0207.atlassian.net/browse/DATN-86);
   artifact review: [Document PR #23](https://github.com/DATN-SPRING2027/Document/pull/23).
 - **[PROPOSED — CHƯA PHÊ DUYỆT]**: tài liệu đưa ra khuyến nghị để leader và
@@ -10,11 +12,11 @@
   hay schema. Accepted policy của các lựa chọn mới vẫn **UNKNOWN**; expected
   reviewed contract của DATN-86 vẫn **NOT MET**.
 - Reuse [working contract 06](06-organization-membership-contract.md) cho B1–B7,
-  E1–E12, Q1–Q8 và AT-01–09; [worksheet 07](07-organization-membership-review-worksheet.md)
+  E1–E14, Q1–Q8 và AT-01–09; [worksheet 07](07-organization-membership-review-worksheet.md)
   cho alternatives, API examples, RV-01–08 và decision record. Tài liệu này
   bổ sung căn cứ bên ngoài và ưu tiên đề nghị, không thay thế hai tài liệu đó.
 - Phạm vi research: tài liệu công khai chính thức của GitHub, GitLab, Auth0,
-  Clerk, OWASP và RFC; đọc ngày trên. Chưa chạy demo, benchmark hay thử mutation
+  Clerk, OWASP và RFC; đọc ngày 2026-10-05. Chưa chạy demo, benchmark hay thử mutation
   trên hệ thống nhà cung cấp. Đây là mẫu so sánh có chủ đích, không chứng minh
   một chuẩn chung của mọi hệ thống hoặc topology/persistence nội bộ của họ.
 
@@ -34,6 +36,12 @@ ongoing membership/role management hoặc Organization-content access từ platf
 authority. Record ghi Leader approval, không cung cấp tên; overall matrix PARTIAL.
 Không biến sub-scope này thành approval cho C-01, revoke policy của membership
 hay audit collection/event/transaction specifics.
+
+R5 re-read Jira ngày 2026-10-06: status/descriptions/dependencies như R4;
+parent chuyển In Progress để sửa. PR có một comment với ba P2 và một P3, chưa
+có formal review hay decision sign-off. E13/E14 xác minh account-source gap và
+Project-create baseline tại cùng BE SHA. Các corrections dưới đây vẫn đề nghị
+xin quyết định; không nghiệm thu bốn subtasks hoặc reviewed-contract result.
 
 | Subtask | Phần thiếu để chốt contract | Nơi theo dõi |
 |---|---|---|
@@ -75,10 +83,32 @@ chỉ nhắm membership của Organization đã được provision theo authorit
 
 ### RP-01 — Mời user đã tồn tại, người nhận tự chấp nhận
 
-**Đề nghị INV-A + ACT-A**: ADMIN có ACTIVE membership và authority phù hợp trong
-chính Organization mời bằng userId đã tồn tại. Tạo PENDING_INVITE; chưa cấp context
+**Đề nghị có điều kiện INV-A + ACT-A**: chỉ dùng existing-user-only cho MVP khi
+Product + IAM/auth + Security xác nhận nguồn tài khoản/provisioning workflow đã
+duyệt, owner, eligibility và cách ADMIN tìm/chọn đúng User. E13 có GET User list,
+GET/PATCH detail nhưng không có create-User API; directory chỉ gồm ACTIVE member
+của caller Organization, chưa giải quyết người được mời ngoài/chưa thuộc org.
+IAM cần xác minh provisioning ngoài OpenAPI và contract chọn recipient với scope/
+PII an toàn, không mở global directory. Nếu chưa có, ghi dependent work package
+cần được giao/chốt trước invite implementation; không coi dev seed hoặc tạo DB
+thủ công là product flow hoàn chỉnh. Workflow/owner/selection specifics và mã
+task phụ thuộc chưa được xác nhận, vẫn UNKNOWN.
+
+Sau khi các prerequisite đó được duyệt, đề nghị ADMIN có ACTIVE membership và
+authority phù hợp trong chính Organization mời bằng userId đã tồn tại.
+Tạo PENDING_INVITE; chưa cấp context
 hoặc tự gán role/grant. Recipient xác thực đúng identity, account đủ eligibility,
 invitation đúng User/Organization, còn hạn/chưa dùng rồi explicit accept mới ACTIVE.
+
+**Hệ quả baseline E14 cần leader hiểu khi chốt D1:** sau future accepted activation,
+authenticated active User với ACTIVE membership và trusted matching context có
+thể pass Project-create authorization dù roles=[] và không có project.create
+grant. Input hợp lệ, unique code và applicable deny vẫn áp dụng; tạo thành công
+còn cần current MEMBER Role có project.read để bootstrap creator, thiếu/sai cấu
+hình thì transaction rollback. Đề nghị giữ baseline Project; nếu muốn hạn chế
+Project create phải chốt decision Project riêng. Accept không tự gán Organization
+role, nhưng không có nghĩa User chưa thể tạo Project. RV-02 ghi case tương ứng;
+đây chưa là bằng chứng C-01 accept được implement hoặc test runtime.
 
 Căn cứ: E6 hiện yêu cầu userId/organizationId, còn các ví dụ GitHub/Auth0/Clerk
 cho thấy recipient flow có thể tách khỏi ordinary Organization access. Đây là
@@ -138,9 +168,12 @@ accept là recipient exception theo RP-01. Đề nghị target account đủ eli
 khi accept/resume; resume/rejoin không tự khôi phục role/grant/child access.
 ACTIVE với roles=[] vẫn là context hợp lệ theo baseline, không cấp mọi operation.
 
-Đề nghị reason bắt buộc cho suspend/remove; không cho self suspend/remove,
-không suspend/remove một ADMIN khác trước workflow handover/demotion được duyệt,
-và không để mất eligible ADMIN cuối cùng. Cách đếm eligibility, bootstrap/recovery,
+Đề nghị reason bắt buộc cho suspend/remove; không cho self suspend/remove.
+Ở luồng bình thường, đề nghị bảo vệ peer ADMIN bằng workflow handover/demotion
+và không để mất eligible ADMIN cuối cùng. Product/Security cần chốt cách áp dụng
+các safeguards cho luồng khẩn cấp RP-04 riêng; không lấy handover trước làm gate
+chặn emergency suspension, cũng không tự duyệt ngoại lệ peer/last ADMIN.
+Cách đếm eligibility, bootstrap/recovery,
 permission codes, race protection và error cụ thể phải IAM/Security chốt; không
 copy global User LAST_ACTIVE_ADMIN. Role change/handover không nằm trong commands này.
 
@@ -160,12 +193,21 @@ resume/rejoin, quyền cũ chỉ có hiệu lực nếu được revalidate rõ 
 đồng nghĩa cấp lại quyền. Cơ chế ngăn stale grants tái hiệu lực cần DB/IAM contract;
 nếu chưa bảo đảm được thì resume/rejoin chưa được triển khai.
 
-Đề nghị cần hoàn thành approved handover trước suspend/remove với responsibility
-bắt buộc bàn giao. Owner Project/Team/Task/knowledge/handover phải xác định những
-trường hợp đó, thứ tự và recovery; chưa có thì operation phụ thuộc vẫn blocked.
-Đánh đổi: có thể chậm thu hồi trong tình huống khẩn; emergency bypass cần một
-decision riêng của Product/Security, không tự gán ADMIN content rights. DATN-93
-draft chưa thể làm authority cho Task effects.
+**Hai trường hợp PROPOSED để Product/Security review:**
+
+- Bình thường: responsibility bắt buộc bàn giao phải hoàn tất approved handover
+  trước **remove**; owning domain xác định prerequisite và failure/recovery.
+- Khẩn cấp: suspend/chặn access trong Organization mục tiêu trước, người được
+  ủy quyền xử lý handover sau; chỉ remove tiếp nếu điều kiện đã được duyệt cho phép.
+  Không dùng handover-before-remove để trì hoãn emergency suspension.
+
+Exact actor/delegation, điều kiện khẩn cấp, self/peer/last-ADMIN safeguards,
+audit/recovery, thứ tự handover/remove và revocation SLA vẫn UNKNOWN, cần record
+Product + Security/IAM và domain owners trước enablement. Đây không tự cấp quyền
+ADMIN đọc nội dung hoặc exception cho PLATFORM_OPERATOR: E12 không cho ongoing
+membership management qua platform authority. Nếu còn thiếu authority/recovery
+cho last ADMIN, phần emergency tương ứng vẫn blocked, không tự bỏ safeguard.
+DATN-93 draft chưa thể làm authority cho Task effects.
 
 Mục tiêu đề nghị: request Organization được authorize sau committed mutation
 không dùng membership cũ để tiếp tục; refresh không cấp lại context đã mất.
@@ -219,10 +261,10 @@ Danh hỗ trợ context evidence; Tien review FE consumption theo 07 §6.
 
 | Decision package | Câu hỏi leader cần giao/chốt | Authority cần xác nhận / downstream |
 |---|---|---|
-| D1 / Q1/Q2 / RP-01 | Chọn INV-A + ACT-A hay amendment nào? Defer new-account invite? Ai duyệt narrow recipient authentication contract trước implementation? | Product + IAM/auth + Security; 231/233 và invite/accept 87/88 |
+| D1 / Q1/Q2 / RP-01 | Chọn INV-A + ACT-A có điều kiện hay amendment nào? Xác nhận nguồn/provisioning User, owner, eligibility và ADMIN selection an toàn; thiếu thì giao dependent work nào? Defer new-account invite? Ai duyệt narrow recipient auth? Xác nhận hiểu ACTIVE có thể cho phép Project create với roles=[] theo E14; hạn chế phải là Project decision riêng. | Product + IAM/auth + Security; 231/233 và invite/accept 87/88; account-source/selection dependency chưa được đặt mã |
 | D2 / Q2/Q5/Q6 / RP-02 | TTL 7 ngày, single-use, resend invalidation, expiry giữ pending và DEL-A có phù hợp? Exact rate/delivery/error policy? | Product + Security + IAM + Notification/DB liên quan; 231/233/234 |
 | D3 / Q1/Q3 / RP-03 | Duyệt/amend đủ 16 cells và first creation; commands nào enabled/excluded/deferred? Self/peer/last-ADMIN, reason và recovery? | Product + IAM + Security; 232/234 và operation set 87/88 |
-| D4 / Q6/Q8 / RP-04 | Giữ records, không auto-restore/cascade; handover prerequisites, revocation SLA/in-flight/cache và domain effects là gì? | Product + Security/IAM + Project/Team/Task/knowledge/handover owners + DB; 232/234 và downstream domains |
+| D4 / Q1/Q3/Q6–Q8 / RP-04 | Giữ records, không auto-restore/cascade? Chốt normal handover-before-remove riêng với emergency suspend/access-block-before-handover; exact actor/delegation, audit/recovery, peer/last-ADMIN safeguards và later remove? Revocation SLA/in-flight/cache/domain effects là gì? | Product + Security/IAM + Project/Team/Task/knowledge/handover owners + DB; 232/234 và downstream domains; không suy platform bypass |
 | D5 / Q4–Q6 / RP-05 | Exact HTTP/DTO/visibility/errors, recipient route, mixed failures, retries và concurrency guarantees? | IAM/API + Product/Security + FE, DB liên quan; 233/234 rồi 87/88 |
 | D6 / Q7 / RP-06 | Ai cung cấp canonical ADR/SPEC, reconcile scope và phê duyệt audit specifics trong invariant hiện hành? | Architecture/DB + IAM + Security; audit mutation implementation blocked |
 
@@ -237,13 +279,16 @@ chỉnh và downstream nào vẫn blocked; không silently tính phần thiếu 
 DATN-234 review accepted grid/commands/actor/effects/DTO/errors theo RV-01–08 và
 AT-01–09, gồm wrong recipient/expiry/replay, foreign Organization, self/peer/last
 ADMIN, concurrency/uncertain commit, domain+audit failure, stale descendant grants
-và resume/rejoin. UNKNOWN oracle không được đánh PASS. Có thể validate contract
+và resume/rejoin. RV-02 kiểm tra account-source/recipient-selection prerequisite
+và Project-create consequence sau future accepted activation (roles=[], configured/
+missing MEMBER Role); RV-07 tách normal/emergency ordering và safety/recovery.
+UNKNOWN oracle không được đánh PASS. Có thể validate contract
 được duyệt trước BE implementation; runtime tests sẽ thuộc DB/BE/FE lanes.
 
 Sau sign-off exact revision, Phuc reconcile 06/07 và owning API contract, review
 từng child acceptance rồi cập nhật status theo kết quả thật; đánh giá lại expected
 result DATN-86. DB/schema/migration nếu cần có task/branch/PR riêng trước BE; BE87
-chỉ implement accepted operations, FE88 phụ thuộc accepted API + BE. Research R4
+chỉ implement accepted operations, FE88 phụ thuộc accepted API + BE. Research R5
 không sửa app/schema/index/migration/data hoặc tự unblock dependencies.
 
 ## 6. Đoạn tin nhắn để người dùng gửi leader
@@ -251,15 +296,24 @@ không sửa app/schema/index/migration/data hoặc tự unblock dependencies.
 > Em đã research tài liệu chính thức GitHub, GitLab, Auth0 và Clerk cho DATN-86.
 > Bốn subtasks 231–234 đang thiếu quyết định invitation, lifecycle/offboarding,
 > API/audit và rule table để validation; tài liệu hiện có chưa là product contract
-> được duyệt. Đề nghị MVP mời user có tài khoản, người nhận tự accept qua luồng
-> xác thực giới hạn; invite 7 ngày/single-use, resend vô hiệu link cũ; suspend/remove
-> chỉ trong Organization, giữ dữ liệu và review quyền trước resume/rejoin. Gói
+> được duyệt. Đề nghị MVP mời user có tài khoản chỉ khi IAM xác nhận nguồn tạo
+> tài khoản, owner, eligibility và cách ADMIN tìm/chọn recipient an toàn; thiếu
+> thì cần giao việc phụ thuộc trước triển khai, dev seed/manual DB chưa đủ.
+> Người nhận tự accept qua luồng xác thực giới hạn; ACTIVE có thể cho phép tạo
+> Project dù roles=[] theo baseline, tạo thành công còn cần MEMBER Role có
+> project.read để bootstrap. Đề nghị giữ baseline; hạn chế Project create cần
+> decision riêng. Invite đề nghị 7 ngày/single-use, resend vô hiệu link cũ;
+> suspend/remove chỉ trong Organization, giữ dữ liệu, review quyền khi resume/rejoin. Gói
 > research có bảng 16 transitions đề nghị, safeguards, API choices và sáu decision
 > packages để review, tất cả còn PROPOSED.
 >
 > Nhờ anh/chị chỉ định Product/IAM/Security/DB và domain owners có thẩm quyền,
-> review D1–D6, chốt luồng recipient khi chưa có ACTIVE context, handover/revocation
-> effects và canonical audit scope. Atomicity IAM mutation + audit là yêu cầu hiện
+> review D1–D6, chốt account-source/selection và recipient khi chưa có ACTIVE context.
+> Offboarding đề nghị tách bình thường bàn giao trước remove; khẩn cấp suspend/
+> chặn access trước, người được ủy quyền bàn giao sau rồi remove nếu phù hợp.
+> Exact actor, audit/recovery, peer/last-ADMIN safeguards và revocation SLA cần
+> Product/Security chốt; không suy quyền quản trị thường xuyên từ platform role.
+> Cần xác minh canonical audit scope. Atomicity IAM mutation + audit là yêu cầu hiện
 > hành, không phải lựa chọn tùy ý; chi tiết implementation còn UNKNOWN. Có thể dùng
 > In Review để review proposal, nhưng Done cần acceptance của exact contract.
 >

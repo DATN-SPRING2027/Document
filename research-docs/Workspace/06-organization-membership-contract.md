@@ -2,7 +2,7 @@
 
 ## Status and authority
 
-- Revision: **R4, 2026-10-05 (Asia/Saigon)**; owner: Nguyen Hong Phuc.
+- Revision: **R5, 2026-10-06 (Asia/Saigon)**; owner: Nguyen Hong Phuc.
 - R2 applies the user-approved P2 correction preserving the existing IAM/audit
   atomicity requirement; this approval is not a product/lifecycle contract sign-off.
 - Status: **Working contract for human review; lifecycle/API decisions incomplete**.
@@ -12,6 +12,10 @@
 - R4 adds [external research and a leader proposal](08-organization-membership-external-research-and-proposal.md)
   and reconciles E12's bounded A-04 policy record. Research recommendations remain
   PROPOSED; A-04 does not approve ordinary membership lifecycle/API decisions.
+- R5 applies the requester-approved review corrections: conditional User-source/
+  recipient selection prerequisites, the existing Project-create consequence,
+  separate normal/emergency offboarding proposals, and the revision label.
+  Approval to correct these documents does not select or approve a new policy.
 - Jira: [DATN-86](https://trankimthang0207.atlassian.net/browse/DATN-86).
   Expected result is a **reviewed Organization Membership contract for implementation**.
   This draft, its question register, technical checks, or an agent diff review do
@@ -94,6 +98,13 @@ with A-04 decision documents only; E5/E6/E10/E11 runtime/API evidence is unchang
 FE/SAG revisions remain R3's. E12 records a bounded platform policy decision;
 the remaining Organization/Project/Team matrix is explicitly open.
 
+R5 re-read parent, all six children and dependencies on 2026-10-06. Parent was
+In Review and moved to In Progress for the approved corrections; child statuses,
+R2/R3 descriptions and downstream links/statuses are unchanged. No new approval
+comments appeared in the Jira Comments panels. PR #23 has one human issue comment
+with three P2 findings and one P3 label correction, and no formal reviews; it is
+not lifecycle/API sign-off. Document base and fetched BE revision remain R4's.
+
 ## 2. Source and approval boundaries
 
 E1–E8 remain pinned to the verified R1 BE SHA, not a moving branch. R2 inspected
@@ -116,6 +127,8 @@ test inspection establish facts; they do not prove a deployment or passing suite
 | E10 | R3 [authentication service](https://github.com/DATN-SPRING2027/DATN-BE/blob/1f28bb3143bd216b2a7a107b4ef527ee127baf58/src/services/iam/application/authentication/authentication.application.service.ts), [controller](https://github.com/DATN-SPRING2027/DATN-BE/blob/1f28bb3143bd216b2a7a107b4ef527ee127baf58/src/services/iam/controllers/authentication.controller.ts), [service tests](https://github.com/DATN-SPRING2027/DATN-BE/blob/1f28bb3143bd216b2a7a107b4ef527ee127baf58/src/services/iam/application/authentication/authentication.application.service.spec.ts) | Refresh now re-resolves the persisted owner's selected Organization before signing/rotation; no-context failure returns generic 401 AUTH_REFRESH_INVALID and does not rotate. This does not prove a suspend/remove mutation, concurrency fence, global revocation or deployment. Tests inspected, not executed here. |
 | E11 | R3 [IAM OpenAPI](https://github.com/DATN-SPRING2027/DATN-BE/blob/1f28bb3143bd216b2a7a107b4ef527ee127baf58/docs/openapi/iam-v1.openapi.json) | Adds auth refresh; still no Organization Membership administration path/DTO. E5 resolver and E6 OrganizationMembership schema/persistence files are unchanged at this revision. |
 | E12 | R4 [DEC-ACCESS-09 / approved A-04 sub-scope](https://github.com/DATN-SPRING2027/DATN-BE/blob/7f5737399a4e997f3229e858219eb08daddf994a/docs/decisions/dec-access-09-platform-operator-authorization.md) | Records Leader approval conveyed in A-04 closure request; name not supplied. `organization.create` includes only first-ADMIN bootstrap in provisioning, with required consistency/audit. Platform authority alone explicitly denies ongoing Organization membership/role mutation and content access. Overall matrix stays PARTIAL; no runtime, Organization administration API or audit mechanics are approved by that docs change. |
+| E13 | R5 [IAM OpenAPI](https://github.com/DATN-SPRING2027/DATN-BE/blob/7f5737399a4e997f3229e858219eb08daddf994a/docs/openapi/iam-v1.openapi.json), [User directory](https://github.com/DATN-SPRING2027/DATN-BE/blob/7f5737399a4e997f3229e858219eb08daddf994a/src/services/iam/infrastructure/mongodb/user-directory.repository.ts) and [development initializer](https://github.com/DATN-SPRING2027/DATN-BE/blob/7f5737399a4e997f3229e858219eb08daddf994a/scripts/dev/initialize-service-owned-databases.mjs) | User paths expose GET list and GET/PATCH detail, with no create-User API. The directory lists ACTIVE members of the caller's Organization; it does not discover outside/nonmember invite recipients. Development seed creates synthetic Users, not an approved product provisioning flow. An external account source/workflow and safe recipient selection remain unverified, not disproved. |
+| E14 | R5 [Project-create authorization decision](https://github.com/DATN-SPRING2027/DATN-BE/blob/7f5737399a4e997f3229e858219eb08daddf994a/docs/decisions/project-create-active-membership-v1.md) and [creator bootstrap decision](https://github.com/DATN-SPRING2027/DATN-BE/blob/7f5737399a4e997f3229e858219eb08daddf994a/docs/decisions/project-creator-member-bootstrap-v1.md) | Requester-approved Project scope: authenticated active subject, ACTIVE membership and trusted matching context satisfy Project-create authorization without an Organization role or project.create grant. Other request/deny rules still apply. Successful creation requires the configured current MEMBER Role containing project.read; missing/misconfigured Role rolls back the creation transaction. These records neither approve C-01 activation nor select its audit mechanics. |
 
 E1 references canonical `projects/DATN/docs/decisions/ORGANIZATION-MEMBERSHIP-CONTEXT-DECISION-V1.md`
 and `decision-register.md`; AGENTDB references ADR-003 and SPEC-001. Those owning
@@ -149,8 +162,16 @@ and `deploy/` remain untouched; reconciliation needs the owning workflow.
 `[FACT]` Current authentication additionally checks User account eligibility.
 An ACTIVE membership does not make a suspended account login-eligible. An ACTIVE
 member without RoleAssignment can resolve context with `roles: []` (E5); that is
-not permission for every operation. The accepted `project.create` membership-only
-rule in E3 cannot be generalized to Organization Membership administration.
+not permission for every operation. The accepted `project.create` rule in E3/E14
+allows an authenticated active subject with ACTIVE membership and trusted matching
+context to pass that authorization gate even with `roles: []` and no project.create
+grant. Valid input, unique code and applicable deny rules still apply; successful
+creation also requires the configured current MEMBER Role with project.read for
+creator bootstrap, otherwise the transaction rolls back. Therefore a future
+approved invitation acceptance that establishes ACTIVE may enable this existing
+Project-create gate without granting an Organization role. Keep that baseline;
+restricting Project creation requires a separate Project decision, not an invented
+C-01 role/grant gate. It cannot be generalized to membership administration.
 
 ## 4. Lifecycle: context eligibility is settled; commands are not
 
@@ -273,13 +294,13 @@ review or merging this document cannot fill that record.
 | ID | Specific decision to record | Source / authority needed | Blocked scope |
 |---|---|---|---|
 | Q1 | For each list/invite/activate/suspend/remove command, what current role/permission evidence, actor ACTIVE context and target scope are required? Can an invite recipient redeem without ACTIVE context, under which narrowly scoped identity proof? What self/peer/last-admin rules apply? | E2; DEC-ACCESS-09; Product + Security/authorization owner, with IAM owner | DATN-233; DATN-87 authorization; DATN-88 controls |
-| Q2 | Is onboarding invite-only? Invite existing userId, email/new account, or both? Who may accept vs activate? What verification/token binding, expiry, resend/cancel/replay/duplicate/rate/delivery rules and resulting four-state outcomes apply? Does failed delivery retain a pending row? | E1 excludes writes; DEC-ORG-05; Product + IAM/auth + Security; Notification owner if involved | DATN-231/233; invite/activation BE and FE |
+| Q2 | Is onboarding invite-only? Invite existing userId, email/new account, or both? For existing-user-only, what approved account source/provisioning workflow and owner supply eligible Users, and how may ADMIN discover/select an outside/nonmember recipient without a global directory/PII leak? If absent, which dependent work package is required before invitation implementation? Who may accept vs activate? What verification/token binding, expiry, resend/cancel/replay/duplicate/rate/delivery rules and resulting four-state outcomes apply? Does failed delivery retain a pending row? | E1 excludes writes; E13; DEC-ORG-05; Product + IAM/auth + Security; Notification owner if involved | DATN-231/233; invite/activation BE and FE; dev seed/manual DB is not a product-flow substitute |
 | Q3 | For all 16 transition cells and first creation, which commands are enabled, by whom, from which state, with which reason and same-state/retry/conflict outcome? Are resume/rejoin enabled; how are REMOVED pair uniqueness and roles handled? | E1; DEC-ACCESS-06; Product + IAM owner + Security; DB owner validates chosen representation | DATN-232/234; activation/suspend/remove BE; FE actions |
 | Q4 | Who may see each membership state and which member/User fields? What exact list filters, search, sort, paging, totals, empty-result and PII visibility rules apply? | E4/E8; DEC-ACCESS-14; Product + IAM/API + Security; FE review | DATN-233; member list BE/FE |
 | Q5 | What method/path and request/response/success status apply to every enabled command? Which IDs/selectors are accepted and how validated? What allowlist, required/optional fields, limits, reason format, reference checks, idempotency key and stale-write/version/fence rules apply? | E4/E6; DEC-ACCESS-01/14; IAM/API + Product; DB and FE consistency review | DATN-233/234; DB contract if needed, DATN-87/88 integration |
 | Q6 | Which status/code/details and precedence apply to unauthenticated, inactive actor, cross-Organization/not-visible/missing target, malformed payload, invite token failure, duplicate/illegal/stale transition, retry and audit failure? How does context selection/refresh/cache invalidation behave after membership changes? | E4/E5; DEC-ACCESS-02/10; IAM/auth + Security + API/FE owners | DATN-233/234; error tests and FE UX; revocation/caching |
 | Q7 | Obtain the canonical ADR-003/SPEC-001 authority/revision and confirm the exact Organization scope of E9's existing IAM mutation/audit atomicity requirement; preserve it while unresolved, with any exception blocked. Which collection/action/target/before-after/reason/correlation fields, transaction mechanism/boundary, audit-failure rollback and deduplication/retry behavior implement it per command and rejected attempt? Are async consumers/outbox required; who owns delivery and retention? All specific details remain UNKNOWN. | E2/E7/E9; canonical authority/scope reconciliation blocker; architecture/DB + IAM + Security owning approval | DATN-233/234; auditable/partial-write-safe BE and integration tests; no optional eventual-audit alternative inferred |
-| Q8 | On suspend/remove, which child memberships/roles/grants/sessions/caches remain stored, lose effective access, or change? What happens to Project/Team leadership, Task assignment, Work Note/knowledge ownership, SME/SUCCESSOR and handover responsibilities? Who transfers/unassigns, with what order/failure recovery, and what changes on resume/rejoin? | DEC-WS-11; Product + IAM + Project/Team/Task/knowledge/handover owners, Security; accepted contracts for each domain | DATN-232/234; offboarding/cascade BE and FE; dependent domains |
+| Q8 | On suspend/remove, which child memberships/roles/grants/sessions/caches remain stored, lose effective access, or change? What happens to Project/Team leadership, Task assignment, Work Note/knowledge ownership, SME/SUCCESSOR and handover responsibilities? Review normal handover-before-remove separately from emergency suspend/access-block-before-handover: who is authorized, what self/peer/last-ADMIN safeguards/recovery and audit apply, and when may later remove occur? Who transfers/unassigns, with what order/failure recovery, and what changes on resume/rejoin? | DEC-WS-11; Product + IAM + Project/Team/Task/knowledge/handover owners, Security; accepted contracts for each domain | DATN-232/234; offboarding/cascade BE and FE; dependent domains; neither path or exception approved |
 
 B2/B4 settle the parent access gate: a non-ACTIVE parent cannot establish
 Organization Context. They do not settle how stored descendants, responsibilities,
@@ -327,11 +348,11 @@ Required review/implementation scenarios, **not executed acceptance tests**:
 | AT-01 — all four states, role-only data, active membership without role | B1/B2/B3; context only from ACTIVE; permissions evaluated separately |
 | AT-02 — zero/one/multiple ACTIVE and valid/invalid selection | B3; existing auth outcome in section 6; future API/UI must resolve Q5/Q6 |
 | AT-03 — inactive account or inactive actor membership; cross-Organization IDs | B4; deny access; precise HTTP/error/assertions require Q1/Q6 |
-| AT-04 — invite/accept/activate/resend/cancel and token/identity/delivery failure | Only Q1–Q3/Q5–Q7-approved commands and outcomes; no added state |
+| AT-04 — invite/accept/activate/resend/cancel and token/identity/delivery failure | Only Q1–Q3/Q5–Q7-approved commands and outcomes; no added state. Verify approved account source/recipient selection; after future accepted activation test E14's roles-empty Project-create authorization and configured/missing bootstrap Role outcomes. No C-01 runtime test executed. |
 | AT-05 — every transition cell, same-state repeat, duplicate pair and concurrent/stale write | Q3/Q5/Q6: test accepted outcomes, atomic duplicate/partial-write safety |
 | AT-06 — allowed/denied actor, self/peer/last-admin target | Q1/Q3; no copied account or Project grants |
 | AT-07 — audit persistence, state/audit failure and retry | Preserve B6/E9 atomicity; Q7 authority/scope and specific transaction/dedup/error rules must be closed before implementation. E9 requires MongoDB replica-set commit/rollback evidence before cutover; no concrete mechanism/outcome is selected here. |
-| AT-08 — suspend/remove/resume across tokens, caches, descendants and responsibilities | Parent context denial B2/B4; E10 refresh revalidation is a source fact, not executed mutation evidence; stored/cascade/offboarding behavior only after Q6/Q8 |
+| AT-08 — suspend/remove/resume across tokens, caches, descendants and responsibilities | Parent context denial B2/B4; E10 refresh revalidation is a source fact, not executed mutation evidence. Review normal remove with mandatory handover and emergency scoped suspension before handover separately; actor/last-ADMIN/audit/recovery, propagation and later remove require Q1/Q3/Q6–Q8. No path or cascade is approved. |
 | AT-09 — member list projection/pagination and FE list/actions/errors | Q4–Q6; four states and backend authority; DATN-88 after accepted BE API |
 
 ## 9. Review exit and downstream handoff
@@ -350,4 +371,4 @@ when needed, then BE, then FE after its dependency is ready. Do not alter frozen
 baselines, run migrations, add permission seeds, or change application behavior
 to make this documentation task appear complete. PR #23 is already Open; human
 contract review/approval, Jira completion and team communication remain separate
-actions. A technical review of R3 is not product contract approval.
+actions. A technical review of this revision is not product contract approval.

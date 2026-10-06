@@ -2,9 +2,10 @@
 
 ## Review status and use
 
-- Revision: **R3, 2026-10-05 (Asia/Saigon)**; prepared by Nguyen Hong Phuc.
+- Revision: **R5, 2026-10-06 (Asia/Saigon)**; prepared by Nguyen Hong Phuc.
+  R3 alternatives are retained; R5 applies the approved documentation corrections.
 - Companion to the [working contract](06-organization-membership-contract.md)
-  (B1–B7, E1–E12, Q1–Q8, AT-01–09) and [PR #23](https://github.com/DATN-SPRING2027/Document/pull/23).
+  (B1–B7, E1–E14, Q1–Q8, AT-01–09) and [PR #23](https://github.com/DATN-SPRING2027/Document/pull/23).
 - **All alternatives, command mappings, HTTP/DTO examples and proposed outcomes
   below are [PROPOSED]. No option has been selected or approved.** An explicit
   exclusion/deferment also requires a decision; blank approval is UNKNOWN.
@@ -20,7 +21,7 @@ rule and authority in section 6, then update the working contract. Until human
 contract review closes the required decisions, DATN-86's expected result is
 **NOT MET** and DATN-87/88 remain blocked. Technical review is a separate check.
 
-R4 [external research and leader proposal](08-organization-membership-external-research-and-proposal.md)
+The [external research and leader proposal](08-organization-membership-external-research-and-proposal.md)
 adds vendor evidence and a recommended package for these choices. Recommendations
 are PROPOSED; no option in this worksheet is selected or approved by that research.
 E12 confirms the separately approved first-ADMIN provisioning boundary and denies
@@ -31,7 +32,7 @@ select any Organization administration alternative below.
 
 | Choice | Concrete alternative for review | Tradeoff / remaining authority gate |
 |---|---|---|
-| INV-A | Invite an existing User by userId; first membership creation would produce PENDING_INVITE. Unknown userId would create neither User nor membership. | Fits the current required userId relationship. Product must decide how an ADMIN discovers an eligible User without exposing a global directory; identity eligibility, duplicate outcomes and safe errors still Q1/Q2/Q4/Q6. |
+| INV-A | Conditionally invite an existing User by userId; first membership creation would produce PENDING_INVITE. Unknown userId would create neither User nor membership. | Product + IAM/auth + Security must first confirm an approved account source/provisioning workflow, owner, eligibility and safe ADMIN discovery/selection for outside/nonmember recipients. E13 has no create-User API and its ACTIVE own-Organization directory is insufficient. If missing, define dependent work before enablement; dev seed/manual DB is not a complete product flow. Q1/Q2/Q4/Q6. |
 | INV-B | Invite an email recipient who may not yet have a User; create/link identity only through an accepted onboarding contract. | Needs an approved identity binding and representation before a membership requiring userId can exist; no placeholder User, collection or schema is chosen. Product + IAM/auth + Security + DB; DATN-231/233 blocked until resolved. |
 | ACT-A | Recipient proves the invited identity and accepts; successful accepted redemption would change PENDING_INVITE to ACTIVE. | A recipient with zero ACTIVE memberships cannot obtain current Organization login context (B3/E5). Define a narrowly scoped authentication/redemption contract first; do not bypass the ordinary ADMIN route or treat a token as general Organization access. Q1/Q2/Q3/Q5/Q6. |
 | ACT-B | An authorized Organization ADMIN activates a pending membership after the approved verification/consent prerequisite. | Avoids requiring a recipient session for this command, but does not decide verification or consent, or grant ADMIN an arbitrary ACTIVE write. Product + Security + IAM must specify proof and self/peer/last-admin safety. Q1/Q2/Q3. |
@@ -43,6 +44,14 @@ semantics. These are separate choices, not bundled approval. For every enabled
 choice, decide onboarding eligibility, identity proof, invite binding, expiry,
 resend/cancel, replay, duplicate and rate limits. All durations/counts and proof
 formats remain UNKNOWN; an expired credential is not a fifth membership state.
+
+**Existing Project baseline (E14), not an activation proposal:** after any future
+approved acceptance establishes ACTIVE, an authenticated active User in trusted
+matching context can pass Project-create authorization even with roles=[] and no
+project.create grant. Other request/deny rules apply; creation also needs the
+configured current MEMBER Role containing project.read for creator bootstrap,
+otherwise the transaction rolls back. Preserve this baseline. A restriction on
+Project creation needs a separate Project decision; ACT-A does not add a role gate.
 
 For a token-based ACT-A design, a security candidate is an unpredictable,
 identity-bound, securely stored, expiring, single-use credential, excluded from
@@ -75,7 +84,7 @@ requests need an explicit no-op/replay/conflict rule for each command.
 | Effect boundary | Concrete alternatives to decide | Constraint that is already settled |
 |---|---|---|
 | Stored child memberships/roles/grants | Preserve records with access gated by parent eligibility; or explicitly reconcile selected records through approved domain contracts | Non-ACTIVE parent cannot establish context. Neither alternative permits effective child access to bypass B4; no cascade or delete is selected. Q8. |
-| Leadership / assigned responsibilities | Block suspend/remove until authorized handover prerequisites are satisfied; or allow it with an explicitly owned transfer/unassignment/recovery workflow | No ADMIN content right or direct cross-service DB write; Task/knowledge/handover effects need accepted owning contracts. Q1/Q8. |
+| Leadership / assigned responsibilities | Review normal removal with mandatory handover before remove separately from emergency scoped suspension/access blocking before handover; an authorized person handles handover afterward, then remove if appropriate | Both paths PROPOSED: exact actor/delegation, responsibility prerequisites, audit/recovery, self/peer/last-ADMIN treatment and later-remove conditions remain UNKNOWN. No ADMIN content right, platform bypass or direct cross-service DB write; owning domain contracts required. Q1/Q3/Q7/Q8. |
 | Sessions / caches / running work | Retain stored sessions subject to current eligibility checks; or explicitly revoke selected sessions/invalidate caches under an approved propagation contract | E10 refresh checks ACTIVE context before rotation; /me rechecks membership. Neither proves cancellation of in-flight work or a mutation-time race guarantee. Q6/Q8. |
 | Resume / rejoin effects | Require explicit reassignment/revalidation; or restore an explicitly approved subset of retained scopes | Prior storage/RoleAssignment does not prove current membership or permission. Which subset and order remain UNKNOWN. Q3/Q8. |
 
@@ -84,6 +93,11 @@ ADMIN targets and last eligible ADMIN. A conservative candidate is to reject a
 command that would leave no eligible administrator; another is a separately
 authorized transfer workflow. Neither is approved. Do not copy global User
 `LAST_ACTIVE_ADMIN` or `SHARED_ACCOUNT_STATUS_CHANGE` as membership policy.
+Product/Security must reconcile these safeguards separately for the proposed
+normal and emergency cases; do not apply normal handover-before-remove as a
+blanket prerequisite to emergency suspension. No emergency safeguard exception
+or actor is approved, including for a peer or last ADMIN. Platform authority
+alone remains insufficient under E12.
 
 ## 3. DATN-233 — concrete API candidates
 
@@ -182,12 +196,12 @@ the appropriate DB/BE/FE tasks. An UNKNOWN oracle cannot be reported as PASS.
 | Case / subtask mapping | Setup and action to review | Settled constraint / required oracle |
 |---|---|---|
 | RV-01 / AT-01–03 / 229–230 | Four synthetic memberships plus role-only User; resolve zero/one/multiple contexts and a foreign selector | B1–B4; only ACTIVE supplies context; no role fallback; permission separate. Existing source tests inspected, not executed. |
-| RV-02 / AT-04 / 231 | Invite known User; unknown identity; accept/activate with correct/wrong identity, expired/replayed credential and failed delivery | Chosen INV/ACT/DEL rule, proof, final state and exact safe response; Q1–Q3/Q5–Q7. No context before ACTIVE. |
+| RV-02 / AT-04 / 231 | Verify approved account source and safe ADMIN recipient selection, including outside/nonmember User; invite known/unknown identity; accept/activate with correct/wrong identity, expired/replayed credential and failed delivery. After future accepted activation, attempt Project create with roles=[] and with configured/missing/misconfigured MEMBER Role | INV-A conditional prerequisites and chosen INV/ACT/DEL proof/state/safe response require Q1–Q3/Q4–Q7. No context before ACTIVE. E14 allows roles-empty Project-create authorization with active subject/trusted matching context and no project.create grant; other input/deny rules apply. Correct MEMBER Role with project.read permits bootstrap; missing/misconfigured Role rolls back creation. C-01 runtime case unexecuted. |
 | RV-03 / AT-05 / 232/234 | Enumerate all 16 ordered state pairs, first creation and repeat commands; apply each enabled/excluded/deferred rule | Accepted command/actor/precondition/result/error for every cell, including same-state and REMOVED pair handling; Q3/Q5/Q6. |
 | RV-04 / AT-03/06 / 232/233 | ADMIN in another Organization, inactive actor, MEMBER/Team Leader, self/peer/last-ADMIN target | B4/B5 boundaries plus accepted per-command safety/error rules Q1/Q3/Q6; no cross-Organization effect or copied User policy. |
 | RV-05 / AT-05/07 / 233/234 | Two invites to one pair, two concurrent mutations, same/different retry payloads; actor loses authority or target cycles states after precheck | Approved idempotency/fence/error oracles Q3/Q5/Q6/Q7; unique/partial-write safety; mechanism remains UNKNOWN. |
 | RV-06 / AT-07 / 233/234 | Fault required domain write and audit write independently; retry and simulate uncertain commit response | Existing atomicity preserved; exact persistence/retry/error oracles Q7 must be approved; real replica-set commit/rollback before cutover. |
-| RV-07 / AT-08 / 232/234 | After accepted suspend/remove, use issued access/refresh credentials, cached scope, child records, running work and assigned responsibilities; then approved resume/rejoin | B2/B4 deny new context; E10 describes refresh source behavior only. Approved Q6/Q8 propagation, transfer/recovery/restoration oracles required. |
+| RV-07 / AT-08 / 232/234 | Review normal mandatory handover before remove and emergency scoped suspend/access block before authorized handover, then later remove if appropriate. Cover handover failure, peer/last-ADMIN, issued tokens, caches, child records, running work and resume/rejoin | B2/B4 deny new context; E10 is refresh source evidence only. Both proposed paths need exact actor/delegation/safeguard/audit/recovery and later-remove oracles Q1/Q3/Q6–Q8. No blanket handover gate may silently defeat the proposed emergency path; no exception, propagation SLA or restoration approved. |
 | RV-08 / AT-09 / 233/234 | All-state list filters, boundaries/empty pages, foreign IDs, PII projection and server-denied FE actions | Approved Q4–Q6 DTO/visibility/pagination/error assertions; no secret/foreign data. FE loading/empty/error and permitted actions belong to DATN-88. |
 
 ## 6. Decision record and completion responsibility
