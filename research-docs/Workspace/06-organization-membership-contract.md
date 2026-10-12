@@ -1,5 +1,15 @@
 # DATN-86 — Organization Membership lifecycle and API working contract
 
+> **Authority successor note — 2026-10-12:** R2/R3/R5 snapshots below predate
+> Leader D1–D6, received 2026-10-06 and confirmed by the requester. Their exact
+> selected Organization policies and still-unspecified implementation details
+> are reconciled in [C-04 §2](09-team-management-foundation-decision-gap-report.md#2-approved-decisions-consumed-by-c-04).
+> Read “all questions remain UNKNOWN”, transition grids and NOT MET below as
+> historical assessments at those revisions; they do not reopen selected
+> D1–D6 policies. Do not approve entire R3/R4 proposals, infer exact API details,
+> or extend Organization approval to Team. The R5 work record is preserved;
+> a full C-01 API/acceptance rewrite remains outside this C-04 task.
+
 ## Status and authority
 
 - Revision: **R5, 2026-10-06 (Asia/Saigon)**; owner: Nguyen Hong Phuc.

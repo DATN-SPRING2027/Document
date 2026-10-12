@@ -9,6 +9,18 @@
 - [DATN-86 Organization Membership working contract](06-organization-membership-contract.md) reconciles the accepted four-state/context baseline with current IAM source and maps unresolved lifecycle/API decisions to DATN-229–234. It is pending human contract review and does not clear DATN-87/DATN-88 dependencies.
 - [DATN-86 review worksheet](07-organization-membership-review-worksheet.md) supplies concrete invitation, transition, API and validation alternatives for DATN-231–234; all candidates remain proposals pending named authority decisions.
 - [DATN-86 external research and leader proposal](08-organization-membership-external-research-and-proposal.md) compares official vendor behavior and recommends a review package for the open decisions; it grants no lifecycle or implementation authority.
+- **Authority update, 2026-10-12:** the DATN-86 R2/R3/R5 decision snapshots above
+  predate Leader D1–D6, received 2026-10-06 and confirmed by the requester.
+  [C-04 §2](09-team-management-foundation-decision-gap-report.md#2-approved-decisions-consumed-by-c-04)
+  records their exact selected Organization policies and remaining detail; do not
+  reopen the selected policies or approve Team behavior from them. Historical
+  proposals are not accepted wholesale. This index's older open cells must be
+  interpreted within that dated scope; exact APIs and Team decisions remain separate.
+- [DATN-89 Team Foundation report](09-team-management-foundation-decision-gap-report.md)
+  provides the current pinned BE inventory, authority/decision limits and ten
+  precise Team questions. Its [acceptance and validation mapping](10-team-foundation-review-validation.md)
+  covers DATN-248–253. It is a decision-gap deliverable for review, not an approved
+  Team contract that unblocks DATN-90/91/92.
 
 ## 1. Purpose and conclusion
 
