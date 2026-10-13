@@ -593,6 +593,16 @@
               "type": "string",
               "minLength": 1
             }
+          },
+          {
+            "name": "__Host-csrf",
+            "in": "cookie",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Readable double-submit CSRF cookie; Secure; SameSite=Lax; Path=/; no Domain. Its value must match the X-CSRF-Token header."
           }
         ],
         "responses": {
@@ -1175,6 +1185,16 @@
               "type": "string",
               "minLength": 1
             }
+          },
+          {
+            "name": "__Host-csrf",
+            "in": "cookie",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Readable double-submit CSRF cookie; Secure; SameSite=Lax; Path=/; no Domain. Its value must match the X-CSRF-Token header."
           }
         ],
         "responses": {
@@ -1434,6 +1454,16 @@
               "type": "string",
               "minLength": 1
             }
+          },
+          {
+            "name": "__Host-csrf",
+            "in": "cookie",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Readable double-submit CSRF cookie; Secure; SameSite=Lax; Path=/; no Domain. Its value must match the X-CSRF-Token header."
           }
         ],
         "responses": {
@@ -1657,6 +1687,16 @@
               "type": "string",
               "minLength": 1
             }
+          },
+          {
+            "name": "__Host-csrf",
+            "in": "cookie",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Readable double-submit CSRF cookie; Secure; SameSite=Lax; Path=/; no Domain. Its value must match the X-CSRF-Token header."
           }
         ],
         "responses": {
@@ -1874,6 +1914,16 @@
               "type": "string",
               "minLength": 1
             }
+          },
+          {
+            "name": "__Host-csrf",
+            "in": "cookie",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Readable double-submit CSRF cookie; Secure; SameSite=Lax; Path=/; no Domain. Its value must match the X-CSRF-Token header."
           }
         ],
         "responses": {
@@ -2108,6 +2158,16 @@
               "type": "string",
               "minLength": 1
             }
+          },
+          {
+            "name": "__Host-csrf",
+            "in": "cookie",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Readable double-submit CSRF cookie; Secure; SameSite=Lax; Path=/; no Domain. Its value must match the X-CSRF-Token header."
           }
         ],
         "responses": {
@@ -2342,6 +2402,16 @@
               "type": "string",
               "minLength": 1
             }
+          },
+          {
+            "name": "__Host-csrf",
+            "in": "cookie",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Readable double-submit CSRF cookie; Secure; SameSite=Lax; Path=/; no Domain. Its value must match the X-CSRF-Token header."
           }
         ],
         "responses": {
@@ -2577,6 +2647,16 @@
               "type": "string",
               "minLength": 1
             }
+          },
+          {
+            "name": "__Host-csrf",
+            "in": "cookie",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Readable double-submit CSRF cookie; Secure; SameSite=Lax; Path=/; no Domain. Its value must match the X-CSRF-Token header."
           }
         ],
         "responses": {
@@ -2838,6 +2918,16 @@
               "type": "string",
               "minLength": 1
             }
+          },
+          {
+            "name": "__Host-csrf",
+            "in": "cookie",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Readable double-submit CSRF cookie; Secure; SameSite=Lax; Path=/; no Domain. Its value must match the X-CSRF-Token header."
           }
         ],
         "responses": {
