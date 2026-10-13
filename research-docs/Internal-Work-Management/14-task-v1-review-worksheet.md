@@ -105,7 +105,7 @@ verification tiếp tục là lifecycle khác. S3 mục 7 đề nghị DONE khô
 Note/evidence và chỉ TODO/IN_PROGRESS/BLOCKED vào Handover assignment; cả hai
 rule chi tiết vẫn cần Q4, không suy ra từ optional link hoặc từ B5.
 
-**Accepted transition matrix: tất cả 25 cells vẫn UNKNOWN (Q4/Q5/Q7).**
+**Transition matrix for review: tất cả 25 cells vẫn UNKNOWN (Q4/Q5/Q7).**
 Same-state cells cũng cần no-op/conflict/replay decision; không tự xem là allowed.
 
 | From → To | TODO | IN_PROGRESS | BLOCKED | DONE | CANCELLED |
