@@ -9,6 +9,20 @@
 - [DATN-86 Organization Membership working contract](06-organization-membership-contract.md) preserves the historical R5 question inventory. Its [DATN-87 V1 successor](09-organization-membership-administration-v1.md) records requester-approved D1–D6, selected lifecycle/reliability options and A1–A6/A8 API decisions on2026-10-12. The selected policy is no longer UNKNOWN; owning proof/provider/epoch readiness and executable acceptance remain separate gates.
 - [DATN-86 review worksheet](07-organization-membership-review-worksheet.md) supplies concrete invitation, transition, API and validation alternatives for DATN-231–234; all candidates remain proposals pending named authority decisions.
 - [DATN-86 external research and leader proposal](08-organization-membership-external-research-and-proposal.md) compares official vendor behavior and recommends a review package for the open decisions; it grants no lifecycle or implementation authority.
+- **Authority update, 2026-10-12:** the DATN-86 R2/R3/R5 decision snapshots above
+  predate Leader D1–D6, received 2026-10-06 and confirmed by the requester.
+  [C-04 §2](09-team-management-foundation-decision-gap-report.md#2-approved-decisions-consumed-by-c-04)
+  records their exact selected Organization policies and remaining detail; do not
+  reopen the selected policies or approve Team behavior from them. Historical
+  proposals are not accepted wholesale. This index's older open cells must be
+  interpreted within that dated C-04 scope. C-02 API selections are recorded in the
+  [DATN-87 V1 successor](09-organization-membership-administration-v1.md); Team
+  decisions remain separate.
+- [DATN-89 Team Foundation report](09-team-management-foundation-decision-gap-report.md)
+  provides the current pinned BE inventory, authority/decision limits and ten
+  precise Team questions. Its [acceptance and validation mapping](10-team-foundation-review-validation.md)
+  covers DATN-248–253. It is a decision-gap deliverable for review, not an approved
+  Team contract that unblocks DATN-90/91/92.
 
 ## 1. Purpose and conclusion
 

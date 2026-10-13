@@ -4,6 +4,16 @@
 
 Status: Research only. No implementation was performed.
 
+> **Current evidence successor — 2026-10-12:** the
+> [DATN-89 C-04 report](09-team-management-foundation-decision-gap-report.md)
+> revalidates BE main and separates accepted Organization/Project decisions
+> from Team Membership/API proposals. The no-Workspace-API/no-guards statements
+> below are dated; current Project APIs exist, but Team APIs remain draft only.
+> Current Project removal sets INACTIVE without a TeamMembership check; the
+> research's removal-blocker proposal is not an approved runtime requirement.
+> No current FE inspection is claimed by C-04; this file's FE findings remain
+> historical. See the report for exact Team draft paths and decision gates.
+
 ## Evidence classification
 
 - `[FACT]`: directly verified in source.
