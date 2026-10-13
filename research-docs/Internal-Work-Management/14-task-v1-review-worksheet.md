@@ -2,7 +2,7 @@
 
 **Trạng thái:** Review package: APPROVED BASELINE / PARTIAL recommendations /
 PROPOSED exact policies / UNKNOWN answers; chưa phải approved implementation contract.
-**Revision:** R2, 13/10/2026 (Asia/Saigon). **Owner tổng hợp:** Nguyen Hong Phuc.
+**Revision:** R3, 13/10/2026 (Asia/Saigon). **Owner tổng hợp:** Nguyen Hong Phuc.
 
 Worksheet cụ thể hóa các gaps trong [working contract R5](13-task-v1-contract-readiness.md)
 để reviewer trả lời từng item. [Review PR #22](https://github.com/DATN-SPRING2027/Document/pull/22#pullrequestreview-5410654477)
@@ -32,11 +32,11 @@ bị ADR-010 supersede ở deployment/database placement; B5 vẫn theo ADR-009.
 | B1 | Continuum Task API canonical; MongoDB operational records; không Jira import/sync/two-way write trong MVP | [ADR-009, Decision 1–2](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-tech/ADR-009-internal-task-source-and-mongodb.md#L12-L15) | Không chọn fields, routes hoặc lifecycle |
 | B2 | Existing DATN-BE/DATN-FE; Task là NestJS process riêng; không repo ManageWork/cluster Mongo mới | [ADR-010, Decision 1–5](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-tech/ADR-010-task-service-in-existing-repositories.md#L18-L22) | Accepted target; không phải runtime/config đã triển khai |
 | B3 | Browser qua existing BFF/Gateway; consumers qua authenticated API/event contract, không direct Task collections | [ADR-010, Decision 3–6](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-tech/ADR-010-task-service-in-existing-repositories.md#L20-L23) | Exact routes/trust/errors còn T6/T9 |
-| B4 | Task sở hữu target `continuum_task`, `tasks`, append-only `task_events`; mutation + history atomic trong Task DB; outbox cùng transaction khi cần durable publish | [ADR-010, Decision 5/7](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-tech/ADR-010-task-service-in-existing-repositories.md#L22-L24) | Không xin chọn lại atomic history; coverage/schema/retention, compliance sink và consumer decision còn riêng |
+| B4 | Task sở hữu target `continuum_task`, `tasks`, append-only `task_events`; mutation + history atomic trong Task DB; outbox cùng transaction khi cần durable publish | [ADR-010, Decision 5/7](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-tech/ADR-010-task-service-in-existing-repositories.md#L22-L24) | Không xin chọn lại atomic history hoặc audit owner/status tối thiểu B8; exact coverage/schema/retention, Task-specific shared-audit mapping và consumer decision còn riêng |
 | B5 | Work Note **có thể tùy chọn** tham chiếu internal Task qua logical `taskId`; Task không tự thành verified knowledge/standalone SAG source | [ADR-009, Decision 3–4 và scope validation](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-tech/ADR-009-internal-task-source-and-mongodb.md#L16-L23) | Optional reference đã accepted; feature/UI inclusion, cardinality và stale-link/DTO chưa được ADR chọn |
 | B6 | Authorized Team Leader chọn/giao Task qua Task API; Handover giữ workflow/reference riêng; operation ID/idempotency/retry/compensation, không shared Task/Handover transaction | [ADR-009, Decision 5](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-tech/ADR-009-internal-task-source-and-mongodb.md#L18), [ADR-010, Decision 6](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-tech/ADR-010-task-service-in-existing-repositories.md#L23) | Eligible states/targets, successor access lifetime và exact recovery còn T2/T4/T7 |
 | B7 | Agent dùng authorized context/proposal; permitted human xác nhận trước mutation; safe history provenance gồm user + Agent/proposal identity, không full prompt/raw context | [ADR-010, Decision 7–8](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-tech/ADR-010-task-service-in-existing-repositories.md#L24-L25) | Metadata intent accepted; feature inclusion và event names/types/projection/retention chưa được chọn |
-| B8 | ACTIVE OrganizationMembership chứng minh context; RoleAssignment không thay membership; scoped authority/ACL/explicit deny; ADMIN/platform không implicit confidential access | [Actors, §2–3](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-docs/02_ACTORS_ROLES_AND_PERMISSIONS.md#L15-L54), [Workspace, §4.1–4.2 / DEC-016](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-docs/Workspace/00-organization-and-access-contract-readiness.md#L66-L117) | Governance baseline; Task action codes/matrix vẫn chưa duyệt. Không dùng ADR-009/010 thay nguồn governance |
+| B8 | ACTIVE OrganizationMembership chứng minh context; RoleAssignment không thay membership; scoped authority/ACL/explicit deny; ADMIN/platform không implicit confidential access. Audit **ít nhất thay đổi owner/status Task trong approved Task scope**; logs tránh token, full prompts, document bodies | [Actors, §2–3](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-docs/02_ACTORS_ROLES_AND_PERMISSIONS.md#L15-L54), [Actors, §7 audit minimum/privacy](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-docs/02_ACTORS_ROLES_AND_PERMISSIONS.md#L102-L106), [Workspace, §4.1–4.2 / DEC-016](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-docs/Workspace/00-organization-and-access-contract-readiness.md#L66-L117) | Minimum audit/privacy accepted; Task action codes/matrix, exact events/schema/retention và shared-audit mapping vẫn cần Task-specific decision; không dùng ADR-009/010 thay governance |
 | B9 | Creator bootstrap ordinary Project MEMBER, không Leader/owner/Team; documented create/edit Task rights khi API có mặt. Leader Tổng = Org ADMIN; Leader Project = Project TEAM_LEADER | [Project creator, Decision, 30/09 reaffirmed 04/10](https://github.com/DATN-SPRING2027/DATN-BE/blob/fc7d0be91c7b3e9e1ff6a4a726d0cd4e5efabe6a/docs/decisions/project-creator-member-bootstrap-v1.md#L3-L16), [Project Access, Accepted role mapping, 02/10](https://github.com/DATN-SPRING2027/DATN-BE/blob/fc7d0be91c7b3e9e1ff6a4a726d0cd4e5efabe6a/docs/decisions/project-access-visibility-v1.md#L11-L17) | Không cấp sửa mọi Task/field hoặc tự seed Task permissions |
 | B10 | PUBLIC/Org ADMIN Project metadata access không cấp Task content; removal → INACTIVE giữ membership/assignment records nhưng thu hồi effective Project access; Project-scoped auth cần ACTIVE ProjectMembership | [Project Foundation, Contract used](https://github.com/DATN-SPRING2027/DATN-BE/blob/fc7d0be91c7b3e9e1ff6a4a726d0cd4e5efabe6a/docs/decisions/project-foundation-read-mvp.md#L7-L17), [Project Access, Visibility/Membership operations](https://github.com/DATN-SPRING2027/DATN-BE/blob/fc7d0be91c7b3e9e1ff6a4a726d0cd4e5efabe6a/docs/decisions/project-access-visibility-v1.md#L34-L47) | Không chọn Task assignment clear/transfer/delete hoặc copy Project 404/audit policy sang Task |
 
@@ -56,8 +56,9 @@ Authority là approval evidence trong record, không phải việc PR được m
   principles; exact dictionary/eligibility còn UNKNOWN. Organization contextual;
   **persist `organizationId` chưa được chọn**, phải có query/isolation need.
 - **PARTIAL T8/T9:** safe append-only history boundary/atomicity giữ nguyên;
-  exact coverage/schema/retention chưa chọn. Outbox deferred tới khi named durable
-  consumer được approve; điều này không chọn đáp án no-consumer hoặc compliance sink.
+  exact coverage/schema/retention chưa chọn, nhưng audit owner/status tối thiểu B8
+  đã accepted. Outbox deferred tới khi named durable consumer được approve; điều
+  này không chọn đáp án no-consumer hoặc Task-specific shared-audit mapping.
 - Record cũng chọn non-unique Task titles, query-derived index/validation/test
   methods và chưa thêm delete/archive field/route trước khi có policy. Đây không
   phải phê duyệt concrete schema/index, API hoặc deletion/retention behavior.
@@ -67,6 +68,20 @@ vẫn giữ exact fields/permissions/lifecycle/errors UNKNOWN; **25 transition c
 UNKNOWN và disabled; D-03 BLOCKED**. [D02-R1](16-task-v1-state-machine-contract.md)
 và [reliability proposal](17-task-v1-command-reliability-review.md) của DATN-94
 vẫn PROPOSED/UNKNOWN; Jira Done hay PR #26 merge không thành policy approval.
+
+### 0.2 Audit Task — baseline, topology và target/proposal
+
+| Concern | Authority/evidence | Trạng thái và giới hạn |
+|---|---|---|
+| Audit owner/status tối thiểu, tránh token/full prompts/document bodies | [Actors Accepted baseline, §7](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-docs/02_ACTORS_ROLES_AND_PERMISSIONS.md#L102-L106) | **APPROVED BASELINE B8** trong approved Task scope; không hỏi lại có cần audit hay cho phép bỏ audit |
+| Shared audit destination `continuum_audit` | [Database catalog, Phạm vi](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/database-design/README.md#L8), [Audit catalog entry](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/database-design/README.md#L57) | Shared topology đã được ghi nhận; chưa là quyết định mỗi Task event phải ghi thêm vào shared sink hoặc Task-specific integration đã triển khai |
+| `audit_logs`, Task action vocabulary và retention examples | [Audit schema, §2.1](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/database-design/10_AUDIT_AND_COMPLIANCE_SCHEMA.md#L22-L67), [Retention example](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/database-design/10_AUDIT_AND_COMPLIANCE_SCHEMA.md#L100-L109) | **TARGET/PROPOSED** cho Task-specific names/coverage/schema. `TASK_CREATED`, `TASK_UPDATED`, `TASK_ASSIGNED`, `TASK_STATUS_CHANGED`, `TASK_CANCELLED` và ví dụ 365 ngày chưa được Task-specific approval |
+| Exact history contract còn mở | [Approval record, History boundary và atomicity](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-docs/Internal-Work-Management/20-task-v1-contract-approval-record.md#L23-L24) | Exact event coverage/schema/readers/retention UNKNOWN; không hủy minimum owner/status audit B8 hoặc atomic domain history B4 |
+
+Schema phân biệt domain `task_events` phục vụ Task history với shared `audit_logs`
+phục vụ security/accountability; không ghi toàn bộ Task description/document vào
+diff. T8-A chỉ chốt cách đáp ứng audit bắt buộc: `task_events` có đủ hay cần ghi
+thêm vào `continuum_audit`; không xin quyền bỏ minimum audit.
 
 ## 1. DATN-105 — V1 làm gì, không làm gì, ai dùng
 
@@ -249,7 +264,7 @@ contract, không tin identity do client tự gửi.
 | Missing vs inaccessible Task | Q6: exact 403/404 disclosure policy | Không copy IAM/Project error policy thành Task policy |
 | Illegal/stale/duplicate/payload-mismatch command | Q4/Q6/Q7: status/code/replay response | Không double mutation/history hoặc overwrite stale version |
 | Persistence/history failure | Q7/Q8: response/retry mapping | B4 yêu cầu task/history cùng commit hoặc rollback; không hỏi duyệt lại atomicity |
-| Separate compliance audit failure | T8: sink có cần không và consistency/failure policy UNKNOWN | Không suy atomic cross-DB hoặc eventual delivery từ B4 |
+| Additional shared audit failure | T8-A: mandatory events chỉ task_events hay cần ghi thêm continuum_audit; consistency/failure policy UNKNOWN | Minimum owner/status audit B8 vẫn bắt buộc; không suy atomic cross-DB hoặc eventual delivery từ B4 |
 | Internal upstream unavailable/timeout | Q6/Q9: safe status/body/correlation | Không direct-DB fallback, không trả protected upstream data |
 
 **APPROVED HISTORY INTENT B4/B7:** append-only task_events cùng transaction
@@ -257,12 +272,15 @@ với mutation; actor type/identity, event/source, changed metadata, task versio
 time, operation/correlation, initiating user + Agent/proposal provenance khi
 áp dụng; không full prompt/raw context. Exact field types/names, nullability,
 event vocabulary, before/after safety, readable projection và retention còn Q8.
-Compliance audit sink của Task chưa được IAM/Project decision chốt thay.
-**Câu hỏi T8 bắt buộc:** V1 có cần compliance audit sink riêng ngoài domain
-`task_events` không? Reviewer chọn **CÓ / KHÔNG / DEFER** có scope/evidence.
-CÓ cần owner, nơi lưu, dữ liệu, quyền đọc, retention và consistency/failure
-policy; KHÔNG cần ghi rõ quyết định không có separate sink trong V1. DEFER giữ
-gap mở; không mặc định KHÔNG. Chi tiết ở §8/T8, không dùng “nếu áp dụng”.
+**APPROVED AUDIT MINIMUM B8:** audit ít nhất thay đổi owner/status trong approved
+Task scope; logs tránh token, full prompts và document bodies. Shared audit
+topology `continuum_audit` đã có trong catalog (§0.2); Task-specific routing và
+mapping chưa được IAM/Project decision chốt thay. Tên `TASK_*` và ví dụ retention
+365 ngày trong audit schema là **TARGET/PROPOSED**, chưa là Task-specific approval.
+**T8-A cần quyết định:** event audit bắt buộc được đáp ứng **CHỈ TASK_EVENTS**
+hay **GHI THÊM CONTINUUM_AUDIT**? Schema/coverage chi tiết, readers/retention và
+consistency/failure policy còn UNKNOWN. **DEFER** giữ gap mở, không chọn mặc định
+hoặc bỏ audit tối thiểu. Chi tiết ở §8/T8.
 
 **APPROVED DELIVERY B4:** nếu phải publish bền vững, outbox cùng transaction,
 relay sau commit và dedup event ID. V1 có consumer nào/no-consumer, event DTO,
@@ -441,41 +459,61 @@ durable proof/retry/backoff/window theo recovery horizon; late replay/expiry
 không execute lại; retention và recovery owner. Không chọn duration mặc định;
 approve CAS riêng không duyệt toàn bộ reliability/schema/index.
 
-### T8 — Domain history và separate compliance audit (Q8 / DATN-110)
+### T8 — Audit tối thiểu, domain history và shared sink mapping (Q8 / DATN-110)
 
-**APPROVED BASELINE B4/B7 — không xin duyệt lại:** Task mutation và append-only
+**APPROVED BASELINE B4/B7/B8 — không xin duyệt lại:** Task mutation và append-only
 `task_events` atomic **trong Task DB**, cùng commit hoặc rollback. Metadata intent
 gồm actor type/identity, event/source, changed fields, version/time, operation/
 correlation; event giữ initiating user + Agent/proposal identity cho human-confirmed
-Agent flow. Không full prompt/raw context. §0.1 giữ safe append-only boundary.
+Agent flow. **Audit ít nhất các thay đổi owner/status trong approved Task scope**
+theo [Actors §7](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-docs/02_ACTORS_ROLES_AND_PERMISSIONS.md#L102-L106).
+Logs tránh token, full prompts và document bodies; history không full prompt/raw
+context. §0.1 giữ safe append-only boundary. Baseline audit không enable owner/
+status mutation hoặc transition chưa được duyệt.
 
-**Domain history exact contract UNKNOWN:** chọn coverage cho create/update/
-assignment/transitions, event vocabulary/names/types/nullability; safe changed
-fields/before-after/redaction; ordering/paging, readers/projection và retention.
-Proposal/schema của S4/D02 không phê duyệt các chi tiết này. Atomic domain history
-không chứng minh đã có compliance sink hoặc cross-database audit transaction.
+**Shared topology đã có nguồn:** [database catalog](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/database-design/README.md#L8)
+ghi `continuum_audit` là đích audit dùng chung. [Audit schema §2.1](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/database-design/10_AUDIT_AND_COMPLIANCE_SCHEMA.md#L22-L67)
+phân biệt domain `task_events` và shared `audit_logs`; không full description/
+Task document trong diff. Task action names `TASK_CREATED`, `TASK_UPDATED`,
+`TASK_ASSIGNED`, `TASK_STATUS_CHANGED`, `TASK_CANCELLED` là **TARGET/PROPOSED**
+cho Task-specific contract tới khi có approval. Ví dụ retention **365 ngày chưa
+được duyệt** cho Task history hoặc Task compliance audit.
 
-**T8-A — Câu hỏi phải chọn rõ:** V1 có cần **compliance audit sink riêng ngoài
-domain history `task_events`** không? Accepted answer hiện **UNKNOWN**; không có
-đáp án được chọn trong worksheet này.
+**Exact contract UNKNOWN:** event coverage ngoài minimum owner/status và mapping
+minimum đó thành events cho create/update/assignment/transitions; event names/
+types/nullability, safe changed fields/before-after/redaction; ordering/paging,
+readers/projection và retention. [Approval record, History boundary](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-docs/Internal-Work-Management/20-task-v1-contract-approval-record.md#L23-L24)
+giữ các chi tiết này UNKNOWN, không hủy minimum audit B8. S4/D02 và schema target
+không tự approve event vocabulary. B4 atomic domain history không tự chốt
+Task-specific shared-audit mapping hoặc atomic cross-database transaction.
 
-- **CÓ:** chốt owner chịu trách nhiệm, nơi lưu (database/collection hoặc service/
-  API sink), dữ liệu/event coverage (gồm có/không audit rejected attempts), quyền
-  đọc/administration/redaction, retention và consistency/failure policy. Chọn rõ
-  audit phải atomic với mutation hay delivery theo contract khác; cách xử lý sink
-  lỗi/unavailable, retry/dedup/recovery owner và safe response. Không tự chọn
-  `continuum_audit`, atomic cross-DB hoặc eventual delivery.
-- **KHÔNG:** ghi explicit decision **V1 không có separate compliance audit sink**,
-  authority/scope/revision/date; vẫn giữ B4/B7 và chốt domain history contract.
-  Không suy “không cần audit” chỉ vì có history hoặc chưa tìm thấy source.
-- **DEFER:** ghi blocker/owner quyết định và slice bị ảnh hưởng; giữ UNKNOWN,
-  không coi im lặng hoặc chờ lâu là KHÔNG.
+**T8-A — Câu hỏi phải chọn rõ:** Trong V1, **audit events bắt buộc** (ít nhất
+owner/status trong approved Task scope) được đáp ứng **chỉ trong `task_events`**,
+hay cần **ghi thêm vào `continuum_audit`**? Accepted Task-specific answer hiện
+**UNKNOWN**; worksheet chưa chọn đáp án.
+
+- **CHỈ TASK_EVENTS:** Security/Architecture xác nhận domain history đáp ứng đủ
+  minimum audit baseline trong approved V1 scope; ghi rõ không thêm shared audit
+  record cho Task trong scope đó. Chốt coverage/schema, owner, quyền đọc/projection,
+  retention và failure mapping; giữ atomic Task/history B4. Đây không là lựa chọn
+  bỏ audit hoặc bỏ safeguards chỉ vì chưa có shared integration.
+- **GHI THÊM CONTINUUM_AUDIT:** giữ domain history B4 và bổ sung Task-specific
+  mapping vào shared audit topology đã có. Chốt owner/producer, collection hoặc
+  API/write boundary, event coverage/schema (gồm rejected-attempt policy), quyền
+  đọc/administration/redaction, retention và **consistency/failure policy**.
+  Audit bổ sung phải atomic với mutation hay theo delivery contract nào? Sink
+  lỗi/unavailable trả gì, có cho mutation commit không, retry/dedup/recovery owner
+  nào? Không mặc định `audit_logs`, tên `TASK_*`, 365 ngày, atomic cross-DB hoặc
+  eventual delivery chỉ từ catalog/schema target.
+- **DEFER:** ghi blocker/owner và slice bị ảnh hưởng; giữ mapping UNKNOWN,
+  không suy Task-events-only hoặc bỏ audit tối thiểu từ im lặng.
 
 **Nguồn thiếu:** original owning ADR-003/SPEC-001 không tìm thấy trong inspected
 workspace; AGENTDB chỉ dẫn đường tới path khác. Cần Architecture/DB/Security owner
 cung cấp revision/section hiện hành hoặc explicit Task-specific decision cho
-phần còn thiếu. IAM/Project audit source không chọn Task sink/schema/retention.
-B4 atomic history và B5 optional reference vẫn có nguồn độc lập, không chờ duyệt lại.
+phần còn thiếu. IAM/Project audit source không chọn exact Task event mapping/
+schema/retention. B4 atomic history, B5 optional reference và B8 minimum audit
+có nguồn độc lập; không đưa các invariant này trở lại trạng thái chờ duyệt.
 
 ### T9 — Runtime/config và consumer decision (Q9 / DATN-106/110)
 
@@ -490,8 +528,8 @@ reconciliation. Port 3009 vẫn proposal, không thành default từ ADR table.
 Chọn explicit **V1 no async consumer** hoặc liệt kê **từng named consumer** với
 approval/scope. Nhánh durable publication cần giữ B4 same-transaction outbox,
 after-commit relay, consumer dedup event ID rồi chốt schema/retry/retention/owner.
-Organization email outbox không chọn Task notifications. T8 compliance sink
-decision và T9 delivery decision là hai câu hỏi khác nhau.
+Organization email outbox không chọn Task notifications. T8 mandatory-audit
+destination/mapping và T9 async delivery là hai quyết định khác nhau.
 
 ### Cách ghi câu trả lời và phần còn thiếu
 
@@ -500,7 +538,8 @@ Item T/Q + exact UC/field/edge/action/API:
 APPROVE / AMEND / DEFER — answer và scope cụ thể:
 Authority/approver + evidence permalink:
 Owning contract/source revision + ngày duyệt:
-T8-A: CÓ / KHÔNG / DEFER; có thì đủ owner/storage/data/readers/retention/failure policy:
+T8-A: CHỈ TASK_EVENTS / GHI THÊM CONTINUUM_AUDIT / DEFER:
+Owner/event mapping/schema/readers/retention/consistency/failure policy cho lựa chọn:
 Owner API / DB / Security / Capture / Handover / Runtime cho phần chưa chốt:
 Chi tiết vẫn UNKNOWN hoặc deferred khỏi V1:
 ```
