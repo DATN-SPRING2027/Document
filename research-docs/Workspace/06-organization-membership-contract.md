@@ -1,5 +1,11 @@
 # DATN-86 — Organization Membership lifecycle and API working contract
 
+> **2026-10-12 successor:** [DATN-87 approved V1 contract](09-organization-membership-administration-v1.md)
+> records requester-approved D1–D6/N1/V2/E1/H1/Q1/epoch direction and A1–A6/A8.
+> The UNKNOWN lifecycle/API inventory below is the historical R5 snapshot, not
+> the current status of those selected decisions. A7 owning proof/provider/epoch
+> readiness and executable acceptance remain open as specified by the successor.
+
 > **Authority successor note — 2026-10-12:** R2/R3/R5 snapshots below predate
 > Leader D1–D6, received 2026-10-06 and confirmed by the requester. Their exact
 > selected Organization policies and still-unspecified implementation details
