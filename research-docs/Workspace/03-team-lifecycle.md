@@ -4,6 +4,15 @@
 
 Status: Research only. No implementation was performed.
 
+> **Current evidence successor — 2026-10-12:** use the
+> [DATN-89 C-04 report](09-team-management-foundation-decision-gap-report.md)
+> for pinned current BE main evidence, approved containment/context boundaries,
+> lifecycle/API questions and downstream limits. The health-only/no-Project-API
+> inventory below is historical: Project Foundation/Access and Organization
+> context guards now exist, while Team still lacks a controller/service/state
+> machine. Team archive/restore and exact action grants remain unapproved.
+> Research references to Leader requirements are not standalone Team sign-off.
+
 ## Evidence classification
 
 - `[FACT]`: directly verified in source.
