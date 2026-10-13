@@ -1,55 +1,108 @@
 # DATN-93 — Worksheet review Task V1 theo DATN-105–110
 
-**Trạng thái:** PROPOSED review package; chưa phải approved Task implementation contract.
-**Revision:** R1, 12/10/2026 (Asia/Saigon). **Owner tổng hợp:** Nguyen Hong Phuc.
+**Trạng thái:** Review package: APPROVED BASELINE / PARTIAL recommendations /
+PROPOSED exact policies / UNKNOWN answers; chưa phải approved implementation contract.
+**Revision:** R2, 13/10/2026 (Asia/Saigon). **Owner tổng hợp:** Nguyen Hong Phuc.
 
 Worksheet cụ thể hóa các gaps trong [working contract R5](13-task-v1-contract-readiness.md)
 để reviewer trả lời từng item. [Review PR #22](https://github.com/DATN-SPRING2027/Document/pull/22#pullrequestreview-5410654477)
 ghi **No findings**, dạng Comment; đó không phải Approval hay quyết định product.
-Các bảng dưới có đề nghị rõ ràng nhưng **accepted answer vẫn UNKNOWN** ở mức
-chi tiết, trừ các baseline được chỉ nguồn riêng. Không provision, tạo fixture,
-enable endpoint hoặc transition từ các candidate này.
+Reviewer đã duyệt **hướng trình bày T1–T9**, chưa duyệt policy T1–T9 trong phản
+hồi user chuyển ngày 13/10. Riêng approval record mới trên main ghi nhận
+recommendations được duyệt một phần (§0.1); không bỏ qua evidence mới hoặc coi
+nó là exact policy approval. Chi tiết chưa có answer vẫn UNKNOWN. Không provision,
+tạo fixture, enable endpoint hoặc transition từ các candidate này.
 
 Nguồn owning: [Task Use Cases](12-continuum-task-management-use-cases.md) (S3),
 [Task storage proposal](../../database-design/12_TASK_MANAGEMENT_SCHEMA.md) (S4),
-[Task permission proposal](../02_ACTORS_ROLES_AND_PERMISSIONS.md) (S5),
+[Governance baseline / Task permission proposal](../02_ACTORS_ROLES_AND_PERMISSIONS.md) (S5),
 [ADR-009](../../research-tech/ADR-009-internal-task-source-and-mongodb.md) (S1),
 [ADR-010](../../research-tech/ADR-010-task-service-in-existing-repositories.md) (S2).
 B1–B10 và Q1–Q9 giữ ID của working contract; không tạo một bộ authority khác.
 
+## 0. Baseline có nguồn — giữ nguyên, không xin duyệt lại
+
+Các link dưới pin **Document `69c16445417f3fbcaecd6b04943603c092003b77`** và
+**DATN-BE `fc7d0be91c7b3e9e1ff6a4a726d0cd4e5efabe6a`**, đã fetch ngày
+13/10/2026. Line range trỏ trực tiếp tới statement/section owning. ADR-009 chỉ
+bị ADR-010 supersede ở deployment/database placement; B5 vẫn theo ADR-009.
+
+| ID | APPROVED BASELINE | Owning evidence tại revision đã pin | Giới hạn authority / phần cần quyết định |
+|---|---|---|---|
+| B1 | Continuum Task API canonical; MongoDB operational records; không Jira import/sync/two-way write trong MVP | [ADR-009, Decision 1–2](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-tech/ADR-009-internal-task-source-and-mongodb.md#L12-L15) | Không chọn fields, routes hoặc lifecycle |
+| B2 | Existing DATN-BE/DATN-FE; Task là NestJS process riêng; không repo ManageWork/cluster Mongo mới | [ADR-010, Decision 1–5](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-tech/ADR-010-task-service-in-existing-repositories.md#L18-L22) | Accepted target; không phải runtime/config đã triển khai |
+| B3 | Browser qua existing BFF/Gateway; consumers qua authenticated API/event contract, không direct Task collections | [ADR-010, Decision 3–6](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-tech/ADR-010-task-service-in-existing-repositories.md#L20-L23) | Exact routes/trust/errors còn T6/T9 |
+| B4 | Task sở hữu target `continuum_task`, `tasks`, append-only `task_events`; mutation + history atomic trong Task DB; outbox cùng transaction khi cần durable publish | [ADR-010, Decision 5/7](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-tech/ADR-010-task-service-in-existing-repositories.md#L22-L24) | Không xin chọn lại atomic history; coverage/schema/retention, compliance sink và consumer decision còn riêng |
+| B5 | Work Note **có thể tùy chọn** tham chiếu internal Task qua logical `taskId`; Task không tự thành verified knowledge/standalone SAG source | [ADR-009, Decision 3–4 và scope validation](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-tech/ADR-009-internal-task-source-and-mongodb.md#L16-L23) | Optional reference đã accepted; feature/UI inclusion, cardinality và stale-link/DTO chưa được ADR chọn |
+| B6 | Authorized Team Leader chọn/giao Task qua Task API; Handover giữ workflow/reference riêng; operation ID/idempotency/retry/compensation, không shared Task/Handover transaction | [ADR-009, Decision 5](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-tech/ADR-009-internal-task-source-and-mongodb.md#L18), [ADR-010, Decision 6](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-tech/ADR-010-task-service-in-existing-repositories.md#L23) | Eligible states/targets, successor access lifetime và exact recovery còn T2/T4/T7 |
+| B7 | Agent dùng authorized context/proposal; permitted human xác nhận trước mutation; safe history provenance gồm user + Agent/proposal identity, không full prompt/raw context | [ADR-010, Decision 7–8](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-tech/ADR-010-task-service-in-existing-repositories.md#L24-L25) | Metadata intent accepted; feature inclusion và event names/types/projection/retention chưa được chọn |
+| B8 | ACTIVE OrganizationMembership chứng minh context; RoleAssignment không thay membership; scoped authority/ACL/explicit deny; ADMIN/platform không implicit confidential access | [Actors, §2–3](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-docs/02_ACTORS_ROLES_AND_PERMISSIONS.md#L15-L54), [Workspace, §4.1–4.2 / DEC-016](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-docs/Workspace/00-organization-and-access-contract-readiness.md#L66-L117) | Governance baseline; Task action codes/matrix vẫn chưa duyệt. Không dùng ADR-009/010 thay nguồn governance |
+| B9 | Creator bootstrap ordinary Project MEMBER, không Leader/owner/Team; documented create/edit Task rights khi API có mặt. Leader Tổng = Org ADMIN; Leader Project = Project TEAM_LEADER | [Project creator, Decision, 30/09 reaffirmed 04/10](https://github.com/DATN-SPRING2027/DATN-BE/blob/fc7d0be91c7b3e9e1ff6a4a726d0cd4e5efabe6a/docs/decisions/project-creator-member-bootstrap-v1.md#L3-L16), [Project Access, Accepted role mapping, 02/10](https://github.com/DATN-SPRING2027/DATN-BE/blob/fc7d0be91c7b3e9e1ff6a4a726d0cd4e5efabe6a/docs/decisions/project-access-visibility-v1.md#L11-L17) | Không cấp sửa mọi Task/field hoặc tự seed Task permissions |
+| B10 | PUBLIC/Org ADMIN Project metadata access không cấp Task content; removal → INACTIVE giữ membership/assignment records nhưng thu hồi effective Project access; Project-scoped auth cần ACTIVE ProjectMembership | [Project Foundation, Contract used](https://github.com/DATN-SPRING2027/DATN-BE/blob/fc7d0be91c7b3e9e1ff6a4a726d0cd4e5efabe6a/docs/decisions/project-foundation-read-mvp.md#L7-L17), [Project Access, Visibility/Membership operations](https://github.com/DATN-SPRING2027/DATN-BE/blob/fc7d0be91c7b3e9e1ff6a4a726d0cd4e5efabe6a/docs/decisions/project-access-visibility-v1.md#L34-L47) | Không chọn Task assignment clear/transfer/delete hoặc copy Project 404/audit policy sang Task |
+
+### 0.1 Evidence mới — PARTIAL, không mở chặn implementation
+
+[Approval record §Approved recommendations](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-docs/Internal-Work-Management/20-task-v1-contract-approval-record.md#L3-L28)
+ghi Trần Kim Thắng (Leader), ngày 13/10, approve recommendations §12 tại
+source `145af128e70fcfbcd6a64d5ac7859dfb9468d14c`; PR #30 ghi record này trên main.
+Authority là approval evidence trong record, không phải việc PR được merge.
+
+- **PARTIAL T1:** core Project-local list/create/detail/edit/assignment/status/
+  search/limited history được chọn ở recommendation level. Exact UC scope,
+  projection và permissions còn UNKNOWN; Work Note/Handover inclusion cần owner
+  approve exact contract; advanced capabilities deferred trừ khi scope riêng.
+- **PARTIAL T2/T3:** Project owns Task, đúng một Project; Team/assignee 0..1
+  cardinalities được ghi nhận. Stable ID/title/creator/server timestamps là field
+  principles; exact dictionary/eligibility còn UNKNOWN. Organization contextual;
+  **persist `organizationId` chưa được chọn**, phải có query/isolation need.
+- **PARTIAL T8/T9:** safe append-only history boundary/atomicity giữ nguyên;
+  exact coverage/schema/retention chưa chọn. Outbox deferred tới khi named durable
+  consumer được approve; điều này không chọn đáp án no-consumer hoặc compliance sink.
+- Record cũng chọn non-unique Task titles, query-derived index/validation/test
+  methods và chưa thêm delete/archive field/route trước khi có policy. Đây không
+  phải phê duyệt concrete schema/index, API hoặc deletion/retention behavior.
+
+[Open decisions và readiness](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-docs/Internal-Work-Management/20-task-v1-contract-approval-record.md#L30-L47)
+vẫn giữ exact fields/permissions/lifecycle/errors UNKNOWN; **25 transition cells
+UNKNOWN và disabled; D-03 BLOCKED**. [D02-R1](16-task-v1-state-machine-contract.md)
+và [reliability proposal](17-task-v1-command-reliability-review.md) của DATN-94
+vẫn PROPOSED/UNKNOWN; Jira Done hay PR #26 merge không thành policy approval.
+
 ## 1. DATN-105 — V1 làm gì, không làm gì, ai dùng
 
-**PROPOSED SCOPE**, tổng hợp S3 mục 3–7. Reviewer ghi `included`, `deferred`
+**PARTIAL core recommendations (§0.1); PROPOSED exact scope**, tổng hợp S3 mục 3–7. Reviewer ghi `included`, `deferred`
 hoặc `excluded` cho từng dòng, không chỉ duyệt chung câu “Task V1”. Đề nghị
 review nhóm core cùng nhau vì update/assignment/lifecycle/history ảnh hưởng
 data và API ngay từ đầu; lịch triển khai từng slice không tự thay release scope.
 
 | ID | Use case | Đề nghị để review | Accepted scope |
 |---|---|---|---|
-| UC-TM-01 | List Task | Included, scoped list | UNKNOWN Q1 |
-| UC-TM-02 | Create Task | Included, một đơn vị công việc đơn giản | UNKNOWN Q1 |
-| UC-TM-03 | View Task detail | Included, chỉ projection được quyền xem | UNKNOWN Q1 |
-| UC-TM-04 | Update Task | Included, allowlist field; không generic status/assignee PATCH | UNKNOWN Q1/Q3/Q5 |
-| UC-TM-05 | Assign/reassign Task | Included, command riêng trong scope | UNKNOWN Q1/Q2/Q5 |
-| UC-TM-06 | Change status | Included, fixed lifecycle được duyệt | UNKNOWN Q1/Q4/Q5 |
-| UC-TM-07 | Basic search/filter | Included trong list; bounds cần chốt | UNKNOWN Q1/Q6 |
-| UC-TM-08 | Optional Work Note link | Included; B5 đã chốt optional logical link, cardinality/DTO còn mở | UNKNOWN detailed Q1/Q2/Q6 |
-| UC-TM-09 | Handover open tasks | Included; B6 đã chốt Team Leader/Task API boundary, eligible states còn mở | UNKNOWN detailed Q1/Q4/Q7 |
-| UC-TM-10 | View history | Included, scoped read-only history | UNKNOWN Q1/Q5/Q8 |
-| UC-TM-11 | Agent rewrite proposal | Deferred đến khi core/ACL có contract; B7 vẫn áp dụng nếu bật | UNKNOWN release Q1 |
-| P1-KANBAN | Fixed-column board | Deferred; thay đổi demo scope cần quyết định riêng | UNKNOWN Q1 |
-| P1-SUBTASK | Subtask một cấp | Deferred; không nhầm với subtasks Jira của team | UNKNOWN Q1 |
+| UC-TM-01 | List Task | Included, scoped list | PARTIAL core recommendation; exact Q1 UNKNOWN |
+| UC-TM-02 | Create Task | Included, một đơn vị công việc đơn giản | PARTIAL core recommendation; exact Q1 UNKNOWN |
+| UC-TM-03 | View Task detail | Included, chỉ projection được quyền xem | PARTIAL core recommendation; exact Q1 UNKNOWN |
+| UC-TM-04 | Update Task | Included, allowlist field; không generic status/assignee PATCH | PARTIAL core recommendation; exact Q1/Q3/Q5 UNKNOWN |
+| UC-TM-05 | Assign/reassign Task | Included, command riêng trong scope | PARTIAL core recommendation; exact Q1/Q2/Q5 UNKNOWN |
+| UC-TM-06 | Change status | Included, fixed lifecycle được duyệt | PARTIAL core recommendation; exact Q1/Q4/Q5 UNKNOWN |
+| UC-TM-07 | Basic search/filter | Included trong list; bounds cần chốt | PARTIAL core recommendation; exact Q1/Q6 UNKNOWN |
+| UC-TM-08 | Optional Work Note link | B5 optional logical link accepted; đề nghị feature included khi owner duyệt exact contract | PARTIAL integration recommendation; exact Q1/Q2/Q6 UNKNOWN |
+| UC-TM-09 | Handover open tasks | B6 Team Leader/Task API boundary accepted; included khi owner duyệt exact contract | PARTIAL integration recommendation; exact Q1/Q4/Q7 UNKNOWN |
+| UC-TM-10 | View history | Included, scoped read-only history | PARTIAL limited history recommendation; exact Q1/Q5/Q8 UNKNOWN |
+| UC-TM-11 | Agent rewrite proposal | Deferred đến khi core/ACL có contract; B7 vẫn áp dụng nếu bật | PARTIAL advanced deferral; exact release Q1 UNKNOWN |
+| P1-KANBAN | Fixed-column board | Deferred; thay đổi demo scope cần quyết định riêng | PARTIAL advanced deferral; exact Q1 UNKNOWN |
+| P1-SUBTASK | Subtask một cấp | Deferred; không nhầm với subtasks Jira của team | PARTIAL advanced deferral; exact Q1 UNKNOWN |
 
 **APPROVED EXCLUSIONS:** Jira canonical/import/sync/two-way writes (B1),
 Task record thành standalone SAG source (B5), Agent tự ghi Task hoặc bypass
 human confirmation (B7), repo ManageWork/cluster Mongo mới (B2).
 
-**PROPOSED EXCLUSIONS/DEFERRALS, chưa accepted:** Scrum/sprint/estimate;
+**PARTIAL advanced deferral (§0.1); PROPOSED exact exclusions/deferrals:** Scrum/sprint/estimate;
 Epic/Story/Bug/version; workflow editor; Task comment/file/mention/watcher;
 time tracking; JQL/shared filters; dependency graph; automation/notification
 builder; dashboard/report; bulk operations; hard delete/archive/retention
 feature. Nguồn S3 mục 4; từng nhóm vẫn cần Q1, không suy ra release exclusion
 từ một chức năng tương tự của Jira. Work Note/evidence không tự cấp Task ACL.
+§0.1 đã chọn advanced deferral ở recommendation level và chưa thêm delete/archive
+field/route; chi tiết từng feature/deletion/retention rule vẫn cần exact answer.
 
 ## 2. DATN-106 — ownership và service boundary
 
@@ -68,21 +121,22 @@ chéo collections để né API. Port `3009`/queue names vẫn proposal của AD
 
 ## 3. DATN-107 — data dictionary và reference review
 
-**PROPOSED DATA**, từ S3 Field tối thiểu/mục 7 và S4 mục 3. Đây là candidate
-contract dictionary, không phải schema/OpenAPI đã duyệt. Required/default ở
-cột giữa cũng là proposal. Type/limit/null/normalization chưa có owning answer
+**PARTIAL field/ownership principles (§0.1), PROPOSED exact DATA**, từ S3 Field
+tối thiểu/mục 7 và S4 mục 3. Đây là candidate contract dictionary, không phải
+schema/OpenAPI đã duyệt. Required/default chưa có owning answer vẫn là proposal;
+chỉ các phần có evidence §0.1 được ghi nhận trong scope đó. Type/limit/null/normalization chưa có owning answer
 phải được ghi rõ; không tự đặt title length hay enum mới để lấp ô trống.
 
 | Candidate field | Proposal để review | Exact accepted detail còn thiếu |
 |---|---|---|
-| id/_id | Mongo ObjectId canonical; API string representation là candidate | Q3: API name/format, validation; chưa có key/sequence contract |
-| organizationId | Required scope; server kiểm tra trusted context | Q2/Q3/Q6: representation và client/server ownership |
-| projectId | Required, đúng một Project thuộc Organization | Q2/Q3: cardinality, reference/state eligibility |
-| teamId | Optional, tối đa một Team trong Project | Q2/Q3/Q5: null/absent, teamless access, reassignment |
+| id/_id | Stable ID principle đã chọn (§0.1); Mongo ObjectId/API string representation là candidates | Q3: API/storage name/type/format, validation; chưa có key/sequence contract |
+| organizationId | Trusted Organization context required; persisting derived organizationId conditional, chưa chọn (§0.1) | Q2/Q3/Q6: query/isolation rationale, derivation/integrity, representation |
+| projectId | Đúng một Project ownership đã chọn (§0.1); exact field requiredness/type còn mở | Q2/Q3: reference/state eligibility, representation |
+| teamId | 0..1 Team cardinality đã chọn (§0.1); exact shape còn mở | Q2/Q3/Q5: null/absent, eligibility, teamless access, reassignment |
 | title | Required string, editable | Q3: trim/empty/length/encoding limits |
 | description | Optional string, editable | Q3/Q5: null/clear, format/size, visible content |
 | createdBy | Required authenticated user; server-owned | Q3/Q6: representation và attribution/trusted caller |
-| assigneeId | Optional; Member tự gán/để trống, Leader gán người khác | Q2/Q5: eligible target/unassign/cross-scope rules |
+| assigneeId | 0..1 assignee cardinality đã chọn (§0.1); self/Leader assignment vẫn proposal | Q2/Q5: eligible target/unassign/cross-scope rules |
 | status | Server initial TODO, approved command sau đó | Q3/Q4: accepted enum/default và writable operations |
 | priority | LOW/MEDIUM/HIGH; server default MEDIUM | Q3: accepted enum/default/editability |
 | type | Chỉ TASK | Q1/Q3: có persist/expose field hay implied single type |
@@ -90,7 +144,8 @@ phải được ghi rõ; không tự đặt title length hay enum mới để l�
 | createdAt/updatedAt | Server timestamps | Q3/Q6: exact representation, clock semantics |
 | version | Server mutation version | Q3/Q7: type/initial value/CAS/token/ETag semantics |
 
-Reference review phải đóng riêng: Organization/Project/Team parent IDs; assignee
+Project/Team/assignee cardinality đã có limited answer (§0.1); reference review
+phải đóng riêng: Organization/Project/Team parent IDs; assignee
 User và membership eligibility; Work Note 0..1 Task / Task 0..N notes proposal;
 successor eligibility/access lifetime; xử lý suspended/removed/archived targets.
 Không suy ra cascade delete/transfer hoặc restore quyền từ stored RoleAssignment.
@@ -193,7 +248,8 @@ contract, không tin identity do client tự gửi.
 | Malformed/unknown/forbidden field or target | Q2/Q3/Q6: validation/status/code/details | Allowlist, ID/enum/limit/reference failures |
 | Missing vs inaccessible Task | Q6: exact 403/404 disclosure policy | Không copy IAM/Project error policy thành Task policy |
 | Illegal/stale/duplicate/payload-mismatch command | Q4/Q6/Q7: status/code/replay response | Không double mutation/history hoặc overwrite stale version |
-| Persistence/history/audit failure | Q7/Q8: rollback/response/retry mapping | B4 yêu cầu task/history cùng commit hoặc rollback |
+| Persistence/history failure | Q7/Q8: response/retry mapping | B4 yêu cầu task/history cùng commit hoặc rollback; không hỏi duyệt lại atomicity |
+| Separate compliance audit failure | T8: sink có cần không và consistency/failure policy UNKNOWN | Không suy atomic cross-DB hoặc eventual delivery từ B4 |
 | Internal upstream unavailable/timeout | Q6/Q9: safe status/body/correlation | Không direct-DB fallback, không trả protected upstream data |
 
 **APPROVED HISTORY INTENT B4/B7:** append-only task_events cùng transaction
@@ -202,6 +258,11 @@ time, operation/correlation, initiating user + Agent/proposal provenance khi
 áp dụng; không full prompt/raw context. Exact field types/names, nullability,
 event vocabulary, before/after safety, readable projection và retention còn Q8.
 Compliance audit sink của Task chưa được IAM/Project decision chốt thay.
+**Câu hỏi T8 bắt buộc:** V1 có cần compliance audit sink riêng ngoài domain
+`task_events` không? Reviewer chọn **CÓ / KHÔNG / DEFER** có scope/evidence.
+CÓ cần owner, nơi lưu, dữ liệu, quyền đọc, retention và consistency/failure
+policy; KHÔNG cần ghi rõ quyết định không có separate sink trong V1. DEFER giữ
+gap mở; không mặc định KHÔNG. Chi tiết ở §8/T8, không dùng “nếu áp dụng”.
 
 **APPROVED DELIVERY B4:** nếu phải publish bền vững, outbox cùng transaction,
 relay sau commit và dedup event ID. V1 có consumer nào/no-consumer, event DTO,
@@ -223,18 +284,239 @@ Acceptance cases và downstream được mở chặn:
 Chi tiết vẫn UNKNOWN:
 ```
 
-Phúc tổng hợp; named Product/Security/API/DB/runtime approvers chưa được xác
-nhận. Không suy ra authority từ Reporter hoặc review dạng Comment. Reviewer
+Phúc tổng hợp; Leader cho scoped recommendations đã được record §0.1 ghi nhận.
+Named Security/API/DB/Handover/runtime approvers và authority cho exact open
+items vẫn cần xác nhận. Không suy ra authority từ Reporter hoặc review dạng Comment. Reviewer
 có thể chọn proposal/alternative hoặc chỉ duyệt một phần; ghi đúng PARTIAL.
 
 Theo quy ước tracking user ngày 06/10 và 11/10: status Jira phản ánh **phần việc
-đã làm**, quyết định product/readiness ghi riêng. Sáu worksheet/checkpoint đã
-chuẩn bị để review → đề nghị To Do → In Review cho DATN-105–110; user tự đổi.
-Nếu phần tài liệu được nghiệm thu theo precise blocker list thì tiến độ có thể
-Done mà Q chi tiết vẫn open; đó không phải authority triển khai DATN-94/95/96.
-Parent hiện In Review; không tự chuyển status/gỡ dependency hoặc gọi report
-merge là full contract Approval. Thứ tự 105+106 → 107/108/109 → 110 là luồng
-review đề nghị, không phải dependency cứng được suy ra từ số thứ tự subtasks.
+đã làm**, quyết định product/readiness ghi riêng. Snapshot live 13/10/2026:
+[DATN-93](https://trankimthang0207.atlassian.net/browse/DATN-93) và DATN-105–110
+**Done**, progress 100%; children Unassigned, descriptions trống, không thấy
+linked dependency giữa children. PR #22 **merged**, commit
+`8ab9268523c3fb661008cd0b6715e0e1ca3cd79c`; precise blocker list đã hoàn thành.
+Status hiện tại → đề nghị **giữ Done** cho phần report, không reopen vì policies mở.
+Parent links vẫn **blocks DATN-94/95/96**; downstream hiện 94 Done (docs), 95
+In Progress, 96 To Do. 94 blocks 100; 95 và 96 blocks 97. Không sửa tracking/dependency,
+không suy report merge hoặc Done là authority triển khai các policies chờ duyệt.
+Thứ tự 105+106 → 107/108/109 → 110 chỉ là luồng review đề nghị.
 
 Đối chiếu từng review item và [scenarios validation](15-task-v1-review-validation.md)
 trước khi nhận quyết định. Scenarios chưa phải runtime tests đã chạy.
+
+## 8. Phiếu xin quyết định chi tiết T1–T9
+
+T1–T9 ánh xạ Q1–Q9, không tạo bộ authority mới. **APPROVED BASELINE** ở §0
+giữ nguyên; **PARTIAL** chỉ trong scope §0.1; lựa chọn mới dưới đây **PROPOSED**,
+accepted exact answer **UNKNOWN** tới khi có evidence. Reviewer presentation
+approval không chọn các policies này. Bản chat gửi reviewer chỉ dẫn tới worksheet;
+chi tiết quyết định và phần thiếu nằm ở đây.
+
+### T1 — Scope V1 (Q1 / DATN-105)
+
+**PARTIAL:** core Project-local list/create/detail/edit/assignment/status/search/
+limited history đã được chọn ở recommendation level (§0.1). Work Note logical
+`taskId` tùy chọn là **APPROVED BASELINE B5**, không xin chọn lại optionality.
+Feature/UI inclusion của Work Note và Handover chưa có exact integration approval.
+
+**PROPOSED exact scope:** included UC-TM-01–07 và 10; UC-TM-08–09 included khi
+owning Capture/Handover reviewer duyệt exact contract. Deferred Agent rewrite,
+Kanban và subtask sản phẩm. Đề nghị ngoài V1: Scrum/estimate, Epic/Story/Bug/
+version, workflow editor, comment/file/mention/watcher riêng của Task, time
+tracking, JQL, dependency graph, dashboard/report và bulk operations. Delete/
+archive field/route tiếp tục deferred theo §0.1, policy retention vẫn UNKNOWN.
+Jira import/sync, Task standalone SAG source, Agent tự ghi canonical và repo/
+cluster mới đã excluded bởi B1/B2/B5/B7, không xin duyệt lại.
+
+**Cần quyết định:** điền included/deferred/excluded cho từng UC/feature, slice và
+acceptance; owner chốt optional integration có vào V1 hay không. Chọn scope không
+tự chốt fields/quyền/lifecycle/API. Exact release answer còn UNKNOWN.
+
+### T2 — Relationships và target eligibility (Q2 / DATN-107/109)
+
+**PARTIAL:** Project owns Task; đúng một Project, Team/assignee 0..1 cardinalities
+đã được record §0.1 chọn. Organization contextual; persist derived organizationId
+chỉ khi được duyệt query/isolation need. **B5/B6 giữ optional logical taskId và
+Task API/Handover boundary**; successor không tự kế thừa predecessor permissions.
+
+**PROPOSED:** Work Note 0..1 Task mỗi note / Task 0..N notes; Team phải thuộc
+Project đã chọn; assignee/successor là User và memberships eligible trong scope.
+**UNKNOWN cần quyết định:** exact Work Note cardinality/DTO/stale-link behavior;
+parent/Team membership requirements cho Task có Team hoặc teamless; target
+eligibility và successor access/projection/lifetime. Khi membership suspend/remove
+hoặc parent archived, giữ assignment, unassign hay chuyển người nào, ai thực hiện,
+thứ tự/failure recovery? D1–D6 Organization không chọn các Task effects này.
+
+### T3 — Fields, defaults và validation (Q3 / DATN-107)
+
+**PARTIAL:** stable Task ID, Project ownership, title, creator, server timestamps
+và field cần bởi approved operations; server-derived trusted actor/context;
+non-unique Task title (§0.1). Không lấy principles này thành exact schema.
+
+**PROPOSED candidates:** single type TASK; Mongo ObjectId/API string ID;
+projectId/title/createdBy required; teamId/description/assigneeId/dueDate optional;
+server id/creator/time/status/priority/version; initial TODO, priorities
+LOW/MEDIUM/HIGH default MEDIUM. organizationId là trusted context; **persistence
+presence UNKNOWN**, không ép field required từ packet cũ.
+
+**Cần API/DB owner quyết định** từng field: name/type/representation, required/
+optional, null vs absent/clear, default, trim/empty/length/payload bounds, enum,
+server-owned/editable và reference validation. dueDate date-only hay timestamp,
+timezone/past-date rule? version initial/type/bounds? Có persist type field không?
+Approved principles/default riêng vẫn **PARTIAL** khi dictionary chưa đủ; không
+tự đặt numeric limits hoặc nullable semantics. D-03 proposal không là schema approval.
+
+### T4 — Lifecycle/transition/reason (Q4 / DATN-108; D02-01–03)
+
+**PROPOSED:** TODO, IN_PROGRESS, BLOCKED, DONE, CANCELLED; initial TODO;
+DONE reopen về IN_PROGRESS; CANCELLED terminal; DONE không bắt buộc Work Note/
+evidence và không thành verified knowledge; Handover assignment chỉ open states
+TODO/IN_PROGRESS/BLOCKED. B5 optional link không tự chọn completion guard này.
+
+Tám **candidate allow edges**, từ [D02-R1 §3, transition register](https://github.com/DATN-SPRING2027/Document/blob/69c16445417f3fbcaecd6b04943603c092003b77/research-docs/Internal-Work-Management/16-task-v1-state-machine-contract.md#L74-L111):
+START TODO→IN_PROGRESS; CANCEL TODO→CANCELLED; BLOCK IN_PROGRESS→BLOCKED;
+COMPLETE IN_PROGRESS→DONE; CANCEL IN_PROGRESS→CANCELLED; RESUME BLOCKED→IN_PROGRESS;
+CANCEL BLOCKED→CANCELLED; REOPEN DONE→IN_PROGRESS. **Không edge nào đã enabled.**
+START/BLOCK/COMPLETE/RESUME/REOPEN đề nghị current assignee hoặc scoped Leader;
+CANCEL đề nghị scoped Leader. Reason sau trim required cho BLOCK/RESUME/CANCEL/
+REOPEN, optional START/COMPLETE. Đề nghị 17 cells còn lại reject, gồm new same-state
+command; exact committed retry xử lý qua T7, không thành same-state command mới.
+
+**Cần quyết định:** approve/amend/defer từng state/edge cùng actor/guard/reason,
+initial/terminal/completion/Handover semantics và error/event oracle. **Tất cả
+25 accepted cells còn UNKNOWN/disabled**, kể cả candidate rejects chưa là exact
+error policy. DATN-94 Done/PR #26 merge không chọn matrix; §0.1 cũng chưa chọn.
+
+### T5 — Action × actor × scope × resource permissions (Q5 / DATN-109)
+
+**B8–B10 giữ nguyên:** current authenticated Organization/Project membership,
+scoped assignment + resource ACL/explicit deny; metadata access không grant Task
+content; creator ordinary MEMBER có documented create/edit rights khi API có mặt.
+
+**PROPOSED:** MEMBER create unassigned/self-assigned và sửa allowlist nếu creator
+hoặc current assignee; scoped TEAM_LEADER quản lý/giao eligible Task; current
+assignee/scoped Leader change status theo T4; cancel scoped Leader; read/search/
+history theo current scope/ACL. SUCCESSOR assignment riêng không grant create/
+reassign/cancel hoặc quyền toàn Project. Agent không có mutation grant độc lập.
+
+**Cần quyết định:** exact action/permission-code matrix, Project vs Team Leader,
+teamless Task, creator vs assignee editable fields, successor projection/lifetime
+và reauthorization/fence khi quyền đổi giữa authorize/write. Candidate codes §5
+chưa là Role seed. ADMIN/platform có evidence member/permission khác hợp lệ phải
+evaluate evidence đó; không blanket deny actor chỉ vì tên role quản trị.
+
+### T6 — Exact API/DTO/errors và query controls (Q6 / DATN-110)
+
+**B3 accepted; exact contract UNKNOWN.** Chỉ định API/Security/Gateway/BFF
+reviewer chốt method/path/version, request/response/success status/error details
+cho create, list/search, detail, update, assign/reassign, transition/cancel/reopen
+và history. **PROPOSED:** command riêng cho state/assignment; mutable allowlist,
+không copy generic response fields vào update input.
+
+**Cần quyết định:** trusted identity/context transport; DTO/types/nullable/bounds;
+accepted filters/sort/pagination/limits/totals; unauthenticated, inactive/cross-
+scope/ACL, malformed/missing/inaccessible, duplicate/illegal/stale/mismatch và
+upstream timeout/failure responses. Chốt 403/404 concealment/error precedence;
+không copy Project/IAM errors hoặc paging như Task contract đã duyệt.
+
+### T7 — Version, replay và Handover recovery (Q7 / DATN-108/110)
+
+**B4/B6/B7 accepted:** atomic domain history; Handover assignment API với operation
+ID/idempotency/retry-compensation; history version/provenance intent. **Exact
+reliability PROPOSED/UNKNOWN**, xem [D02 reliability](17-task-v1-command-reliability-review.md).
+
+Đề nghị monotonic Task version/CAS chung update/assignment/state, expectedVersion
+bắt buộc cho command mới; stale → refetch/human reconfirm, không auto-reapply.
+Stable operation identity (Organization, Task, principal, operation-ID), normalized
+command/payload/version/reason fingerprint; correlation/session token không thay
+operation identity. Retry qua current authorization; exact committed replay trả
+safe acknowledgement kết quả cũ, không mutation/history/version lần hai hoặc CAS
+lại với version cũ. Mismatch không overwrite; durable result/dedup proof cùng
+mutation/history là **proposal DB**. Handover stable service principal bind
+initiating human/item/intent; không shared DB transaction/direct Task DB.
+
+**Cần owners API/DB/Security/Handover quyết định:** namespace/normalization, wire
+version/ETag; missing/stale/mismatch/in-flight/abort outputs; freshness/fence;
+durable proof/retry/backoff/window theo recovery horizon; late replay/expiry
+không execute lại; retention và recovery owner. Không chọn duration mặc định;
+approve CAS riêng không duyệt toàn bộ reliability/schema/index.
+
+### T8 — Domain history và separate compliance audit (Q8 / DATN-110)
+
+**APPROVED BASELINE B4/B7 — không xin duyệt lại:** Task mutation và append-only
+`task_events` atomic **trong Task DB**, cùng commit hoặc rollback. Metadata intent
+gồm actor type/identity, event/source, changed fields, version/time, operation/
+correlation; event giữ initiating user + Agent/proposal identity cho human-confirmed
+Agent flow. Không full prompt/raw context. §0.1 giữ safe append-only boundary.
+
+**Domain history exact contract UNKNOWN:** chọn coverage cho create/update/
+assignment/transitions, event vocabulary/names/types/nullability; safe changed
+fields/before-after/redaction; ordering/paging, readers/projection và retention.
+Proposal/schema của S4/D02 không phê duyệt các chi tiết này. Atomic domain history
+không chứng minh đã có compliance sink hoặc cross-database audit transaction.
+
+**T8-A — Câu hỏi phải chọn rõ:** V1 có cần **compliance audit sink riêng ngoài
+domain history `task_events`** không? Accepted answer hiện **UNKNOWN**; không có
+đáp án được chọn trong worksheet này.
+
+- **CÓ:** chốt owner chịu trách nhiệm, nơi lưu (database/collection hoặc service/
+  API sink), dữ liệu/event coverage (gồm có/không audit rejected attempts), quyền
+  đọc/administration/redaction, retention và consistency/failure policy. Chọn rõ
+  audit phải atomic với mutation hay delivery theo contract khác; cách xử lý sink
+  lỗi/unavailable, retry/dedup/recovery owner và safe response. Không tự chọn
+  `continuum_audit`, atomic cross-DB hoặc eventual delivery.
+- **KHÔNG:** ghi explicit decision **V1 không có separate compliance audit sink**,
+  authority/scope/revision/date; vẫn giữ B4/B7 và chốt domain history contract.
+  Không suy “không cần audit” chỉ vì có history hoặc chưa tìm thấy source.
+- **DEFER:** ghi blocker/owner quyết định và slice bị ảnh hưởng; giữ UNKNOWN,
+  không coi im lặng hoặc chờ lâu là KHÔNG.
+
+**Nguồn thiếu:** original owning ADR-003/SPEC-001 không tìm thấy trong inspected
+workspace; AGENTDB chỉ dẫn đường tới path khác. Cần Architecture/DB/Security owner
+cung cấp revision/section hiện hành hoặc explicit Task-specific decision cho
+phần còn thiếu. IAM/Project audit source không chọn Task sink/schema/retention.
+B4 atomic history và B5 optional reference vẫn có nguồn độc lập, không chờ duyệt lại.
+
+### T9 — Runtime/config và consumer decision (Q9 / DATN-106/110)
+
+**B2–B4 accepted target:** Task là process riêng trong existing BE, continuum_task
+trên infra hiện có, existing BFF/Gateway. §0.1 outbox deferred tới khi named durable
+consumer được approve; **consumer inventory/decision vẫn UNKNOWN**.
+
+**Cần Runtime/API owner quyết định:** internal port registry/config/fail-fast,
+health/readiness, trust/correlation/timeouts/failure mapping và BE/FE guide
+reconciliation. Port 3009 vẫn proposal, không thành default từ ADR table.
+
+Chọn explicit **V1 no async consumer** hoặc liệt kê **từng named consumer** với
+approval/scope. Nhánh durable publication cần giữ B4 same-transaction outbox,
+after-commit relay, consumer dedup event ID rồi chốt schema/retry/retention/owner.
+Organization email outbox không chọn Task notifications. T8 compliance sink
+decision và T9 delivery decision là hai câu hỏi khác nhau.
+
+### Cách ghi câu trả lời và phần còn thiếu
+
+```text
+Item T/Q + exact UC/field/edge/action/API:
+APPROVE / AMEND / DEFER — answer và scope cụ thể:
+Authority/approver + evidence permalink:
+Owning contract/source revision + ngày duyệt:
+T8-A: CÓ / KHÔNG / DEFER; có thì đủ owner/storage/data/readers/retention/failure policy:
+Owner API / DB / Security / Capture / Handover / Runtime cho phần chưa chốt:
+Chi tiết vẫn UNKNOWN hoặc deferred khỏi V1:
+```
+
+Approve một phần phải ghi **PARTIAL**, không tự đóng cả Q. Phần thiếu trước
+implementation: exact UC/dictionary/eligibility (T1–3), states/25 cells/action matrix
+(T4–5), OpenAPI/errors (T6), concurrency/recovery (T7), history/compliance (T8),
+runtime/consumer (T9), owning persistence authority và required test evidence.
+
+| Downstream | Exact contract/gate phải đóng trước phần implementation tương ứng |
+|---|---|
+| DATN-94 / lifecycle enforcement DATN-100 | T4/T5/T7; error/event oracles T6/T8. D02-01–10 vẫn cần answer; scenario docs không phải executable tests |
+| DATN-95 | T1–T3/T5–T8 và persistence authority; concrete indexes từ approved T6 query workload; §0.1 recommendation approval không mở D-03 |
+| DATN-96 | T5–T9, trusted routing/config/health và guide reconciliation; accepted target không chứng minh runtime đã chạy |
+
+Sau exact decision evidence: đồng bộ owning Document/OpenAPI/schema/acceptance
+mapping trên follow-up branch mới từ updated main; checks/review và user xem
+trước PR. Không tái sử dụng nhánh PR22 đã merge hoặc reopen report Done. Không
+triển khai DATN-94/95/96 theo proposal đang chờ duyệt trong lần chỉnh này.
