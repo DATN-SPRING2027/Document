@@ -2,10 +2,11 @@
 
 ## Status and reading boundary
 
-- Revision: **R1, 2026-10-12 (Asia/Saigon)**; document owner: Nguyen Hong Phuc.
-- Deliverable: **precise decision-gap report, ready for human review**. This is
-  not an approved Team implementation contract. Technical review, Jira completion
-  and a documentation merge cannot authorize its proposed Team behavior.
+- Revision: **R2, 2026-10-14 (Asia/Saigon)**; document owner: Nguyen Hong Phuc.
+- Deliverable: **decision-gap report with a partial Team decision record**. This
+  is not a complete Team implementation contract: only the choices and limits
+  recorded in §10.1 are selected. Technical review or Jira completion alone does
+  not authorize behavior outside that recorded scope.
 - Jira: [DATN-89](https://trankimthang0207.atlassian.net/browse/DATN-89), with
   [checkpoint/acceptance mapping and validation](10-team-foundation-review-validation.md).
   All six checkpoints form one C-04 deliverable.
@@ -39,6 +40,8 @@ DATN-80/86/93 branch is a base or source of accepted Team policy.
 | E11 | [Project Access repository](https://github.com/DATN-SPRING2027/DATN-BE/blob/38ef95c0f114daf6c5dca35eb0ce9f41102f1c29/src/services/iam/infrastructure/mongodb/project-access.repository.ts), removeMember and audit methods | `[FACT]` removal retains membership/assignment, sets INACTIVE; leader revocation prerequisite; Project writes and audit_logs_iam use one session | No TeamMembership query/cascade in removal; Project events/collection selection do not approve Team events/collection |
 | E12 | [Team research](03-team-lifecycle.md), [membership research](04-team-membership-workspace-fe-contract.md), [Project membership](02-project-membership.md), [use cases](05-project-team-access-use-cases.md), [IAM design](../../database-design/01_SVC_IAM_SCHEMA.md), Document base above | `[FACT]` dated document content; `[PROPOSED]` Team add/remove, archive/restore, handover and deletion alternatives | “Leader breakdown” provenance inside research is not a separately verified approval of each Team proposal; no current FE audit performed here |
 | E13 | Local AGENTDB.md §2/6 and [topology successor](02-database-topology-successor-2026-10-02.md); [generic audit](https://github.com/DATN-SPRING2027/DATN-BE/blob/38ef95c0f114daf6c5dca35eb0ce9f41102f1c29/src/services/iam/infrastructure/audit/audit.service.ts), [outbox](https://github.com/DATN-SPRING2027/DATN-BE/blob/38ef95c0f114daf6c5dca35eb0ce9f41102f1c29/src/services/iam/infrastructure/outbox/outbox.service.ts), [idempotency helper](https://github.com/DATN-SPRING2027/DATN-BE/blob/38ef95c0f114daf6c5dca35eb0ce9f41102f1c29/src/services/iam/infrastructure/redis/idempotency.service.ts) | Existing workflow requires atomic IAM mutation/audit, replica-set proof; current adapters inspected | Canonical ADR-003/SPEC-001 owning revisions unavailable in this checkout; preserve invariant, confirm Team mapping; no Team replay/outbox/history implementation evidenced |
+| E14 | [DATN-89 Jira decision update](https://trankimthang0207.atlassian.net/browse/DATN-89), read 2026-10-14 | Partial dispositions: TQ-01–04 APPROVE; TQ-05–08 AMEND with stated conditions; TQ-09 contract APPROVE/mutations DEFER; TQ-10 DEFER. Reviewer also confirmed the V4 probe finding closed based on artifact contents | Does not make TQ-05–08 dependencies ready, authorize deferred writes, prove runtime behavior, or make DATN-90/254 fully ready |
+| E15 | Current [BE main schema](https://github.com/DATN-SPRING2027/DATN-BE/blob/6bc13f3e9862bf469f1144d7ccafad8b75cc58f8/src/services/iam/infrastructure/mongodb/mongodb.schemas.ts) and IAM persistence definition, `origin/main` `6bc13f3e9862bf469f1144d7ccafad8b75cc58f8`; current Document `origin/main` `b4d79de558b08bd8d0f490d3d30c78a6cc36f38a` | R2 recheck confirms `teams` still has only organizationId/projectId/name/code/description/timestamps and declared unique `(organizationId, projectId, code)`; `team_memberships` still has parent IDs/teamId/userId/joinedAt and declared unique `(teamId,userId)` | Schema/index declarations do not prove deployed indexes, legacy data shape, Team API/provider readiness or policy beyond the Jira dispositions |
 
 Local E6 evidence: `C:/Users/ASUS/Documents/DATN-handoff-evidence/DATN-86-leader-D1-D6-2026-10-06.png`.
 It is not committed or exposed as a repository-relative link. Source inspection
@@ -271,12 +274,10 @@ approved dependencies merge; no database rollout or team notification here.
 
 ## 10. Precise Team decision gaps
 
-All TQ items are `[UNKNOWN]`. Required authority domains below describe the
-review needed, not assigned people. **The authorized Team product approver and
-final sign-off roster are UNKNOWN; requester must identify them.** Leader is
-confirmed for D1–D6, not automatically assigned every Team decision. IAM/API,
-Security, Architecture/DB and affected domain owners must validate their parts;
-no new Jira assignments or decision tickets have been created.
+The questions below were the original gap inventory. Their current disposition
+is recorded in §10.1 from the Jira decision update on 2026-10-14. That update
+supersedes `UNKNOWN` only for the exact choices marked APPROVE; AMEND and DEFER
+rows retain the stated conditions and do not authorize dependent behavior.
 
 | ID | Exact question to close | Required authority domains | Dependent scope |
 |---|---|---|---|
@@ -291,7 +292,34 @@ no new Jira assignments or decision tickets have been created.
 | TQ-09 | Does Team require Idempotency-Key and version/ETag; for which commands and scopes? Define fingerprint/replay/TTL/in-flight/key reuse, preconditions/error status, atomic duplicate safety and authorization revalidation/fence against concurrent membership/role/parent changes. D5 is Organization scope only. | IAM/API + Security + architecture/DB; Team product authority for observable outcomes | DATN-253; mutations/tests in DATN-90/92; separate DB work if needed |
 | TQ-10 | Confirm canonical ADR-003/SPEC-001 revisions and exact atomic Team audit mapping without weakening B6. Which collection/action/target/reason/diff/correlation/retention and history read policy; rollback/retry/dedup/denied-attempt behavior? Is an async Team consumer needed; if so who owns outbox/delivery? | Architecture/DB + IAM + Security; Team product authority; relevant async/history domain owner if chosen | DATN-253/250/249; DATN-90/92 audit/history/replica-set checks |
 
-For every resolution record: exact selected rule, approval authority and evidence,
-date/revision, affected TQ/B/API/state/validation rows, owning repository contract,
-DB impact and acceptance scenarios. Partial approval enables only its explicitly
-accepted scope; unknown Team operations remain unimplemented and fail closed.
+For every resolution record: exact selected rule, Jira decision/source, date/revision,
+affected TQ/B/API/state/validation rows, owning repository contract, DB impact and
+acceptance scenarios. Partial approval enables only its explicitly accepted scope;
+unknown Team operations remain unimplemented and fail closed.
+
+### 10.1 Jira decision update — 2026-10-14
+
+Source: [DATN-89](https://trankimthang0207.atlassian.net/browse/DATN-89), Jira
+decision table posted 2026-10-14. This is a partial selection, not a blanket
+approval of DATN-90, DATN-91 or DATN-92. `APPROVE` below selects the referenced
+R2 proposal language; `AMEND` selects only the principle stated and preserves
+its explicit dependencies; `DEFER` leaves the affected operation disabled.
+
+| TQ | Jira disposition | Selected rule / remaining condition | Implementation boundary |
+|---|---|---|---|
+| 01 | APPROVE | Selects the exact field, normalization, bounds, nullability, code uniqueness/immutability and DTO rules in §3/R2. | DATN-254 may encode this Team metadata contract; legacy data still requires a dry-run and explicit handling of missing/invalid values. |
+| 02 | APPROVE | Selects ACTIVE/ARCHIVED, archive/restore with retained records, no hard delete/parent move/code change, no implicit member bootstrap, and version preconditions as specified in §4/R2. Lifecycle mutations remain subject to the approved audit invariant; TQ-10 still defers the Team event mapping. | Schema may represent lifecycle/version/archive metadata. State-changing API writes remain subject to TQ-05/06/09/10 gates. |
+| 03 | APPROVE | Selects the Foundation/Membership boundary in §5/R2: no invitation, self-join, bootstrap or role side effect in DATN-90; membership commands remain in DATN-92; access depending on unproven admission/provider evidence is deferred. | DATN-254 must not silently implement TeamMembership admission, rejoin or generation semantics owned by DATN-92/TQ-06. |
+| 04 | APPROVE | Selects one Project per Team, no move/merge, immutable parent/code and no newly imposed cardinality limit. | Keep the existing `(organizationId, projectId, code)` scope; do not add transfer or cap behavior. |
+| 05 | AMEND | No implicit grants is selected. IAM/Security must still confirm exact TEAM_LEADER permission codes and provisioning; unprovisioned Team mutations are deferred. | No role seed/grant, Team-only Leader representation or mutation endpoint may be enabled from this record alone. |
+| 06 | AMEND | A stale or missing parent/admission proof denies access; no cascade is selected. The generation implementation is deferred until owning domains, writer inventory and race tests are identified. | Do not add parent generation/admission fields or claim all-writer readiness in DATN-254 without the owning work package. |
+| 07 | AMEND | Route ownership boundaries are selected. Gateway/BFF/IAM must confirm auth-context, CSRF and conditional/idempotency header forwarding before integration. | Exact route/DTO/query/transport contract remains conditional; membership commands stay in DATN-92 and UI in DATN-91. |
+| 08 | AMEND | Use the current shared error contract. Team-specific R2 mapping is conditional on reconciliation with the owning ErrorResponse/PR32 contract. | Do not ship unverified Team-specific codes or concealment/precedence behavior. |
+| 09 | APPROVE contract; defer mutations | Selects version, Idempotency-Key scope/fingerprint and application-level expiry/CAS semantics in R2/R3. Mutations remain disabled until provider, all-writer coverage and ambiguous-commit recovery have evidence. | This does not authorize Team command-result persistence or enabled writes before the stated runtime/replica-set gates pass. |
+| 10 | DEFER | Architecture/Audit must choose the canonical ADR-003/SPEC-001 source or explicitly select the R2 Team mapping, then provide atomic audit evidence. | No audited Team mutation may be enabled; no Team audit mapping, event index or retention behavior is treated as selected yet. |
+
+Reviewer separately confirmed the V4 probe finding is closed based on artifact
+contents and hashes, without an independent rerun because the available MongoDB
+version differs from the artifact's 7.0.41 requirement. This probe result does
+not satisfy Team provider, all-writer, audit, transport, TTL-monitor or
+ambiguous-commit readiness and does not alter the TQ dispositions above.
