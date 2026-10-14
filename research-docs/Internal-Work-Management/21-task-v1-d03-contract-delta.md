@@ -1,5 +1,9 @@
 # DATN-95 — D-03 contract delta and minimum data-foundation specification
 
+> **Approval successor — confirmation recorded 14/10/2026:** the requester confirmed that the Leader approved all P1–P3 at revision `6628c60ed5b259ae8c368883c8619543919aaf20`. The [scoped approval record](22-task-v1-d03-delta-approval-record.md) is the current authority for those rows and records the P3 `UNCERTAIN` clarification and acceptance of P2's exact W predicate (including U+200B-only titles). Current contract gate: **A — READY FOR D-03 IMPLEMENTATION**, for the private slice only. No implementation/test completion or GitHub approval is claimed.
+>
+> The proposal wording, C classifications, pending-approval conditions and Jira snapshot below describe the reviewed revision. Read them with the successor record; they do not reopen P1–P3. The immutable reviewed revision remains available in Git history.
+
 > **New product decisions: PROPOSED — NOT APPROVED.** PR #30's scoped approval remains valid. This document resolves engineering choices and proposes only the remaining D-03 product decisions; it does not supersede that approval or authorize backend work.
 >
 > **Current readiness: C — BLOCKED — EXPLICIT PRODUCT DECISIONS REQUIRED.** Only P1–P3 below block the proposed minimal D-03 slice. D-02's full transition matrix, public API contracts, and D-04 runtime activation are separate dependencies of their own features.
@@ -221,9 +225,9 @@ All rows are **test specifications, NOT RUN**. Pending P decisions are stated ex
 
 These tests can run with private Task adapters/models and disposable DB connections. IAM/Project regression tests protect existing behavior when implementation arrives; they cannot prove Task history atomicity. Full Task API/state-transition E2E, membership/write-race behavior and D-04 routing tests belong to their owning tasks. Runtime dependency absence does not force a speculative business oracle.
 
-## 12. Readiness, approval binding and follow-ups
+## 12. Readiness at the proposal revision, approval binding and follow-ups
 
-**Current result: C — BLOCKED — EXPLICIT PRODUCT DECISIONS REQUIRED.** The actual product blockers are exactly P1 (D-03 mutation/field exclusions), P2 (minimal record and title validity), and P3 (creation history coverage/projection/invariant). No accepted independent write subset can yet satisfy its own AC: even creation still requires P2/P3. Initialization of an empty DB alone would not close DATN-95.
+**Result at reviewed revision 6628c60: C — BLOCKED — EXPLICIT PRODUCT DECISIONS REQUIRED.** The product blockers at that time were exactly P1 (D-03 mutation/field exclusions), P2 (minimal record and title validity), and P3 (creation history coverage/projection/invariant). No accepted independent write subset could yet satisfy its own AC: even creation still required P2/P3. The successor approval closes those product blockers for the selected slice; initialization of an empty DB alone still would not close DATN-95.
 
 Once P1–P3 are explicitly approved, the defined slice is **READY FOR D-03 IMPLEMENTATION** using the B designs and tests above, subject to normal source safety, scoped guide reconciliation and supported test infrastructure. This is not approval of the complete Task V1 API. If the Leader selects a narrower subset instead, record its exact AC and exclusions and use **PARTIALLY READY — IMPLEMENTABLE SUBSET IDENTIFIED** only when that subset has a complete oracle.
 
