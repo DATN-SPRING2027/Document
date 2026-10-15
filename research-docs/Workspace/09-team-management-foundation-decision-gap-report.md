@@ -10,6 +10,10 @@
 - Jira: [DATN-89](https://trankimthang0207.atlassian.net/browse/DATN-89), with
   [checkpoint/acceptance mapping and validation](10-team-foundation-review-validation.md).
   All six checkpoints form one C-04 deliverable.
+- The [DATN-90 R4 runtime options](11-team-foundation-runtime-options-r4.md)
+  propose explicit A/B choices for the remaining runtime contract details and
+  a separate readiness checklist. They do not reopen the selected §10.1 rules
+  or turn the proposals into accepted policy.
 - Scope: Document only. No BE/FE, OpenAPI, schema, index, migration, seed or data
   changes; no DATN-90 implementation. Existing records and references are preserved.
 - `[APPROVED]`: explicit decision within the cited scope. `[FACT]`: inspected

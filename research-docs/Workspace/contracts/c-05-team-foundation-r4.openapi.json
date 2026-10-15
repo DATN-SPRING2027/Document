@@ -1,0 +1,2029 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "DATN-90 Team R4 — OFFLINE REVIEW CANDIDATE",
+    "version": "0.0.0-proposed-r4",
+    "description": "PROPOSAL for explicit policy choices P1-P5 in ../11-team-foundation-runtime-options-r4.md. The candidate serializes option A for each policy; no selection has been approved. P6 is a separate evidence checklist, currently NOT READY. Preserves selected TQ01-04/TQ09 scope. No runtime registration, DB change or deployment."
+  },
+  "x-contract-state": "PROPOSED_NOT_APPROVED",
+  "x-runtime-readiness": "NOT_READY",
+  "x-provenance": {
+    "beBase": "24853d13588de23fbe701530da705abb12e27979",
+    "documentMain": "2b737e862e6eb4169d342750324bef15808128a2",
+    "sharedErrorResponsePath": "docs/openapi/iam-v1.openapi.json#/components/schemas/ErrorResponse",
+    "sharedSourceSha256": "0106bdb6908dada5bdfb5e54a8547e1958a37e4e327a61cbe716e2545d457f5f",
+    "jiraDecision": "https://trankimthang0207.atlassian.net/browse/DATN-89",
+    "inspectedSources": [
+      {
+        "path": "src/services/iam/application/authentication/authentication.application.service.ts",
+        "sha256": "078a7ca8722ad03e36a5c3336bbf0aee61b010f3d93a74adc88ba574b24adac8"
+      },
+      {
+        "path": "src/services/iam/application/authorization/authorization-evidence.provider.ts",
+        "sha256": "dca266c2d4162afdf71a9a7a60fc2cd25da4575c40721cee11a82f394f4b674e"
+      },
+      {
+        "path": "src/services/iam/application/authorization/authorization.policy.ts",
+        "sha256": "3fe418c2dcdd94fadd09ae0feee9cd727fc82e617f0d3871dc81b5dd0725b765"
+      },
+      {
+        "path": "src/gateway/gateway-iam.controller.ts",
+        "sha256": "d47ef0a2e760e91da95aa821671beb96d6aebaffc5ac4749da93f886593aee40"
+      },
+      {
+        "path": "src/common/http/structured-exception.filter.ts",
+        "sha256": "d688753572a0bf38d4c4d5ea6be1ee9af81fdb48f946aa2bda21a832189363e6"
+      },
+      {
+        "path": "src/services/iam/infrastructure/mongodb/organization-membership-command.repository.ts",
+        "sha256": "22bd414423c038d6f016fe90f8cf75c4ddad0eb67afade84f1b5b4cf39428ce1"
+      },
+      {
+        "path": "src/services/iam/infrastructure/audit/audit.service.ts",
+        "sha256": "4101eb5b5916c470a865495eb03b2177d3441f684d0585a4225fc8c8d6aeec49"
+      },
+      {
+        "path": "src/services/iam/infrastructure/outbox/outbox.service.ts",
+        "sha256": "5b6e13c96805a4fa18f82692083d29c7397acdf916acf70178db6f386a6e949e"
+      },
+      {
+        "path": "docs/decisions/project-audit-collection-mvp.md",
+        "sha256": "c817fe42dd7d3007873fab51534f21d5db044a5e9cc6549d16bd9ae1baec6c52"
+      }
+    ]
+  },
+  "x-error-precedence": "Auth/context → CSRF mutation → shape (malformed target ID404) → scoped visibility → current action → command headers → scoped fingerprint/replay → new-command If-Match → state → session-bound fences/full next-state validation/write/audit. Hidden valid-shape resource404 before key/version/result; invalid body may422 before lookup. Gateway policy is outside IAM precedence.",
+  "x-rate-limiting": "No new Team quota selected; owning Gateway may add existing-policy429/Retry-After/shared envelope, pending exact evidence. Not claimed in operation responses.",
+  "x-audit-candidate": "Direct atomic continuum_audit.audit_logs_iam with Team+durable result, same client/session; TEAM_CREATED/TEAM_METADATA_UPDATED/TEAM_ARCHIVED/TEAM_RESTORED; Team target; payload allowlist/dedup/append-only. No Team outbox/history. TQ10 still DEFER.",
+  "x-lifecycle": "Create ACTIVE/version1/archive fields null. Update only ACTIVE. Changed metadata/archive/restore increments version once; no-op preserves version and updatedAt, no business event but durable command result. Retain ID/code/references. No hard delete/cascade/membership rewrites.",
+  "x-pagination": "createdAt DESC,id DESC; scope/visibility before count/page. Empty totalPages0; beyond page data=[] retains totals; no cross-request snapshot guarantee. Unknown/array/operator queries rejected.",
+  "paths": {
+    "/api/v1/iam/projects/{projectId}/teams": {
+      "post": {
+        "operationId": "createTeam",
+        "summary": "PROPOSED — createTeam",
+        "x-contract-state": "PROPOSED_NOT_APPROVED",
+        "x-runtime-readiness": "NOT_READY",
+        "x-decision-ids": [
+          "C255-01",
+          "C255-02",
+          "C255-03",
+          "C255-04",
+          "C255-05",
+          "C255-06",
+          "C255-07",
+          "C255-08"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Opaque resource ID. Malformed/missing/hidden IDs use the selected 404 mapping."
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9._:-]+$"
+            },
+            "description": "Approved TQ09 key policy; provider/readiness not proven. Scope organizationId+actorUserId+key; method/path/canonical body/precondition fingerprint; 24h app expiry + terminal-slot R3 replace-CAS, TTL cleanup only."
+          },
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Candidate follows current IAM membership commands: matching __Host-csrf cookie required; bearer exemption not selected. Gateway/BFF/IAM must verify."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeamCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Candidate Create Team success contract, runtime not enabled. Returns the created Team with its strong ETag and resource Location. Exact authorized replay returns the original status, body, ETag and Location; Idempotency-Replayed is present only on replay.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Team"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"team:[^\":]+:[1-9][0-9]*\"$",
+                  "description": "Strong tag. Version is a positive safe integer; ID must match resource."
+                }
+              },
+              "Location": {
+                "schema": {
+                  "type": "string",
+                  "description": "/api/v1/iam/teams/{id}"
+                }
+              },
+              "Idempotency-Replayed": {
+                "schema": {
+                  "type": "string",
+                  "const": "true",
+                  "description": "Present only on exact authorized replay."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "PROPOSED mapping: AUTHENTICATION_FAILED. See R4 per-operation precedence and concealment; not all codes apply to every operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "AUTHENTICATION_FAILED"
+            ]
+          },
+          "403": {
+            "description": "PROPOSED: AUTH_CSRF_INVALID / TEAM_ACTION_FORBIDDEN; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "AUTH_CSRF_INVALID",
+              "TEAM_ACTION_FORBIDDEN"
+            ]
+          },
+          "404": {
+            "description": "PROPOSED: PROJECT_NOT_FOUND; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "PROJECT_NOT_FOUND"
+            ]
+          },
+          "409": {
+            "description": "PROPOSED: TEAM_CODE_EXISTS / IDEMPOTENCY_KEY_REUSED; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "TEAM_CODE_EXISTS",
+              "IDEMPOTENCY_KEY_REUSED"
+            ]
+          },
+          "422": {
+            "description": "PROPOSED: VALIDATION_FAILED / IDEMPOTENCY_KEY_REQUIRED; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "VALIDATION_FAILED",
+              "IDEMPOTENCY_KEY_REQUIRED"
+            ]
+          },
+          "500": {
+            "description": "PROPOSED: TEAM_COMMAND_FAILED; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "TEAM_COMMAND_FAILED"
+            ]
+          },
+          "503": {
+            "description": "PROPOSED: TEAM_POLICY_NOT_READY / RETRY_LATER; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "RETRY_LATER:1; policy readiness does not promise retry deadline."
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "TEAM_POLICY_NOT_READY",
+              "RETRY_LATER"
+            ]
+          }
+        },
+        "x-strict-query-allowlist": [],
+        "x-authorization-candidate": {
+          "role": "current project-scoped TEAM_LEADER",
+          "permissions": [
+            "team.create",
+            "team.children.manage"
+          ],
+          "parents": "ACTIVE User, OrganizationMembership, Project, ProjectMembership; current proof, explicit deny/unknown wins. No implicit ADMIN/platform/public/creator grant. Manager does not require TeamMembership.",
+          "memberReads": "DEFER until separately selected admission-provider slice; no policy inferred from this temporary scope."
+        },
+        "x-options": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5",
+          "P6"
+        ]
+      },
+      "get": {
+        "operationId": "listTeams",
+        "summary": "PROPOSED — listTeams",
+        "x-contract-state": "PROPOSED_NOT_APPROVED",
+        "x-runtime-readiness": "NOT_READY",
+        "x-decision-ids": [
+          "C257-01",
+          "C257-02",
+          "C257-03",
+          "C257-04"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Opaque resource ID. Malformed/missing/hidden IDs use the selected 404 mapping."
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991,
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "ARCHIVED",
+                "ALL"
+              ],
+              "default": "ACTIVE"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Candidate List Teams success contract, runtime not enabled. Returns the authorized paginated TeamList. This read does not accept Idempotency-Key and has no idempotency replay, aggregate ETag, Location or Idempotency-Replayed response header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamList"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "PROPOSED mapping: AUTHENTICATION_FAILED. See R4 per-operation precedence and concealment; not all codes apply to every operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "AUTHENTICATION_FAILED"
+            ]
+          },
+          "403": {
+            "description": "PROPOSED: TEAM_ACTION_FORBIDDEN; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "TEAM_ACTION_FORBIDDEN"
+            ]
+          },
+          "404": {
+            "description": "PROPOSED: PROJECT_NOT_FOUND; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "PROJECT_NOT_FOUND"
+            ]
+          },
+          "422": {
+            "description": "PROPOSED: VALIDATION_FAILED; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "VALIDATION_FAILED"
+            ]
+          },
+          "500": {
+            "description": "PROPOSED: TEAM_READ_FAILED; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "TEAM_READ_FAILED"
+            ]
+          },
+          "503": {
+            "description": "PROPOSED: TEAM_POLICY_NOT_READY; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "TEAM_POLICY_NOT_READY"
+            ]
+          }
+        },
+        "x-strict-query-allowlist": [
+          "page",
+          "pageSize",
+          "status"
+        ],
+        "x-authorization-candidate": {
+          "role": "current project-scoped TEAM_LEADER",
+          "permissions": [
+            "team.read",
+            "team.children.manage"
+          ],
+          "parents": "ACTIVE User, OrganizationMembership, Project, ProjectMembership; current proof, explicit deny/unknown wins. No implicit ADMIN/platform/public/creator grant. Manager does not require TeamMembership.",
+          "memberReads": "DEFER until separately selected admission-provider slice; no policy inferred from this temporary scope."
+        },
+        "x-options": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P6"
+        ]
+      }
+    },
+    "/api/v1/iam/teams/{teamId}": {
+      "patch": {
+        "operationId": "updateTeam",
+        "summary": "PROPOSED — updateTeam",
+        "x-contract-state": "PROPOSED_NOT_APPROVED",
+        "x-runtime-readiness": "NOT_READY",
+        "x-decision-ids": [
+          "C256-01",
+          "C256-02",
+          "C256-03",
+          "C256-04"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "teamId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Opaque resource ID. Malformed/missing/hidden IDs use the selected 404 mapping."
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9._:-]+$"
+            },
+            "description": "Approved TQ09 key policy; provider/readiness not proven. Scope organizationId+actorUserId+key; method/path/canonical body/precondition fingerprint; 24h app expiry + terminal-slot R3 replace-CAS, TTL cleanup only."
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"team:[^\":]+:[1-9][0-9]*\"$",
+              "description": "Strong tag. Version is a positive safe integer; ID must match resource."
+            },
+            "description": "Exactly one strong current Team tag. Missing428, weak/wildcard/multiple/malformed422, stale412 are PROPOSED mappings. Exact live replay ignores old resource version after current authorization."
+          },
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Candidate follows current IAM membership commands: matching __Host-csrf cookie required; bearer exemption not selected. Gateway/BFF/IAM must verify."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeamUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Candidate Update Team success contract, runtime not enabled. Returns the resulting Team with its strong ETag. Exact authorized replay returns the original status, body and ETag; Idempotency-Replayed is present only on replay. No Location response header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Team"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"team:[^\":]+:[1-9][0-9]*\"$",
+                  "description": "Strong tag. Version is a positive safe integer; ID must match resource."
+                }
+              },
+              "Idempotency-Replayed": {
+                "schema": {
+                  "type": "string",
+                  "const": "true",
+                  "description": "Present only on exact authorized replay."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "PROPOSED mapping: AUTHENTICATION_FAILED. See R4 per-operation precedence and concealment; not all codes apply to every operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "AUTHENTICATION_FAILED"
+            ]
+          },
+          "403": {
+            "description": "PROPOSED: AUTH_CSRF_INVALID / TEAM_ACTION_FORBIDDEN; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "AUTH_CSRF_INVALID",
+              "TEAM_ACTION_FORBIDDEN"
+            ]
+          },
+          "404": {
+            "description": "PROPOSED: TEAM_NOT_FOUND; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "TEAM_NOT_FOUND"
+            ]
+          },
+          "409": {
+            "description": "PROPOSED: TEAM_ARCHIVED / IDEMPOTENCY_KEY_REUSED; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "TEAM_ARCHIVED",
+              "IDEMPOTENCY_KEY_REUSED"
+            ]
+          },
+          "412": {
+            "description": "PROPOSED mapping: PRECONDITION_FAILED. See R4 per-operation precedence and concealment; not all codes apply to every operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "PRECONDITION_FAILED"
+            ]
+          },
+          "422": {
+            "description": "PROPOSED: VALIDATION_FAILED / IDEMPOTENCY_KEY_REQUIRED; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "VALIDATION_FAILED",
+              "IDEMPOTENCY_KEY_REQUIRED"
+            ]
+          },
+          "428": {
+            "description": "PROPOSED mapping: PRECONDITION_REQUIRED. See R4 per-operation precedence and concealment; not all codes apply to every operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "PRECONDITION_REQUIRED"
+            ]
+          },
+          "500": {
+            "description": "PROPOSED: TEAM_COMMAND_FAILED; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "TEAM_COMMAND_FAILED"
+            ]
+          },
+          "503": {
+            "description": "PROPOSED: TEAM_POLICY_NOT_READY / RETRY_LATER; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "RETRY_LATER:1; policy readiness does not promise retry deadline."
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "TEAM_POLICY_NOT_READY",
+              "RETRY_LATER"
+            ]
+          }
+        },
+        "x-strict-query-allowlist": [],
+        "x-authorization-candidate": {
+          "role": "current project-scoped TEAM_LEADER",
+          "permissions": [
+            "team.update",
+            "team.children.manage"
+          ],
+          "parents": "ACTIVE User, OrganizationMembership, Project, ProjectMembership; current proof, explicit deny/unknown wins. No implicit ADMIN/platform/public/creator grant. Manager does not require TeamMembership.",
+          "memberReads": "DEFER until separately selected admission-provider slice; no policy inferred from this temporary scope."
+        },
+        "x-options": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5",
+          "P6"
+        ]
+      },
+      "get": {
+        "operationId": "getTeam",
+        "summary": "PROPOSED — getTeam",
+        "x-contract-state": "PROPOSED_NOT_APPROVED",
+        "x-runtime-readiness": "NOT_READY",
+        "x-decision-ids": [
+          "C257-01",
+          "C257-03",
+          "C257-04"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "teamId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Opaque resource ID. Malformed/missing/hidden IDs use the selected 404 mapping."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Candidate Get Team success contract, runtime not enabled. Returns the authorized Team with its current strong ETag. This read has no idempotency replay, Location or Idempotency-Replayed response header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Team"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"team:[^\":]+:[1-9][0-9]*\"$",
+                  "description": "Strong tag. Version is a positive safe integer; ID must match resource."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "PROPOSED mapping: AUTHENTICATION_FAILED. See R4 per-operation precedence and concealment; not all codes apply to every operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "AUTHENTICATION_FAILED"
+            ]
+          },
+          "403": {
+            "description": "PROPOSED: TEAM_ACTION_FORBIDDEN; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "TEAM_ACTION_FORBIDDEN"
+            ]
+          },
+          "404": {
+            "description": "PROPOSED: TEAM_NOT_FOUND; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "TEAM_NOT_FOUND"
+            ]
+          },
+          "422": {
+            "description": "PROPOSED: VALIDATION_FAILED; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "VALIDATION_FAILED"
+            ]
+          },
+          "500": {
+            "description": "PROPOSED: TEAM_READ_FAILED; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "TEAM_READ_FAILED"
+            ]
+          },
+          "503": {
+            "description": "PROPOSED: TEAM_POLICY_NOT_READY; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "TEAM_POLICY_NOT_READY"
+            ]
+          }
+        },
+        "x-strict-query-allowlist": [],
+        "x-authorization-candidate": {
+          "role": "current project-scoped TEAM_LEADER",
+          "permissions": [
+            "team.read",
+            "team.children.manage"
+          ],
+          "parents": "ACTIVE User, OrganizationMembership, Project, ProjectMembership; current proof, explicit deny/unknown wins. No implicit ADMIN/platform/public/creator grant. Manager does not require TeamMembership.",
+          "memberReads": "DEFER until separately selected admission-provider slice; no policy inferred from this temporary scope."
+        },
+        "x-options": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P6"
+        ]
+      }
+    },
+    "/api/v1/iam/teams/{teamId}/archive": {
+      "post": {
+        "operationId": "archiveTeam",
+        "summary": "PROPOSED — archiveTeam",
+        "x-contract-state": "PROPOSED_NOT_APPROVED",
+        "x-runtime-readiness": "NOT_READY",
+        "x-decision-ids": [
+          "C258-01",
+          "C258-02",
+          "C258-03",
+          "C258-04"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "teamId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Opaque resource ID. Malformed/missing/hidden IDs use the selected 404 mapping."
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9._:-]+$"
+            },
+            "description": "Approved TQ09 key policy; provider/readiness not proven. Scope organizationId+actorUserId+key; method/path/canonical body/precondition fingerprint; 24h app expiry + terminal-slot R3 replace-CAS, TTL cleanup only."
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"team:[^\":]+:[1-9][0-9]*\"$",
+              "description": "Strong tag. Version is a positive safe integer; ID must match resource."
+            },
+            "description": "Exactly one strong current Team tag. Missing428, weak/wildcard/multiple/malformed422, stale412 are PROPOSED mappings. Exact live replay ignores old resource version after current authorization."
+          },
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Candidate follows current IAM membership commands: matching __Host-csrf cookie required; bearer exemption not selected. Gateway/BFF/IAM must verify."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeamLifecycleCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Candidate Archive Team success contract, runtime not enabled. Returns the resulting Team with its strong ETag. Exact authorized replay returns the original status, body and ETag; Idempotency-Replayed is present only on replay. No Location response header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Team"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"team:[^\":]+:[1-9][0-9]*\"$",
+                  "description": "Strong tag. Version is a positive safe integer; ID must match resource."
+                }
+              },
+              "Idempotency-Replayed": {
+                "schema": {
+                  "type": "string",
+                  "const": "true",
+                  "description": "Present only on exact authorized replay."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "PROPOSED mapping: AUTHENTICATION_FAILED. See R4 per-operation precedence and concealment; not all codes apply to every operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "AUTHENTICATION_FAILED"
+            ]
+          },
+          "403": {
+            "description": "PROPOSED: AUTH_CSRF_INVALID / TEAM_ACTION_FORBIDDEN; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "AUTH_CSRF_INVALID",
+              "TEAM_ACTION_FORBIDDEN"
+            ]
+          },
+          "404": {
+            "description": "PROPOSED: TEAM_NOT_FOUND; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "TEAM_NOT_FOUND"
+            ]
+          },
+          "409": {
+            "description": "PROPOSED: IDEMPOTENCY_KEY_REUSED; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "IDEMPOTENCY_KEY_REUSED"
+            ]
+          },
+          "412": {
+            "description": "PROPOSED mapping: PRECONDITION_FAILED. See R4 per-operation precedence and concealment; not all codes apply to every operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "PRECONDITION_FAILED"
+            ]
+          },
+          "422": {
+            "description": "PROPOSED: VALIDATION_FAILED / IDEMPOTENCY_KEY_REQUIRED; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "VALIDATION_FAILED",
+              "IDEMPOTENCY_KEY_REQUIRED"
+            ]
+          },
+          "428": {
+            "description": "PROPOSED mapping: PRECONDITION_REQUIRED. See R4 per-operation precedence and concealment; not all codes apply to every operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "PRECONDITION_REQUIRED"
+            ]
+          },
+          "500": {
+            "description": "PROPOSED: TEAM_COMMAND_FAILED; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "TEAM_COMMAND_FAILED"
+            ]
+          },
+          "503": {
+            "description": "PROPOSED: TEAM_POLICY_NOT_READY / RETRY_LATER; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "RETRY_LATER:1; policy readiness does not promise retry deadline."
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "TEAM_POLICY_NOT_READY",
+              "RETRY_LATER"
+            ]
+          }
+        },
+        "x-strict-query-allowlist": [],
+        "x-authorization-candidate": {
+          "role": "current project-scoped TEAM_LEADER",
+          "permissions": [
+            "team.archive",
+            "team.children.manage"
+          ],
+          "parents": "ACTIVE User, OrganizationMembership, Project, ProjectMembership; current proof, explicit deny/unknown wins. No implicit ADMIN/platform/public/creator grant. Manager does not require TeamMembership.",
+          "memberReads": "DEFER until separately selected admission-provider slice; no policy inferred from this temporary scope."
+        },
+        "x-options": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5",
+          "P6"
+        ]
+      }
+    },
+    "/api/v1/iam/teams/{teamId}/restore": {
+      "post": {
+        "operationId": "restoreTeam",
+        "summary": "PROPOSED — restoreTeam",
+        "x-contract-state": "PROPOSED_NOT_APPROVED",
+        "x-runtime-readiness": "NOT_READY",
+        "x-decision-ids": [
+          "C258-01",
+          "C258-02",
+          "C258-03",
+          "C258-04"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "teamId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Opaque resource ID. Malformed/missing/hidden IDs use the selected 404 mapping."
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9._:-]+$"
+            },
+            "description": "Approved TQ09 key policy; provider/readiness not proven. Scope organizationId+actorUserId+key; method/path/canonical body/precondition fingerprint; 24h app expiry + terminal-slot R3 replace-CAS, TTL cleanup only."
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"team:[^\":]+:[1-9][0-9]*\"$",
+              "description": "Strong tag. Version is a positive safe integer; ID must match resource."
+            },
+            "description": "Exactly one strong current Team tag. Missing428, weak/wildcard/multiple/malformed422, stale412 are PROPOSED mappings. Exact live replay ignores old resource version after current authorization."
+          },
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Candidate follows current IAM membership commands: matching __Host-csrf cookie required; bearer exemption not selected. Gateway/BFF/IAM must verify."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeamLifecycleCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Candidate Restore Team success contract, runtime not enabled. Returns the resulting Team with its strong ETag. Exact authorized replay returns the original status, body and ETag; Idempotency-Replayed is present only on replay. No Location response header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Team"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"team:[^\":]+:[1-9][0-9]*\"$",
+                  "description": "Strong tag. Version is a positive safe integer; ID must match resource."
+                }
+              },
+              "Idempotency-Replayed": {
+                "schema": {
+                  "type": "string",
+                  "const": "true",
+                  "description": "Present only on exact authorized replay."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "PROPOSED mapping: AUTHENTICATION_FAILED. See R4 per-operation precedence and concealment; not all codes apply to every operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "AUTHENTICATION_FAILED"
+            ]
+          },
+          "403": {
+            "description": "PROPOSED: AUTH_CSRF_INVALID / TEAM_ACTION_FORBIDDEN; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "AUTH_CSRF_INVALID",
+              "TEAM_ACTION_FORBIDDEN"
+            ]
+          },
+          "404": {
+            "description": "PROPOSED: TEAM_NOT_FOUND; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "TEAM_NOT_FOUND"
+            ]
+          },
+          "409": {
+            "description": "PROPOSED: IDEMPOTENCY_KEY_REUSED; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "IDEMPOTENCY_KEY_REUSED"
+            ]
+          },
+          "412": {
+            "description": "PROPOSED mapping: PRECONDITION_FAILED. See R4 per-operation precedence and concealment; not all codes apply to every operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "PRECONDITION_FAILED"
+            ]
+          },
+          "422": {
+            "description": "PROPOSED: VALIDATION_FAILED / IDEMPOTENCY_KEY_REQUIRED; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "VALIDATION_FAILED",
+              "IDEMPOTENCY_KEY_REQUIRED"
+            ]
+          },
+          "428": {
+            "description": "PROPOSED mapping: PRECONDITION_REQUIRED. See R4 per-operation precedence and concealment; not all codes apply to every operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "PRECONDITION_REQUIRED"
+            ]
+          },
+          "500": {
+            "description": "PROPOSED: TEAM_COMMAND_FAILED; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "TEAM_COMMAND_FAILED"
+            ]
+          },
+          "503": {
+            "description": "PROPOSED: TEAM_POLICY_NOT_READY / RETRY_LATER; precedence/concealment per R4.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "RETRY_LATER:1; policy readiness does not promise retry deadline."
+                }
+              }
+            },
+            "x-candidate-codes": [
+              "TEAM_POLICY_NOT_READY",
+              "RETRY_LATER"
+            ]
+          }
+        },
+        "x-strict-query-allowlist": [],
+        "x-authorization-candidate": {
+          "role": "current project-scoped TEAM_LEADER",
+          "permissions": [
+            "team.restore",
+            "team.children.manage"
+          ],
+          "parents": "ACTIVE User, OrganizationMembership, Project, ProjectMembership; current proof, explicit deny/unknown wins. No implicit ADMIN/platform/public/creator grant. Manager does not require TeamMembership.",
+          "memberReads": "DEFER until separately selected admission-provider slice; no policy inferred from this temporary scope."
+        },
+        "x-options": [
+          "P1",
+          "P2",
+          "P3",
+          "P4",
+          "P5",
+          "P6"
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "continuum_access"
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message",
+          "details",
+          "requestId"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "details": {
+            "type": "object",
+            "description": "Machine-readable context. Use an empty object when no additional context is safe to expose.",
+            "additionalProperties": true
+          },
+          "requestId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "Team": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "organizationId",
+          "projectId",
+          "name",
+          "code",
+          "description",
+          "status",
+          "version",
+          "createdAt",
+          "updatedAt",
+          "archivedAt",
+          "archivedBy"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque resource ID. Malformed/missing/hidden IDs use the selected 404 mapping."
+          },
+          "organizationId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque resource ID. Malformed/missing/hidden IDs use the selected 404 mapping."
+          },
+          "projectId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque resource ID. Malformed/missing/hidden IDs use the selected 404 mapping."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Canonical NFC+trim; no C0/DEL."
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_-]{1,31}$"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000,
+            "description": "No trimming. Unicode code points. TAB/LF allowed, other C0/DEL prohibited. Create omission materializes null; PATCH omission retains current value."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "ARCHIVED"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "UTC ISO-8601 with trailing Z."
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "UTC ISO-8601 with trailing Z."
+          },
+          "archivedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "description": "UTC ISO-8601 with trailing Z."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "archivedBy": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Opaque resource ID. Malformed/missing/hidden IDs use the selected 404 mapping."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "TeamCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "code"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "x-canonical-minLength": 1,
+            "x-canonical-maxLength": 200,
+            "description": "Normalize new request NFC + trim BEFORE length/control validation; Unicode code points 1–200; no C0/DEL. Standard raw-input maxLength is intentionally omitted to avoid rejecting text that becomes valid after normalization. No legacy normalization."
+          },
+          "code": {
+            "type": "string",
+            "description": "Normalize new request trim + ASCII uppercase, then validate ^[A-Z][A-Z0-9_-]{1,31}$. Immutable after create; unique within organization+project including ARCHIVED. Validate length AFTER normalization; raw-input maxLength is not canonical length.",
+            "x-canonical-pattern": "^[A-Z][A-Z0-9_-]{1,31}$",
+            "x-canonical-minLength": 2,
+            "x-canonical-maxLength": 32
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000,
+            "description": "No trimming. Unicode code points. TAB/LF allowed, other C0/DEL prohibited. Create omission materializes null; PATCH omission retains current value."
+          }
+        }
+      },
+      "TeamUpdate": {
+        "type": "object",
+        "additionalProperties": false,
+        "minProperties": 1,
+        "properties": {
+          "name": {
+            "type": "string",
+            "x-canonical-minLength": 1,
+            "x-canonical-maxLength": 200,
+            "description": "Normalize new request NFC + trim BEFORE length/control validation; Unicode code points 1–200; no C0/DEL. Standard raw-input maxLength is intentionally omitted to avoid rejecting text that becomes valid after normalization. No legacy normalization."
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000,
+            "description": "No trimming. Unicode code points. TAB/LF allowed, other C0/DEL prohibited. Create omission materializes null; PATCH omission retains current value."
+          }
+        }
+      },
+      "TeamLifecycleCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "x-canonical-minLength": 1,
+            "x-canonical-maxLength": 500,
+            "description": "Trim BEFORE validating 1–500 Unicode code points; no C0/DEL. Raw-input length intentionally not used as canonical length."
+          }
+        }
+      },
+      "TeamList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/Team"
+            }
+          },
+          "pagination": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "page",
+              "pageSize",
+              "totalItems",
+              "totalPages"
+            ],
+            "properties": {
+              "page": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "pageSize": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "totalItems": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "totalPages": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-options-document": "../11-team-foundation-runtime-options-r4.md",
+  "x-policy-options": {
+    "candidate": "A for P1-P5",
+    "selected": false,
+    "readiness": "P6 evidence NOT_READY",
+    "alternative": "B or AMEND/DEFER per option in the worksheet"
+  }
+}
