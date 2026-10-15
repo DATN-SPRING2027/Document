@@ -131,7 +131,8 @@ TQ-09 đã chọn: key ASCII1–128 `[A-Za-z0-9._:-]+`, scope organizationId+act
 fingerprint method+normalized path+canonical validated body+precondition; result/
 mutation/audit cùng transaction; retention24h; application expiry/terminal-slot
 replace-CAS theo R3; TTL chỉ cleanup. Replay revalidate current auth/action/
-visibility rồi trả original status/body/ETag/Location; new key so current version.
+visibility rồi trả original status/body/ETag; Location chỉ áp dụng cho Create.
+New key so current version.
 
 Browser BFF→Gateway→IAM theo trusted auth/context hiện hành; candidate mutation
 yêu cầu CSRF header khớp __Host-csrf cookie, theo membership commands hiện có;

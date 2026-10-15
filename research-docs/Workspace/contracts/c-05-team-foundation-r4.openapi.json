@@ -128,7 +128,7 @@
         },
         "responses": {
           "201": {
-            "description": "Candidate success contract, runtime not enabled. Exact authorized replay returns original status/body/ETag and create Location.",
+            "description": "Candidate Create Team success contract, runtime not enabled. Returns the created Team with its strong ETag and resource Location. Exact authorized replay returns the original status, body, ETag and Location; Idempotency-Replayed is present only on replay.",
             "content": {
               "application/json": {
                 "schema": {
@@ -409,7 +409,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Candidate success contract, runtime not enabled. Exact authorized replay returns original status/body/ETag and create Location.",
+            "description": "Candidate List Teams success contract, runtime not enabled. Returns the authorized paginated TeamList. This read does not accept Idempotency-Key and has no idempotency replay, aggregate ETag, Location or Idempotency-Replayed response header.",
             "content": {
               "application/json": {
                 "schema": {
@@ -653,7 +653,7 @@
         },
         "responses": {
           "200": {
-            "description": "Candidate success contract, runtime not enabled. Exact authorized replay returns original status/body/ETag and create Location.",
+            "description": "Candidate Update Team success contract, runtime not enabled. Returns the resulting Team with its strong ETag. Exact authorized replay returns the original status, body and ETag; Idempotency-Replayed is present only on replay. No Location response header.",
             "content": {
               "application/json": {
                 "schema": {
@@ -936,7 +936,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Candidate success contract, runtime not enabled. Exact authorized replay returns original status/body/ETag and create Location.",
+            "description": "Candidate Get Team success contract, runtime not enabled. Returns the authorized Team with its current strong ETag. This read has no idempotency replay, Location or Idempotency-Replayed response header.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1183,7 +1183,7 @@
         },
         "responses": {
           "200": {
-            "description": "Candidate success contract, runtime not enabled. Exact authorized replay returns original status/body/ETag and create Location.",
+            "description": "Candidate Archive Team success contract, runtime not enabled. Returns the resulting Team with its strong ETag. Exact authorized replay returns the original status, body and ETag; Idempotency-Replayed is present only on replay. No Location response header.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1511,7 +1511,7 @@
         },
         "responses": {
           "200": {
-            "description": "Candidate success contract, runtime not enabled. Exact authorized replay returns original status/body/ETag and create Location.",
+            "description": "Candidate Restore Team success contract, runtime not enabled. Returns the resulting Team with its strong ETag. Exact authorized replay returns the original status, body and ETag; Idempotency-Replayed is present only on replay. No Location response header.",
             "content": {
               "application/json": {
                 "schema": {
