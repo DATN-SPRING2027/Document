@@ -1,0 +1,516 @@
+{
+  "state": "REVIEW_ONLY_NOT_EXECUTED_API_TESTS",
+  "createdAt": "2026-10-15T04:15:35.899Z",
+  "cases": [
+    {
+      "id": "R4-01",
+      "ticket": "DATN-255",
+      "decisionIds": [
+        "C255-01",
+        "C255-02"
+      ],
+      "tier": "http",
+      "scenario": "Create omits description",
+      "expectedCandidate": "201 body description=null; server explicit persistence field; no bootstrap",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-02",
+      "ticket": "DATN-255",
+      "decisionIds": [
+        "C255-01",
+        "C255-02"
+      ],
+      "tier": "http",
+      "scenario": "Create null/empty/Unicode/control bounds",
+      "expectedCandidate": "null/empty valid; NFC+trim/code ASCII normalize; invalid422",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-03",
+      "ticket": "DATN-255",
+      "decisionIds": [
+        "C255-01",
+        "C255-02"
+      ],
+      "tier": "http",
+      "scenario": "Mass assignment parent/status/version/role",
+      "expectedCandidate": "422 and no writes; trusted scope unchanged",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-04",
+      "ticket": "DATN-255",
+      "decisionIds": [
+        "C255-01",
+        "C255-02"
+      ],
+      "tier": "http",
+      "scenario": "Scoped duplicate including archived",
+      "expectedCandidate": "409 TEAM_CODE_EXISTS; sibling scope independent",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-05",
+      "ticket": "DATN-255",
+      "decisionIds": [
+        "C255-01",
+        "C255-02"
+      ],
+      "tier": "http",
+      "scenario": "Missing/malformed/invisible Project",
+      "expectedCandidate": "404 before key/result/version disclosure",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-06",
+      "ticket": "DATN-255",
+      "decisionIds": [
+        "C255-03",
+        "C255-04"
+      ],
+      "tier": "replica-set",
+      "scenario": "Each grant missing/current role mismatch/explicit DENY or UNKNOWN",
+      "expectedCandidate": "deny; no implicit ADMIN/platform/public/creator authority",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-07",
+      "ticket": "DATN-255",
+      "decisionIds": [
+        "C255-03",
+        "C255-04"
+      ],
+      "tier": "replica-set",
+      "scenario": "Create without existing TeamMembership",
+      "expectedCandidate": "manager may create if current parent authority and explicit grants valid",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-08",
+      "ticket": "DATN-255",
+      "decisionIds": [
+        "C255-03",
+        "C255-04"
+      ],
+      "tier": "replica-set",
+      "scenario": "Revocation commits first vs create commits first",
+      "expectedCandidate": "revoked-first deny/retry; create-first one commit and next request deny",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-09",
+      "ticket": "DATN-255",
+      "decisionIds": [
+        "C255-03",
+        "C255-04"
+      ],
+      "tier": "replica-set",
+      "scenario": "Parent suspend-resume/remove-rejoin",
+      "expectedCandidate": "old proof cannot regain authority; provider protocol verified",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-10",
+      "ticket": "DATN-256",
+      "decisionIds": [
+        "C256-01",
+        "C256-03"
+      ],
+      "tier": "http",
+      "scenario": "PATCH missing/null/extra/empty",
+      "expectedCandidate": "missing retains;null clears;extras/empty422",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-11",
+      "ticket": "DATN-256",
+      "decisionIds": [
+        "C256-01",
+        "C256-03"
+      ],
+      "tier": "http",
+      "scenario": "If-Match missing/weak/wildcard/multiple/wrong ID/stale",
+      "expectedCandidate": "428/422/422/422/422/412 per selected mapping",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-12",
+      "ticket": "DATN-256",
+      "decisionIds": [
+        "C256-01",
+        "C256-03"
+      ],
+      "tier": "http",
+      "scenario": "Hidden Team and stale precondition/key mismatch",
+      "expectedCandidate": "404 without existence/key/version leak",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-13",
+      "ticket": "DATN-256",
+      "decisionIds": [
+        "C256-01",
+        "C256-03"
+      ],
+      "tier": "http",
+      "scenario": "New key stale plus archived state",
+      "expectedCandidate": "412 before TEAM_ARCHIVED409",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-14",
+      "ticket": "DATN-256",
+      "decisionIds": [
+        "C256-01",
+        "C256-03"
+      ],
+      "tier": "http",
+      "scenario": "Exact live replay after later Team changes",
+      "expectedCandidate": "original status/body/ETag; current action/visibility revalidated",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-15",
+      "ticket": "DATN-256",
+      "decisionIds": [
+        "C256-04"
+      ],
+      "tier": "replica-set",
+      "scenario": "Concurrent same-version updates",
+      "expectedCandidate": "one CAS winner; no lost update/partial audit/result",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-16",
+      "ticket": "DATN-256",
+      "decisionIds": [
+        "C256-04"
+      ],
+      "tier": "replica-set",
+      "scenario": "No-op canonical equivalent metadata",
+      "expectedCandidate": "version/updatedAt/ETag stable; durable result; no business event",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-17",
+      "ticket": "DATN-256",
+      "decisionIds": [
+        "C256-04"
+      ],
+      "tier": "replica-set",
+      "scenario": "Full next state and immutable code/parent every writer",
+      "expectedCandidate": "invalid state aborts; no query-validator-only bypass",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-18",
+      "ticket": "DATN-257",
+      "decisionIds": [
+        "C257-01",
+        "C257-02",
+        "C257-03",
+        "C257-04"
+      ],
+      "tier": "http",
+      "scenario": "Manager has no TeamMembership",
+      "expectedCandidate": "explicit read+delegation current parent proof permits metadata only",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-19",
+      "ticket": "DATN-257",
+      "decisionIds": [
+        "C257-01",
+        "C257-02",
+        "C257-03",
+        "C257-04"
+      ],
+      "tier": "http",
+      "scenario": "Member/public/creator no implicit Team read",
+      "expectedCandidate": "deferred member slice no fallback allow; owning policy must be selected",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-20",
+      "ticket": "DATN-257",
+      "decisionIds": [
+        "C257-01",
+        "C257-02",
+        "C257-03",
+        "C257-04"
+      ],
+      "tier": "http",
+      "scenario": "Status/default/page boundaries/unknown arrays/operators",
+      "expectedCandidate": "1/20/max100,ACTIVE default;invalid422",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-21",
+      "ticket": "DATN-257",
+      "decisionIds": [
+        "C257-01",
+        "C257-02",
+        "C257-03",
+        "C257-04"
+      ],
+      "tier": "http",
+      "scenario": "Equal createdAt stable order and hidden records",
+      "expectedCandidate": "id DESC tie-break; scope/visibility before totals and paging",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-22",
+      "ticket": "DATN-257",
+      "decisionIds": [
+        "C257-01",
+        "C257-02",
+        "C257-03",
+        "C257-04"
+      ],
+      "tier": "http",
+      "scenario": "Empty/out-of-range page",
+      "expectedCandidate": "200 data[]; empty totalPages0; beyond-last retains totals",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-23",
+      "ticket": "DATN-257",
+      "decisionIds": [
+        "C257-01",
+        "C257-02",
+        "C257-03",
+        "C257-04"
+      ],
+      "tier": "http",
+      "scenario": "Projection and conditional transport",
+      "expectedCandidate": "allowlist only;detail ETag/no-store;no aggregate list ETag",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-24",
+      "ticket": "DATN-257",
+      "decisionIds": [
+        "C257-01",
+        "C257-02",
+        "C257-03",
+        "C257-04"
+      ],
+      "tier": "http",
+      "scenario": "Read provider unavailable/internal failure",
+      "expectedCandidate": "503 TEAM_POLICY_NOT_READY /500 TEAM_READ_FAILED, details{}",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-25",
+      "ticket": "DATN-258",
+      "decisionIds": [
+        "C258-01",
+        "C258-02",
+        "C258-03",
+        "C258-04"
+      ],
+      "tier": "replica-set",
+      "scenario": "Archive complete vs partial archive metadata",
+      "expectedCandidate": "complete status+actor/time/reason/version commit;partial rollback",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-26",
+      "ticket": "DATN-258",
+      "decisionIds": [
+        "C258-01",
+        "C258-02",
+        "C258-03",
+        "C258-04"
+      ],
+      "tier": "replica-set",
+      "scenario": "Restore current profile and historical audit",
+      "expectedCandidate": "clear current archive fields;retain old event;no stale admission revival",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-27",
+      "ticket": "DATN-258",
+      "decisionIds": [
+        "C258-01",
+        "C258-02",
+        "C258-03",
+        "C258-04"
+      ],
+      "tier": "replica-set",
+      "scenario": "Same-state no-op current/new key and stale/missing preconditions",
+      "expectedCandidate": "200 no-op requires reason/current permission/proof/version;otherwise428/412",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-28",
+      "ticket": "DATN-258",
+      "decisionIds": [
+        "C258-01",
+        "C258-02",
+        "C258-03",
+        "C258-04"
+      ],
+      "tier": "replica-set",
+      "scenario": "Concurrent archive/update/restore",
+      "expectedCandidate": "scoped CAS permits only state/version valid command;no partial writes",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-29",
+      "ticket": "DATN-258",
+      "decisionIds": [
+        "C258-01",
+        "C258-02",
+        "C258-03",
+        "C258-04"
+      ],
+      "tier": "replica-set",
+      "scenario": "Retained cross-domain references",
+      "expectedCandidate": "Team/members/references stable;no cascade/reassignment/hard delete",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-30",
+      "ticket": "DATN-259",
+      "decisionIds": [
+        "C255-07"
+      ],
+      "tier": "replica-set",
+      "scenario": "Key length1/128/129 and cross-actor/organization",
+      "expectedCandidate": "1/128 valid;129invalid;exact scoped isolation",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-31",
+      "ticket": "DATN-259",
+      "decisionIds": [
+        "C255-07"
+      ],
+      "tier": "replica-set",
+      "scenario": "Same vs different fingerprint concurrent admissions",
+      "expectedCandidate": "one mutation/event;loser replay or409 after fresh evidence",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-32",
+      "ticket": "DATN-259",
+      "decisionIds": [
+        "C255-07"
+      ],
+      "tier": "replica-set",
+      "scenario": "Expiry exactly now with terminal retained slot",
+      "expectedCandidate": "new admission via generation replace-CAS;not old replay",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-33",
+      "ticket": "DATN-259",
+      "decisionIds": [
+        "C255-07"
+      ],
+      "tier": "replica-set",
+      "scenario": "Malformed/pending slot and TTL cleanup interleaving",
+      "expectedCandidate": "fail closed;controlled cleanup is not actual TTL-monitor proof",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-34",
+      "ticket": "DATN-259",
+      "decisionIds": [
+        "C255-07"
+      ],
+      "tier": "replica-set",
+      "scenario": "Late audit failure after staged Team/result",
+      "expectedCandidate": "all rollback;no success result or partial event",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-35",
+      "ticket": "DATN-259",
+      "decisionIds": [
+        "C255-07"
+      ],
+      "tier": "replica-set",
+      "scenario": "Unknown commit after actual commit",
+      "expectedCandidate": "same command lookup/retry resolves original result;one effect/event",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-36",
+      "ticket": "DATN-259",
+      "decisionIds": [
+        "C255-07"
+      ],
+      "tier": "replica-set",
+      "scenario": "Unknown commit after abort",
+      "expectedCandidate": "safe same-key fresh attempt;no duplicate;fresh current authority",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-37",
+      "ticket": "DATN-259",
+      "decisionIds": [
+        "C255-07"
+      ],
+      "tier": "replica-set",
+      "scenario": "Unresolved commit result",
+      "expectedCandidate": "503 RETRY_LATER;client keeps key;no blind second mutation",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-38",
+      "ticket": "DATN-259",
+      "decisionIds": [
+        "C255-07"
+      ],
+      "tier": "replica-set",
+      "scenario": "Replay after current actor revocation/wrong scope",
+      "expectedCandidate": "deny before cached response;no key/result leak",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-39",
+      "ticket": "DATN-259",
+      "decisionIds": [
+        "C255-05",
+        "C255-06",
+        "C256-03",
+        "C257-03"
+      ],
+      "tier": "transport",
+      "scenario": "BFF→Gateway→IAM If-Match/Key/ETag/Location/replay/Retry-After",
+      "expectedCandidate": "all selected headers survive;no-store;no untrusted identity/context spoof",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-40",
+      "ticket": "DATN-259",
+      "decisionIds": [
+        "C255-05",
+        "C255-06",
+        "C256-03",
+        "C257-03"
+      ],
+      "tier": "transport",
+      "scenario": "CSRF missing/mismatch and bearer exception attempt",
+      "expectedCandidate": "403 AUTH_CSRF_INVALID per selected current-style transport;no guessed bearer exemption",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "R4-41",
+      "ticket": "DATN-259",
+      "decisionIds": [
+        "C255-05",
+        "C255-06",
+        "C256-03",
+        "C257-03"
+      ],
+      "tier": "transport",
+      "scenario": "Error precedence pairs and shared envelope",
+      "expectedCandidate": "auth+invalid,CSRF+hidden,hidden+stale/key,visible-noaction+missing-key;requestId;5xx details{}",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    }
+  ]
+}

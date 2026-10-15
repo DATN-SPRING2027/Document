@@ -23,6 +23,9 @@
   precise Team questions. Its [acceptance and validation mapping](10-team-foundation-review-validation.md)
   covers DATN-248–253. It is a decision-gap deliverable for review, not an approved
   Team contract that unblocks DATN-90/91/92.
+- [DATN-90 R4 runtime options](11-team-foundation-runtime-options-r4.md) supply
+  concrete A/B choices, a candidate OpenAPI and a scenario matrix for the remaining
+  Team runtime decisions. They are proposals; readiness evidence is tracked separately.
 
 ## 1. Purpose and conclusion
 
