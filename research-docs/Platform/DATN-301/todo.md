@@ -22,7 +22,7 @@
 - [ ] Full BE repository E2E remains blocked by local infrastructure: rerun had 11 suites pass, 2 skipped, 2 fail (76 tests pass, 4 skipped, 3 fail) because shared AppModule tests require Redis, unavailable on 127.0.0.1:6379. The isolated missing-JWT startup test now passes. Re-run with the repository's Redis service before merge.
 - [x] Record as-built API, UI, audit and DB impact in the canonical contract, DATN-301 record, task folder and Jira DATN-295/298 descriptions; do not change Jira workflow status.
 - [x] Final diff/security review: exact permission and resource checks, privileged transaction/audit atomicity, FE action gates, migration additive-only behavior, secret/content exposure, and changed-file scope reviewed; no additional findings.
-- [ ] Local commits pending. Push/PR are not created automatically.
+- [x] Created local commits: contract `aacd5cb`, DB `00cbe5f`, BE `511ccd6`, FE `231d284`. No push or PR was created.
 
 ## External rollout gates
 
