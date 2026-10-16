@@ -1,56 +1,37 @@
-# DATN-301 — Kế hoạch chốt policy PLATFORM_OPERATOR V1
+# DATN-301 — Kế hoạch đóng gate PLATFORM_OPERATOR V1
 
-| Trường | Giá trị |
+| Field | Value |
 |---|---|
-| Jira | [DATN-301](https://trankimthang0207.atlassian.net/browse/DATN-301) |
-| Parent | [DATN-293](https://trankimthang0207.atlassian.net/browse/DATN-293) |
-| Canonical contract | [PLATFORM_OPERATOR V1 Contract](../platform-operator-v1-contract.md) |
+| Jira | DATN-301, parent DATN-293 |
+| Contract | [PLATFORM_OPERATOR V1](../platform-operator-v1-contract.md) |
 | Decision record | [design.md](design.md) |
-| Trạng thái | Đã chốt một phần; vẫn In Progress vì còn chữ ký Security/IAM và operation decisions |
-| Phạm vi | Policy/documentation và Jira scope; không thay đổi runtime |
+| DB runbook | [Read-only verification](../platform-operator-v1-db-verification-runbook.md) |
+| Scope | Documentation and Jira synchronization only |
+| Outcome | Contract ready except external Security/IAM, Audit and DB evidence |
 
-## Mục tiêu
+## Final implementation boundary
 
-Đóng các policy decisions DATN-301 đang chặn DATN-295–300, ghi nguồn phê duyệt, phần còn chờ owner, và giữ implementation không suy diễn từ permission membership.
+- Active: PLAT-ORG-01, PLAT-HEALTH-01, PLAT-AUDIT-01 using unchanged DATN-79/A-04 permissions and behavior.
+- Deferred from V1: all remaining 37 candidate operations in canonical contract §4.3. No permission, endpoint, UI or QA feature is implied.
+- Configuration: OUT OF V1.
+- Effective active permission count: 3. DATN-79 is unchanged.
 
-## Disposition đã nhận ngày 2026-10-16
+## Completed decision work
 
-KeyT phê duyệt:
+1. Inspected Jira DATN-293–301, DATN-79, DATN-80 and A-04 subtasks; checked current repo authorization, assignment schema/index declarations, transaction/audit implementation and migration behavior.
+2. Dispositioned every operation ACTIVE or DEFERRED FROM V1 with reason, owner, evidence and implementation impact.
+3. Specified the exact PO-AUTH-01 bootstrap/recovery/revoke procedure, identity proof, issuer/executor separation, no self/operator grants, legacy-row policy, concurrency, idempotency, rollback, last-operator and post-check.
+4. Specified audit events/fields, redaction, read/export/denial handling, atomic failure semantics, proposed retention/archive/deletion and exact external signers.
+5. Resolved DEC-ACCESS-10 for the active A-04 catalog; left broader resource classifications for unrelated capabilities open.
+6. Marked DB deployment reality UNVERIFIED and created a read-only runbook. No collection data was queried or changed.
+7. Synchronized canonical contract, decision record, readiness references and Jira descriptions without status transitions; identified stale `DATN-301 blocks` links to DATN-296–300 for removal while retaining the historical DATN-294 prerequisite and external gate for DATN-295.
+8. Cross-checked for count/permission/operation/readiness consistency; docs only.
 
-- PLATFORM_OPERATOR có đúng 40 exact codes: 3 permission hiện hữu của DATN-79/A-04 và toàn bộ 37 code cụ thể trong DATN-294 matrix. Không wildcard, không tự mở rộng runtime.
-- Tiếp tục dùng exact permission assignments; grant/revoke toàn bộ tập là atomic, all-or-nothing. Assignment một phần không tạo role operator; không viết lại/backfill các grant legacy.
-- Hoãn Platform Configuration khỏi active V1 theo disposition được KeyT duyệt trong DATN-301. DEC-ACCESS-09 tự nó vẫn ghi read/write là `FUTURE / DECISION_REQUIRED`; cần reconcile scope DATN-293, DATN-297 và DATN-299.
-- Giữ 401/403; dùng 404 chỉ theo resource-concealment policy; dùng 422/409/503/500 cho validation, conflict/stale, dependency và unexpected failure; response theo safe allowlist IAM envelope.
-- Operator API không sửa/xóa audit history; privileged mutations fail closed nếu audit chưa ghi bền vững.
-- Contract audit boundary: state change + required event share one durable commit boundary; external side effects need a durable intent/audit before dispatch or remain outside active V1. A-04 Organization provisioning supplies a same-transaction precedent, not proof of universal coverage/outbox.
-- Với 37 operation mới, authorization yêu cầu full exact 40-code set hiện hành cộng exact operation permission; ba operation A-04 giữ single-code behavior.
-- Preserve current A-04 platform login/refresh: password + ACTIVE-user + rate-limit/MFA + fresh authority on login; platform-context refresh revalidates current authority; protected requests recheck current authority.
+## Remaining gates
 
-Security/IAM cần ký issuer/executor và bootstrap/recovery procedure; Security/IAM cũng cần chốt audit retention. Audit producer coverage, read/export/denial behavior, durability controls và operation-specific contracts vẫn cần audit/domain owners. Chi tiết và exact codes ở [design.md](design.md).
+- Security/IAM must name and approve the issuer/executor and PO-AUTH-01 controls.
+- Security/IAM + DB must approve legacy assignment/regrant handling and operation-ID storage.
+- Security/IAM + Security/Audit + Privacy/Legal must approve retention/enforcement.
+- IAM DB owner must provide read-only staging/prod evidence using the runbook.
 
-## Ranh giới bắt buộc
-
-- Authentication luôn bắt buộc; không bypass Organization/Project ACL hoặc tenant-content boundary.
-- Secret/credential không trả ra API/FE; không có Break-glass, hidden account, production seed hoặc wildcard.
-- Ba mã A-04 không đổi tên hoặc semantics; không backfill tự động các assignment cũ.
-- Permission membership tự nó không bật API/UI: 37 mapping mới nằm ngoài active V1 catalog và bị chặn triển khai, chờ domain owner quyết định từng operation là `ACTIVE` (kèm semantics/test oracle đầy đủ) hay `DEFERRED FROM V1` (kèm rationale/evidence). Chưa có disposition nào; không suy ra defer hay status cuối cùng chỉ từ việc chưa có approval.
-- Configuration không thuộc active V1.
-
-## Kế hoạch hoàn tất
-
-1. [x] Ghi exact permission set và assignment atomicity theo disposition của KeyT.
-2. [x] Ghi nhận Configuration deferral và D4 error baseline; resource classes cho concealment/404 còn chờ owner.
-3. [x] Ghi nhận audit API append-only và privileged-mutation fail-closed baseline; giữ retention/coverage là blocker.
-4. [x] Ghi rõ 3 operation A-04 đang ở active catalog; 37 permission-to-operation mappings là decision queue ngoài catalog, không coi thiếu approval là defer hay final operation status.
-5. [ ] Ghi disposition có thẩm quyền cho từng mapping trong 37 mapping mới: `ACTIVE` với full operation contract và test oracle, hoặc `DEFERRED FROM V1` có lý do/evidence.
-6. [ ] Security/IAM ghi tên issuer/executor, identity verification, approval path và bootstrap/recovery/revoke/rollback runbook.
-7. [ ] Security/IAM + DB owner quyết định legacy A-04 assignment overlap, full-set revoke ownership và regrant-after-revoke dưới unique index hiện tại.
-8. [ ] Security/IAM ghi retention period và enforcement boundary.
-9. [ ] Security/Audit/domain owners chốt event coverage/fields/reason/redaction/read-export-denial policy và chứng minh failure/durability behavior đáp ứng shared commit-boundary contract.
-10. [x] Đồng bộ Configuration deferral và current blockers trong DATN-293/294/295–300.
-11. [ ] DEC-ACCESS-10 owner chốt resource classes cần concealment/404 trong shared readiness và các contract liên quan.
-12. [ ] Chỉ gỡ dependency khi evidence cho đúng task đã được duyệt và acceptance contract được cập nhật.
-
-## Readiness
-
-DATN-301 chưa đạt acceptance hoàn chỉnh; DATN-295–300 vẫn bị chặn theo dependency tương ứng. Exact permission set, Configuration deferral, D4 baseline, audit invariants, A-04 session behavior và the shared durable commit boundary have been recorded. Issuer/recovery, retention/enforcement, audit completeness, resource classes requiring concealment/404 and owner disposition of each of the 37 new mappings remain open. The three existing A-04 operations stay unchanged; no unapproved operation may be enabled. Xem [design.md §5–7](design.md) để biết gate theo child.
+These are external approvals/access facts; no unresolved policy wording remains for the active V1 catalog. Child readiness is recorded in the contract and design record. Keep Jira statuses as-is until an authorized human updates the workflow.
