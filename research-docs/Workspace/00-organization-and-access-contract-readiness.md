@@ -87,7 +87,7 @@ Organization
 ```text
 CONTINUUM AI PLATFORM
 ├── PLATFORM_OPERATOR
-│   ├── platform operations, Organization provisioning, first-ADMIN bootstrap, health/configuration
+│   ├── platform operations, Organization provisioning, first-ADMIN bootstrap, approved health functions; configuration excluded from V1
 │   └── no default Organization-content access
 └── ORGANIZATION
     ├── ADMIN: manages Users/membership, assigns roles/scopes, manages Organization
@@ -97,7 +97,7 @@ CONTINUUM AI PLATFORM
         └── MEMBER: participates within active membership, scope and resource ACL
 ```
 
-`[APPROVED BASELINE: confirmed 2026-10-02]` `PLATFORM_OPERATOR` is a platform-scoped operations actor, not an Organization role. It may provision Organizations, bootstrap the first Organization `ADMIN`, and monitor platform health/configuration. Platform authority alone grants no Organization Membership and no access to private Organization content. `ADMIN` administers its Organization but receives no default confidential-content access. `TEAM_LEADER` authority is limited to explicitly assigned Project/Team scope and cannot grant itself broader access. `MEMBER` access remains subject to membership, scope, and resource ACL.
+`[APPROVED BASELINE: confirmed 2026-10-02; V1 scope qualified 2026-10-16]` `PLATFORM_OPERATOR` is a platform-scoped operations actor, not an Organization role. The historical baseline says it may provision Organizations, bootstrap the first Organization `ADMIN`, and monitor platform health/configuration. That general description does not approve configuration access for V1: DEC-ACCESS-09 leaves configuration read/write `FUTURE / DECISION_REQUIRED`, and KeyT's DATN-301 disposition defers Platform Configuration from active V1. Platform authority alone grants no Organization Membership and no access to private Organization content. `ADMIN` administers its Organization but receives no default confidential-content access. `TEAM_LEADER` authority is limited to explicitly assigned Project/Team scope and cannot grant itself broader access. `MEMBER` access remains subject to membership, scope, and resource ACL.
 
 `[APPROVED BASELINE: DEC-016]` `OrganizationMembership` is the authoritative relationship proving a User belongs to an Organization; an Organization-level `RoleAssignment` alone does not establish membership. Membership status vocabulary is `PENDING_INVITE`, `ACTIVE`, `SUSPENDED`, `REMOVED`; only `ACTIVE` establishes Organization Context. Zero active memberships means no context, one is selected automatically, and multiple require explicit selection. The backend validates any client-supplied Organization ID against the authenticated User's active membership. `ONBOARDING` and `OFFBOARDING` describe workflows, not Organization-context eligibility.
 

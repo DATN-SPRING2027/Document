@@ -17,7 +17,7 @@ An authenticated User with an `ACTIVE` Organization Membership may create a Proj
 ```text
 CONTINUUM AI PLATFORM
 ├── PLATFORM_OPERATOR
-│   └── provisions Organization / first ADMIN, operates health/config; no default Organization-content access
+│   └── provisions Organization / first ADMIN, operates approved health functions; configuration is not active in V1
 └── ORGANIZATION
     ├── ADMIN (manages Organization Users/membership, roles/scopes and Organization settings)
     │   └── no default confidential-content access
@@ -34,7 +34,7 @@ Role and assignment records need `organizationId`, subject, scope, `validFrom`, 
 
 ### PLATFORM_OPERATOR
 
-- Operates the Continuum platform, provisions Organizations, bootstraps the first Organization `ADMIN`, and monitors system health/configuration.
+- Operates approved Continuum platform functions, provisions Organizations, and bootstraps the first Organization `ADMIN`. The older baseline mentions health/configuration monitoring; configuration read/write is `FUTURE / DECISION_REQUIRED` in DEC-ACCESS-09 and is excluded from active V1 by the DATN-301 disposition.
 - Is not an Organization member by virtue of platform operations and receives no default access to private Organization, Project, task, Work Note, evidence, knowledge, or handover content.
 - Must use a separately authorized Organization membership and role if also acting as an Organization user; platform authority alone is not an Organization content grant.
 
