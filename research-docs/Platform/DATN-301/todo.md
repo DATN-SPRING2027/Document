@@ -1,38 +1,33 @@
-# DATN-301 — Gate closure todo
+# DATN-301 — Current V1 implementation gates
 
-Jira: DATN-301 · Parent: DATN-293 · Contract: [DATN-294](../platform-operator-v1-contract.md) · Decisions: [design.md](design.md)
+## Product decision
 
-## Completed in this documentation change
+- [x] Preserve three existing A-04 capabilities unchanged.
+- [x] Activate PLAT-ORG-02 Organization read.
+- [x] Activate PLAT-USER-01 exact ACTIVE User lookup.
+- [x] Activate PLAT-MEM-01 bounded Organization membership read.
+- [x] Activate PLAT-MEM-03 SUSPEND only; keep invite, resume, remove deferred by DATN-291 A7/A8.
+- [x] Keep the remaining 33 candidates deferred and Configuration OUT OF V1.
+- [x] Record PO-D13 and supersede the earlier PO-D02/PO-D12 three-permission handoff.
 
-- [x] Preserve exactly three active A-04 permissions and operations; DATN-79 unchanged.
-- [x] Assign all 37 remaining candidate operations DEFERRED FROM V1, each with rationale, owner, evidence and implementation effect.
-- [x] Resolve the active V1 permission bundle; no full-40 runtime grant.
-- [x] Define all 16 domains and exclude Configuration.
-- [x] Define actor/action/resource/scope for active operations and the controlled PO-AUTH-01 procedure.
-- [x] Define identity verification, issuer/executor, no self/operator grant, bootstrap/recovery, last operator, race/CAS, retry/idempotency, timeout, rollback and post-verification.
-- [x] Define audit coverage, required fields, redaction, read/export/denial, retention proposal, integrity, access and failure semantics.
-- [x] Resolve DEC-ACCESS-10 for active A-04 operations; preserve broader global decision scope.
-- [x] Create read-only DB verification runbook and record actual DB as UNVERIFIED.
-- [x] Set deterministic readiness for DATN-295–300 without changing Jira workflow statuses.
-- [x] Preserve all existing Jira issue links per KeyT's explicit choice; DATN-301 is Done and the retained links remain traceability, while DATN-295 still has external approval/evidence gates.
-- [x] No runtime code, migration, seed, DB write, ACL, RAG or ingestion change.
+## Implementation and verification
 
-## External approvals/evidence only
+- [x] DATN-295 implementation: exact seven-code catalog, legacy/new bundle compatibility, provenance-matched V1 expansion, mandatory snapshot-hash CAS, transaction/idempotency/audit, and separate additive report-first index migration. The migration is not applied; the authority authorization provider remains fail-closed with 503 until external Security/IAM configures approved issuer/MFA evidence.
+- [x] DATN-296 implementation: Organization list/detail, exact ACTIVE User lookup by POST body, scoped Membership list and SUSPEND-only Platform routes; preserve A-04 and tenant membership behavior.
+- [x] DATN-297 implementation: preserve health and bounded audit response; add only membership-suspension action to the fixed allowlist.
+- [x] DATN-298 implementation: dedicated Platform sign-in/session shell; Organization create/list/detail, exact User lookup and Membership list/suspend.
+- [x] DATN-299 implementation: Health and bounded Audit views in the Platform shell; no deferred Operations/Configuration controls.
+- [x] DATN-300 focused coverage: BE Platform E2E (27 tests), Mongo administration/authority integration, exact authorization, projection/resource scope, CAS/replay/last-admin/audit rollback; FE Console/API/BFF regression.
+- [x] FE full check: lint, typecheck, 345 tests and production build passed. BE lint, typecheck, development DB smoke safety, unit suite (69 suites / 678 tests), focused Platform E2E (27 tests) and production build passed. Migration plan tests passed (3 tests).
+- [ ] Full BE repository E2E remains blocked by local infrastructure: rerun had 11 suites pass, 2 skipped, 2 fail (76 tests pass, 4 skipped, 3 fail) because shared AppModule tests require Redis, unavailable on 127.0.0.1:6379. The isolated missing-JWT startup test now passes. Re-run with the repository's Redis service before merge.
+- [x] Record as-built API, UI, audit and DB impact in the canonical contract, DATN-301 record, task folder and Jira DATN-295/298 descriptions; do not change Jira workflow status.
+- [x] Final diff/security review: exact permission and resource checks, privileged transaction/audit atomicity, FE action gates, migration additive-only behavior, secret/content exposure, and changed-file scope reviewed; no additional findings.
+- [ ] Local commits pending. Push/PR are not created automatically.
 
-- [ ] Security/IAM names issuer/executor and signs PO-AUTH-01 identity/MFA, legacy guard, last-operator, recovery and transaction controls.
-- [ ] Security/IAM + DB approve legacy-row/regrant behavior and operation-ID ledger storage.
-- [ ] Security/IAM + Audit + Privacy/Legal approve retention/archive/backup/deletion/read/denial policy or give exact replacement.
-- [ ] IAM DB owner provides read-only staging/prod report per [runbook](../platform-operator-v1-db-verification-runbook.md).
+## External rollout gates
 
-## Readiness
-
-| Task | Status | Exact gate |
-|---|---|---|
-| DATN-295 | EXTERNAL APPROVAL REQUIRED | Signed Security/IAM/Audit package and actual read-only environment report before implementation/migration |
-| DATN-296 | READY | Preserve PLAT-ORG-01; no new administration API |
-| DATN-297 | READY | Preserve PLAT-HEALTH-01; no new operations API |
-| DATN-298 | READY | No administration UI in V1 |
-| DATN-299 | READY | No operations UI or Configuration |
-| DATN-300 | READY | Test oracle fixed; bootstrap transaction tests follow DATN-295 tool |
-
-Do not infer Security/IAM or Audit approval from Jira status Done, and do not transition child statuses. Existing issue links are intentionally preserved; READY describes deterministic implementation scope, not a request to edit Jira dependencies.
+- [ ] Security/IAM approves and configures PO-AUTH-01 issuer/executor, trusted identity/MFA evidence, explicit V1 expansion, provenance and last-operator behavior. Until then the runtime deliberately refuses grants with 503 and the new four permissions are not provisioned.
+- [ ] Audit/Privacy/Legal reviews minimal User projection, audit visibility and retention controls.
+- [ ] DB owner supplies a redacted read-only report for each deployment environment.
+- [ ] Do not activate invite/resume/remove until DATN-291 A7/A8 evidence and cutover are accepted.
+- [x] Jira workflow statuses were not changed; do not infer rollout readiness from the existing Done statuses.
