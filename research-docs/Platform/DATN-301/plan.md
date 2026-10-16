@@ -1,37 +1,25 @@
-# DATN-301 — Kế hoạch đóng gate PLATFORM_OPERATOR V1
+# DATN-301 — Implementation plan for usable PLATFORM_OPERATOR V1
 
-| Field | Value |
-|---|---|
-| Jira | DATN-301, parent DATN-293 |
-| Contract | [PLATFORM_OPERATOR V1](../platform-operator-v1-contract.md) |
-| Decision record | [design.md](design.md) |
-| DB runbook | [Read-only verification](../platform-operator-v1-db-verification-runbook.md) |
-| Scope | Documentation and Jira synchronization only |
-| Outcome | Contract ready except external Security/IAM, Audit and DB evidence |
+## Current V1 boundary
 
-## Final implementation boundary
+Keep the existing A-04 organization.create, platform.health.read and platform.audit.read behavior. Add only PLAT-ORG-02 safe Organization list/detail, PLAT-USER-01 exact normalized-email lookup for an ACTIVE User, PLAT-MEM-01 bounded membership read, and PLAT-MEM-03 suspension only. Invite, membership resume/remove, role change, Organization/User status changes, Projects, Sessions, Operations, export and Configuration remain excluded.
 
-- Active: PLAT-ORG-01, PLAT-HEALTH-01, PLAT-AUDIT-01 using unchanged DATN-79/A-04 permissions and behavior.
-- Deferred from V1: all remaining 37 candidate operations in canonical contract §4.3. No permission, endpoint, UI or QA feature is implied.
-- Configuration: OUT OF V1.
-- Effective active permission count: 3. DATN-79 is unchanged.
+## Dependency order
 
-## Completed decision work
+1. Contract and decision: PO-D13, exact API/projection/error/audit/QA mapping, operation matrix and approval record.
+2. DB model branch: add the exact permission enum values and compatible legacy/new PO-AUTH bundle validation. Add a separate additive, report-first provenance snapshot index migration; no assignment data backfill/update; do not modify existing migrations or apply the new migration before external gates close.
+3. BE branch: add server-side exact permissions; current Platform session recovery; bounded Organization/User/Membership reads; platform-only suspension through the existing transaction/audit path; extend fixed audit allowlist.
+4. FE branch: dedicated Platform auth/sign-in/session recovery; separate shell; Organization create/list/detail; exact User picker; membership list/suspend; Health and Audit views.
+5. QA: BE unit/integration/E2E for permissions, target resolution, legacy bundle, CAS/replay/audit rollback; FE unit/build/typecheck and browser flow; cross-system security review.
+6. As-built: update canonical contract, DATN-301 record, task folder, Jira issue descriptions, diff and handoff. Keep Jira workflow status unchanged.
 
-1. Inspected Jira DATN-293–301, DATN-79, DATN-80 and A-04 subtasks; checked current repo authorization, assignment schema/index declarations, transaction/audit implementation and migration behavior.
-2. Dispositioned every operation ACTIVE or DEFERRED FROM V1 with reason, owner, evidence and implementation impact.
-3. Specified the exact PO-AUTH-01 bootstrap/recovery/revoke procedure, identity proof, issuer/executor separation, no self/operator grants, legacy-row policy, concurrency, idempotency, rollback, last-operator and post-check.
-4. Specified audit events/fields, redaction, read/export/denial handling, atomic failure semantics, proposed retention/archive/deletion and exact external signers.
-5. Resolved DEC-ACCESS-10 for the active A-04 catalog; left broader resource classifications for unrelated capabilities open.
-6. Marked DB deployment reality UNVERIFIED and created a read-only runbook. No collection data was queried or changed.
-7. Synchronized canonical contract, decision record, readiness references and Jira descriptions without status transitions or link changes; preserved existing issue links per KeyT's explicit choice.
-8. Cross-checked for count/permission/operation/readiness consistency; docs only.
+## Verification gates
 
-## Remaining gates
-
-- Security/IAM must name and approve the issuer/executor and PO-AUTH-01 controls.
-- Security/IAM + DB must approve legacy assignment/regrant handling and operation-ID storage.
-- Security/IAM + Security/Audit + Privacy/Legal must approve retention/enforcement.
-- IAM DB owner must provide read-only staging/prod evidence using the runbook.
-
-These are external approvals/access facts; no unresolved policy wording remains for the active V1 catalog. Child readiness is recorded in the contract and design record. Keep Jira statuses as-is until an authorized human updates the workflow.
+- Exact current permission on every protected request; do not trust client permission or scope.
+- Route resource IDs are resolved in BE and Organization/Membership relationships are checked.
+- Membership suspend retains self-action and last eligible Organization ADMIN guards.
+- Mutations use Idempotency-Key and expected version; stale state returns 409.
+- Business change, operation record and required audit commit atomically; audit failure returns no success.
+- FE uses existing BFF/cookie/CSRF conventions and never stores access/refresh tokens in local storage.
+- No secret, tenant content, Project ACL, RAG or ingestion change.
+- Actual production/staging DB state remains unverified until a read-only evidence report exists.
