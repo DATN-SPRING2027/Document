@@ -168,7 +168,7 @@
             }
           },
           "500": {
-            "description": "Required persistence/audit/result/outbox failure; no success ack and transaction rollback.",
+            "description": "Unexpected internal failure while reading Organization Memberships.",
             "headers": {
               "Cache-Control": {
                 "schema": {
@@ -335,7 +335,7 @@
             }
           },
           "500": {
-            "description": "Required persistence/audit/result/outbox failure; no success ack and transaction rollback.",
+            "description": "Unexpected internal failure while reading Organization Memberships.",
             "headers": {
               "Cache-Control": {
                 "schema": {
