@@ -1,0 +1,146 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "C-07 Team Membership API (draft)",
+    "version": "0.1-draft",
+    "description": "Draft for DATN-92 review. POST/DELETE scope is approved; detailed behavior is proposed and awaits API/IAM/Security approval. No GET/list operation is included."
+  },
+  "servers": [{ "url": "/api/v1/iam" }],
+  "tags": [{ "name": "Team Memberships" }],
+  "paths": {
+    "/teams/{teamId}/memberships": {
+      "post": {
+        "tags": ["Team Memberships"],
+        "operationId": "createTeamMembership",
+        "summary": "Add a Team Membership admission",
+        "description": "The POST operation is in DATN-92 scope. Exact response and header semantics remain proposed pending C-07 API review. Rejoin after explicit removal creates a new Membership ID and joinedAt.",
+        "parameters": [
+          { "$ref": "#/components/parameters/TeamId" },
+          { "$ref": "#/components/parameters/CsrfToken" },
+          { "$ref": "#/components/parameters/IdempotencyKey" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AddTeamMembershipRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "New admission created. Recommended also for explicit rejoin because it creates a new Membership resource.",
+            "headers": { "Location": { "$ref": "#/components/headers/Location" }, "Cache-Control": { "$ref": "#/components/headers/NoStore" } },
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TeamMembership" } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "422": { "$ref": "#/components/responses/ValidationFailed" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        },
+        "security": [{ "cookieAuth": [] }, { "bearerAuth": [] }],
+        "x-approval-status": "approved-operation-scope; details-proposed"
+      }
+    },
+    "/teams/{teamId}/memberships/{membershipId}": {
+      "delete": {
+        "tags": ["Team Memberships"],
+        "operationId": "removeTeamMembership",
+        "summary": "Remove a Team Membership admission",
+        "description": "The DELETE operation is in DATN-92 scope. A repeated removal is approved to return 204 within the caller's authorized scope; detailed error and audit behavior remains proposed.",
+        "parameters": [
+          { "$ref": "#/components/parameters/TeamId" },
+          { "$ref": "#/components/parameters/MembershipId" },
+          { "$ref": "#/components/parameters/CsrfToken" },
+          { "$ref": "#/components/parameters/IdempotencyKey" }
+        ],
+        "responses": {
+          "204": { "description": "Removed or already removed within the authorized scope.", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "422": { "$ref": "#/components/responses/ValidationFailed" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalError" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        },
+        "security": [{ "cookieAuth": [] }, { "bearerAuth": [] }],
+        "x-approval-status": "approved-operation-scope; details-proposed"
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": { "type": "apiKey", "in": "cookie", "name": "continuum_access", "description": "Existing IAM browser access cookie." },
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT", "description": "Existing IAM programmatic authentication; trusted acquisition remains governed by the shared IAM contract." }
+    },
+    "parameters": {
+      "TeamId": { "name": "teamId", "in": "path", "required": true, "schema": { "$ref": "#/components/schemas/ResourceId" } },
+      "MembershipId": { "name": "membershipId", "in": "path", "required": true, "schema": { "$ref": "#/components/schemas/ResourceId" } },
+      "CsrfToken": { "name": "X-CSRF-Token", "in": "header", "required": false, "description": "Required for cookie-authenticated mutation requests; must match the readable __Host-csrf cookie under the existing double-submit CSRF policy. Bearer requests follow the existing IAM policy.", "schema": { "type": "string", "minLength": 1 }, "x-required-when": "cookieAuth is used" },
+      "IdempotencyKey": { "name": "Idempotency-Key", "in": "header", "required": false, "description": "Recommended; required only if R0 confirms C-04 TQ-09 or an authorized replacement is approved. Do not implement until this dependency is resolved.", "schema": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]+$" }, "x-required-when": "TQ-09 is confirmed applicable under R0 or approved as a replacement" }
+    },
+    "headers": {
+      "Location": { "description": "URI of the newly created Membership admission.", "schema": { "type": "string", "format": "uri-reference" } },
+      "NoStore": { "description": "Prevents caching of membership mutation responses.", "schema": { "type": "string", "enum": ["no-store"] } }
+    },
+    "schemas": {
+      "ResourceId": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Opaque resource identifier. Clients must not infer its storage format."
+      },
+      "AddTeamMembershipRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["userId"],
+        "properties": { "userId": { "$ref": "#/components/schemas/ResourceId" } }
+      },
+      "TeamMembership": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "organizationId", "projectId", "teamId", "userId", "joinedAt"],
+        "properties": {
+          "id": { "$ref": "#/components/schemas/ResourceId" },
+          "organizationId": { "$ref": "#/components/schemas/ResourceId" },
+          "projectId": { "$ref": "#/components/schemas/ResourceId" },
+          "teamId": { "$ref": "#/components/schemas/ResourceId" },
+          "userId": { "$ref": "#/components/schemas/ResourceId" },
+          "joinedAt": { "type": "string", "format": "date-time", "pattern": "Z$" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "message", "details", "requestId"],
+        "properties": {
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "details": { "type": "object", "additionalProperties": true },
+          "requestId": { "type": "string" }
+        }
+      }
+    },
+    "responses": {
+      "Unauthorized": { "description": "Authentication is missing, invalid, expired or revoked.", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+      "Forbidden": { "description": "The authenticated caller lacks permission for the requested scope or CSRF validation failed.", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+      "NotFound": { "description": "The addressed Team or Membership does not exist or is not visible to the caller.", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+      "Conflict": { "description": "Active duplicate admission or idempotency key conflict.", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+      "ValidationFailed": { "description": "Request body, target eligibility or approved command validation failed.", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+      "TooManyRequests": { "description": "The request exceeded the applicable rate limit.", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+      "ServiceUnavailable": { "description": "The persistence, transaction or required audit dependency is unavailable; no mutation is acknowledged.", "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } }, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+      "InternalError": {
+        "description": "Unexpected internal failure; implementation details are not exposed.",
+        "headers": { "Cache-Control": { "$ref": "#/components/headers/NoStore" } },
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      }
+    }
+  },
+  "x-contract-status": "draft; not Gate A",
+  "x-get-membership-list": "excluded from DATN-92; existing shared draft disposition remains with its owning API contract"
+}
