@@ -5,7 +5,7 @@
 | Status | Review draft; not implementation-approved |
 | Jira | DATN-294; parent DATN-293 |
 | Reviewed | 2026-10-16 (Asia/Bangkok) |
-| Documentation repository | `Document-B05-reference` |
+| Documentation repository | `DATN-SPRING2027/Document` (local checkout: `Document-B05-reference`) |
 | Base branch / commit | `main` / `c8190aa3b3c9670ef96a9d651feba5e0de63e742` |
 | Task branch | `feat/KeyT-platform-operator-v1-contract-bootstrap` |
 
@@ -67,60 +67,58 @@ This role bundle is absent from runtime. Until expansion and bootstrap decisions
 
 ### 5.1 Naming and scope
 
-**[PROPOSED]** Use `platform.<domain>.<resource>.<action>` for new permissions; preserve the three existing codes byte-for-byte. Never implement `PLATFORM_OPERATOR = *`.
+**[PROPOSED]** Use the four-segment `platform.<domain>.<resource>.<action>` pattern for new permissions; preserve the three existing DATN-79 codes byte-for-byte as legacy exceptions. Never implement `PLATFORM_OPERATOR = *`.
 
 `PLATFORM` is the grant scope, not a trusted target selector. The server resolves each target and derives its scope/relationships from authoritative storage. Client scope/parent IDs are selectors only and must be checked. Cross-Organization/Project relationships are validated server-side. Missing-resource concealment follows DEC-ACCESS-10.
 
 ### 5.2 Permission matrix
 
-`ALLOW` is intended bundle membership after approval, not proof of runtime support. `DENY` is outside contract. Each target must be resolved server-side. Audit/error shorthand is detailed below.
+`ALLOW` is intended bundle membership after approval, not proof of runtime support. An explicit `DENY` would be an approved policy prohibition; none is defined in this matrix. Deferred/out-of-scope capabilities are recorded separately and are not represented as DENY. Each target must be resolved server-side. Audit/error shorthand is detailed below.
 
 | Permission | Domain | Action / resource | Grant / target scope | Role | Authorization | Visibility | Audit | Status / source |
 |---|---|---|---|---|---|---|---|---|
 | `organization.create` | Organization | Create Organization + first ADMIN | PLATFORM / new Organization | ALLOW | Exact current A-04; active subject; provisioning invariants | Input and safe created metadata | Required, transactional | [CONFIRMED] DATN-79 |
 | `platform.health.read` | Service | Read IAM liveness | PLATFORM / service | ALLOW | Exact current permission | Liveness only | Read logging unresolved | [CONFIRMED] DATN-79 |
 | `platform.audit.read` | Audit | Read filtered projection | PLATFORM / audit event | ALLOW | Exact current permission; bounded filters | Existing allowlisted fields | Read logging unresolved | [CONFIRMED] DATN-79 |
-| `platform.dashboard.read` | Dashboard | Read approved aggregate counters | PLATFORM / aggregate | ALLOW | Active subject; approved metric sources | Aggregates only | Read logging proposed | [PROPOSED] DATN-293 |
-| `platform.organizations.read` | Organization | Read metadata | PLATFORM / Organization | ALLOW | Resolve target server-side | Allowlisted metadata | Read logging proposed | [PROPOSED] |
+| `platform.dashboard.summary.read` | Dashboard | Read approved aggregate counters | PLATFORM / aggregate | ALLOW | Active subject; approved metric sources | Aggregates only | Read logging proposed | [PROPOSED] DATN-293 |
+| `platform.organizations.organization.read` | Organization | Read metadata | PLATFORM / Organization | ALLOW | Resolve target server-side | Allowlisted metadata | Read logging proposed | [PROPOSED] |
 | `platform.organizations.status.manage` | Organization | Suspend/reactivate | PLATFORM / Organization | ALLOW | Approved transition, reason, version | State and safe result | Required | [PROPOSED]; status absent in schema |
 | `platform.organizations.usage.read` | Organization | Read usage/health counters | PLATFORM / Organization | ALLOW | Approved metric source/definition | Aggregates only | Read logging proposed | [PROPOSED]; counters absent |
-| `platform.users.read` | User | Read account metadata | PLATFORM / User | ALLOW | Resolve target server-side | Safe identity/profile/state | Read logging proposed | [PROPOSED] |
+| `platform.users.account.read` | User | Read account metadata | PLATFORM / User | ALLOW | Resolve target server-side | Safe identity/profile/state | Read logging proposed | [PROPOSED] |
 | `platform.users.profile.manage` | User | Update allowlisted profile fields | PLATFORM / User | ALLOW | Field allowlist and version check | Safe profile only | Required | [PROPOSED] |
 | `platform.users.status.manage` | User | Suspend/reactivate | PLATFORM / User | ALLOW | Lifecycle policy/reason/version; final-operator rule unresolved | State/result | Required | [PROPOSED]; lifecycle incomplete |
-| `platform.memberships.read` | Membership | Read Organization membership | PLATFORM / membership→Organization | ALLOW | Resolve both; C-02 projection | Membership/role state | Read logging proposed | [PROPOSED]; preserve DATN-80/86–88 |
-| `platform.memberships.invite` | Membership | Invite to Organization | PLATFORM / Organization | ALLOW | Reuse C-02 invite invariants | Safe invite result; no token | Required | [PROPOSED]; precedence needs approval |
+| `platform.memberships.membership.read` | Membership | Read Organization membership | PLATFORM / membership→Organization | ALLOW | Resolve both; C-02 projection | Membership/role state | Read logging proposed | [PROPOSED]; preserve DATN-80/86–88 |
+| `platform.memberships.invitation.create` | Membership | Invite to Organization | PLATFORM / Organization | ALLOW | Reuse C-02 invite invariants | Safe invite result; no token | Required | [PROPOSED]; precedence needs approval |
 | `platform.memberships.lifecycle.manage` | Membership | Suspend/reactivate/remove | PLATFORM / membership→Organization | ALLOW | C-02 last ADMIN, self-action, CAS/idempotency | Membership state | Required | [PROPOSED]; precedence needs approval |
 | `platform.memberships.roles.manage` | Membership | Change Organization role | PLATFORM / membership→Organization | ALLOW | C-02 allowed transitions/actor rules | Role metadata | Required | [PROPOSED]; no invented grant power |
-| `platform.projects.read` | Project | Read metadata | PLATFORM / Project→Organization | ALLOW | Resolve relation | Approved metadata only | Read logging proposed | [PROPOSED]; DATN-85 |
+| `platform.projects.project.read` | Project | Read metadata | PLATFORM / Project→Organization | ALLOW | Resolve relation | Approved metadata only | Read logging proposed | [PROPOSED]; DATN-85 |
 | `platform.projects.metadata.manage` | Project | Update allowlisted metadata | PLATFORM / Project→Organization | ALLOW | Field allowlist and version | Metadata only | Required | [PROPOSED] |
 | `platform.projects.visibility.manage` | Project | Change visibility | PLATFORM / Project→Organization | ALLOW | Reuse DATN-82 | Visibility only | Required | [PROPOSED]; DATN-82 |
 | `platform.projects.members.manage` | Project | List/add/remove Project member | PLATFORM / Project→Organization | ALLOW | Resolve Project/member; preserve DATN-82 ACL | ACL metadata, no content | Required | [PROPOSED]; composition unresolved |
 | `platform.projects.leaders.manage` | Project | Assign/remove leader | PLATFORM / Project→Organization | ALLOW | DATN-82 leader constraints | Assignment metadata | Required | [PROPOSED]; reuse semantics |
-| `platform.sessions.read` | Security | Read session metadata | PLATFORM / session→User | ALLOW | Resolve owner; privacy allowlist | Safe state/time/device; IP/UA unresolved | Read logging proposed | [PROPOSED] |
-| `platform.sessions.revoke` | Security | Revoke session | PLATFORM / session→User | ALLOW | Exact permission; current state; idempotent repeat | Revocation result only | Required | [PROPOSED] |
-| `platform.audit.export` | Audit | Export filtered audit events | PLATFORM / event set | ALLOW | Same projection as read; bounded output | No secrets/raw events | Export log proposed | [PROPOSED]; read/export logging open |
+| `platform.sessions.session.read` | Security | Read session metadata | PLATFORM / session→User | ALLOW | Resolve owner; privacy allowlist | Safe state/time/device; IP/UA unresolved | Read logging proposed | [PROPOSED] |
+| `platform.sessions.session.revoke` | Security | Revoke session | PLATFORM / session→User | ALLOW | Exact permission; current state; idempotent repeat | Revocation result only | Required | [PROPOSED] |
+| `platform.audit.event.export` | Audit | Export filtered audit events | PLATFORM / event set | ALLOW | Same projection as read; bounded output | No secrets/raw events | Export log proposed | [PROPOSED]; read/export logging open |
 | `platform.services.health.read` | Service | Read approved service health | PLATFORM / service | ALLOW | Service allowlist | Health only | Read logging proposed | [PROPOSED]; only IAM liveness confirmed |
 | `platform.services.metrics.read` | Service | Read approved metrics | PLATFORM / aggregate | ALLOW | Approved catalogue/dimensions | Aggregates only | Read logging proposed | [PROPOSED]; owner/source absent |
-| `platform.jobs.read` | Queue | Inspect job state/metadata | PLATFORM / job→owner scope | ALLOW | Resolve owner scope; honor content ACL | Operational metadata, no payload | Read logging proposed | [PROPOSED] |
-| `platform.jobs.retry` | Queue | Retry eligible job | PLATFORM / job→owner scope | ALLOW | State, budget, deduplication | State/result ref | Required | [PROPOSED]; state machine absent |
-| `platform.jobs.cancel` | Queue | Cancel cancellable job | PLATFORM / job→owner scope | ALLOW | State and concurrency | State/result | Required | [PROPOSED]; state machine absent |
-| `platform.jobs.requeue` | Queue | Requeue eligible job | PLATFORM / job→owner scope | ALLOW | Eligibility, dedupe/idempotency | State/result ref | Required | [PROPOSED]; semantics absent |
+| `platform.jobs.job.read` | Queue | Inspect job state/metadata | PLATFORM / job→owner scope | ALLOW | Resolve owner scope; honor content ACL | Operational metadata, no payload | Read logging proposed | [PROPOSED] |
+| `platform.jobs.job.retry` | Queue | Retry eligible job | PLATFORM / job→owner scope | ALLOW | State, budget, deduplication | State/result ref | Required | [PROPOSED]; state machine absent |
+| `platform.jobs.job.cancel` | Queue | Cancel cancellable job | PLATFORM / job→owner scope | ALLOW | State and concurrency | State/result | Required | [PROPOSED]; state machine absent |
+| `platform.jobs.job.requeue` | Queue | Requeue eligible job | PLATFORM / job→owner scope | ALLOW | Eligibility, dedupe/idempotency | State/result ref | Required | [PROPOSED]; semantics absent |
 | `platform.rag.indexes.read` | RAG | Read index status | PLATFORM / index→owner scope | ALLOW | Resolve owner; preserve content ACL | Index status only, no chunks | Read logging proposed | [PROPOSED]; shared API absent |
 | `platform.rag.indexes.rebuild` | RAG | Rebuild/reindex | PLATFORM / index→owner scope | ALLOW | Source/state, idempotency, job tracking | Operation status | Required | [PROPOSED]; owner/semantics absent |
 | `platform.ai.runtime.read` | Laya | Read runtime/model status | PLATFORM / runtime | ALLOW | Approved runtime registry | No prompts/content | Read logging proposed | [PROPOSED]; shared authority absent |
 | `platform.ai.runtime.manage` | Laya | Finite operational control | PLATFORM / runtime | ALLOW | Command allowlist and state checks | Safe status/result | Required | [PROPOSED]; control list absent |
 | `platform.llm.providers.read` | LLM | Read provider/model status | PLATFORM / provider | ALLOW | Approved catalogue | Non-secret metadata | Read logging proposed | [PROPOSED] |
 | `platform.llm.providers.manage` | LLM | Finite provider operation | PLATFORM / provider | ALLOW | Approved workflow; secret reference only | Redacted metadata | Required | [PROPOSED]; control/secret API absent |
-| `platform.integrations.read` | Integration | Read metadata/status | PLATFORM / integration | ALLOW | Approved catalogue | Non-secret metadata | Read logging proposed | [PROPOSED] |
-| `platform.integrations.manage` | Integration | Enable/disable/reconnect | PLATFORM / integration | ALLOW | Finite transitions; secret refs | Redacted result | Required | [PROPOSED]; control/secret API absent |
-| `platform.configuration.read` | Configuration | Read approved config | PLATFORM / config key | DENY pending resolution | A-04 deferred config read/write | None until approved; never secret | Unresolved | [CONFLICT] DATN-293 vs DEC-ACCESS-09 |
-| `platform.configuration.manage` | Configuration | Manage approved config | PLATFORM / config key | DENY pending resolution | A-04 deferred config read/write | Redacted only if approved | Unresolved | [CONFLICT] DATN-293 vs DEC-ACCESS-09 |
-| `platform.incidents.read` | Incident | Read incident metadata | PLATFORM / incident | ALLOW | Resolve target; sanitized fields | Operational metadata | Read logging proposed | [PROPOSED]; contract absent |
-| `platform.incidents.manage` | Incident | Create/update/resolve | PLATFORM / incident | ALLOW | Transition, reason, version rules | Safe state/summary | Required | [PROPOSED]; lifecycle absent |
-| `platform.diagnostics.read` | Support | Read bounded diagnostics | PLATFORM / diagnostic ref | ALLOW | Exact IDs, bounded window, allowlist | Sanitized errors; no payload | Read logging proposed | [PROPOSED] |
+| `platform.integrations.integration.read` | Integration | Read metadata/status | PLATFORM / integration | ALLOW | Approved catalogue | Non-secret metadata | Read logging proposed | [PROPOSED] |
+| `platform.integrations.integration.manage` | Integration | Enable/disable/reconnect | PLATFORM / integration | ALLOW | Finite transitions; secret refs | Redacted result | Required | [PROPOSED]; control/secret API absent |
+| `platform.incidents.incident.read` | Incident | Read incident metadata | PLATFORM / incident | ALLOW | Resolve target; sanitized fields | Operational metadata | Read logging proposed | [PROPOSED]; contract absent |
+| `platform.incidents.incident.manage` | Incident | Create/update/resolve | PLATFORM / incident | ALLOW | Transition, reason, version rules | Safe state/summary | Required | [PROPOSED]; lifecycle absent |
+| `platform.diagnostics.record.read` | Support | Read bounded diagnostics | PLATFORM / diagnostic ref | ALLOW | Exact IDs, bounded window, allowlist | Sanitized errors; no payload | Read logging proposed | [PROPOSED] |
 | `platform.support.actions.manage` | Support | Finite support action | PLATFORM / resolved target | ALLOW | Per-action allowlist/state/reason | Safe result only | Required | [PROPOSED]; catalogue absent |
 
-**Permission count: 42 rows = 3 confirmed existing codes + 37 proposed new codes + 2 conflicted Configuration codes.** Thirty-nine names are absent from runtime. Configuration rows must not be implemented before conflict resolution. ALLOW/DENY is intent only.
+**Permission count: 40 rows = 3 confirmed existing codes + 37 proposed new codes.** All 37 new names are absent from runtime and remain proposals; the role bundle and assignment semantics are not approved. Configuration has no permission row in this active V1 matrix: accepted DEC-ACCESS-09 defers config read/write as `FUTURE / DECISION_REQUIRED`. DATN-293 includes Configuration, so that scope conflict remains recorded for owner resolution; do not infer an allow or deny from the omission.
 ## 6. Operation Catalog
 
 ### 6.1 Shared rules
@@ -132,47 +130,45 @@ The actor for each row is an authenticated current `ACTIVE` user with the exact 
 | `PLAT-ORG-01` | `organization.create` | Org / create + first ADMIN | PLATFORM / new Org | Active subject; exact A-04; provisioning invariants | Safe created metadata, ADMIN reference | Mutation; transactional audit; request idempotency to confirm; not destructive | Existing validation/conflict; A-04 401/403 |
 | `PLAT-HEALTH-01` | `platform.health.read` | Service / IAM liveness | PLATFORM / IAM process | Exact current permission | Liveness only | Read; no mutation; read log unresolved | A-04 401/403; dependency mapping open |
 | `PLAT-AUDIT-01` | `platform.audit.read` | Audit / filtered projection | PLATFORM / allowlisted events | Exact current permission | Bounded projection, current max 100 | Read; no mutation; read log unresolved | A-04 401/403; invalid-filter convention |
-| `PLAT-DASH-01` | `platform.dashboard.read` | Dashboard / approved summary | PLATFORM / aggregate sources | Exact permission; approve source allowlist | Approved counters | Read; read log proposed | 401/403; unavailable-source code open |
-| `PLAT-ORG-02` | `platform.organizations.read` | Org / metadata read | PLATFORM / server-resolved Org | Exact permission; resolve target | Allowlisted metadata | Read; read log proposed | 401/403; 404 policy open |
+| `PLAT-DASH-01` | `platform.dashboard.summary.read` | Dashboard / approved summary | PLATFORM / aggregate sources | Exact permission; approve source allowlist | Approved counters | Read; read log proposed | 401/403; unavailable-source code open |
+| `PLAT-ORG-02` | `platform.organizations.organization.read` | Org / metadata read | PLATFORM / server-resolved Org | Exact permission; resolve target | Allowlisted metadata | Read; read log proposed | 401/403; 404 policy open |
 | `PLAT-ORG-03` | `platform.organizations.status.manage` | Org / suspend/reactivate | PLATFORM / resolved Org | Exact permission; approved transition/reason/version | State and safe result | Mutation; audit; idempotency + CAS; suspend can interrupt service | 401/403; conflict/stale codes open |
 | `PLAT-ORG-04` | `platform.organizations.usage.read` | Org / usage read | PLATFORM / resolved Org | Exact permission; approve metric source | Aggregates | Read; read log proposed | 401/403; metric-source code open |
-| `PLAT-USER-01` | `platform.users.read` | User / metadata read | PLATFORM / resolved User | Exact permission; active actor | Safe identity/profile/state | Read; read log proposed | 401/403; concealment per DEC-ACCESS-10 |
+| `PLAT-USER-01` | `platform.users.account.read` | User / metadata read | PLATFORM / resolved User | Exact permission; active actor | Safe identity/profile/state | Read; read log proposed | 401/403; concealment per DEC-ACCESS-10 |
 | `PLAT-USER-02` | `platform.users.profile.manage` | User / allowlisted profile update | PLATFORM / resolved User | Exact permission; field allowlist/version | Safe updated profile | Mutation; audit + CAS; idempotency by field | 401/403; validation/stale codes open |
 | `PLAT-USER-03` | `platform.users.status.manage` | User / suspend/reactivate | PLATFORM / resolved User | Exact permission; lifecycle/version policy | State/result | Mutation; audit + CAS/idempotency; may revoke access | 401/403; last-operator/self rules BLOCKED |
-| `PLAT-MEM-01` | `platform.memberships.read` | Membership / read | PLATFORM / membership→Org | Exact permission; C-02 projection | Membership/role/state metadata | Read; read log proposed | 401/403; concealment open |
-| `PLAT-MEM-02` | `platform.memberships.invite` | Membership / invite | PLATFORM / resolved Org | Exact permission; C-02 invite rules | Safe invite result, no token | Mutation; audit; idempotency required | 401/403; duplicate code open |
+| `PLAT-MEM-01` | `platform.memberships.membership.read` | Membership / read | PLATFORM / membership→Org | Exact permission; C-02 projection | Membership/role/state metadata | Read; read log proposed | 401/403; concealment open |
+| `PLAT-MEM-02` | `platform.memberships.invitation.create` | Membership / invite | PLATFORM / resolved Org | Exact permission; C-02 invite rules | Safe invite result, no token | Mutation; audit; idempotency required | 401/403; duplicate code open |
 | `PLAT-MEM-03` | `platform.memberships.lifecycle.manage` | Membership / suspend/reactivate/remove | PLATFORM / membership→Org | Exact permission; C-02 last ADMIN/self/CAS invariants | Membership state | Mutation; audit + CAS/idempotent; removal affects access | 401/403; C-02 conflicts and concealment open |
 | `PLAT-MEM-04` | `platform.memberships.roles.manage` | Membership / change role | PLATFORM / membership→Org | Exact permission; C-02 transitions | Role metadata | Mutation; audit + CAS/idempotent; may reduce access | 401/403; transition/conflict code open |
-| `PLAT-PROJ-01` | `platform.projects.read` | Project / metadata read | PLATFORM / Project→Org | Exact permission; DATN-85 boundary | Metadata only | Read; read log proposed | 401/403; no content implication |
+| `PLAT-PROJ-01` | `platform.projects.project.read` | Project / metadata read | PLATFORM / Project→Org | Exact permission; DATN-85 boundary | Metadata only | Read; read log proposed | 401/403; no content implication |
 | `PLAT-PROJ-02` | `platform.projects.metadata.manage` | Project / update allowlist | PLATFORM / Project→Org | Exact permission; field allowlist/version | Updated metadata | Mutation; audit + CAS; field idempotency | 401/403; validation/stale codes open |
 | `PLAT-PROJ-03` | `platform.projects.visibility.manage` | Project / visibility change | PLATFORM / Project→Org | Exact permission; DATN-82 | Visibility only | Mutation; audit + CAS/idempotency; broadens metadata reach only | 401/403; invalid-state/conflict open |
 | `PLAT-PROJ-04` | `platform.projects.members.manage` | Project / list/add/remove member | PLATFORM / Project + member resolved | Exact permission; DATN-82 ACL composition | ACL metadata only | List read; add/remove audited + CAS/idempotent; removal affects access | 401/403; composition BLOCKED |
 | `PLAT-PROJ-05` | `platform.projects.leaders.manage` | Project / assign/remove leader | PLATFORM / Project + Org member | Exact permission; DATN-82 constraints | Assignment metadata | Mutation; audit + CAS/idempotent; changes authority | 401/403; invalid-state code open |
-| `PLAT-SEC-01` | `platform.sessions.read` | Security / session metadata | PLATFORM / session→User | Exact permission; privacy allowlist | Safe state/time/device; IP/UA unresolved | Read; read log proposed | 401/403; hiding open |
-| `PLAT-SEC-02` | `platform.sessions.revoke` | Security / revoke session | PLATFORM / session→User | Exact permission; current state; no client owner assertion | Revocation result | Mutation; audit + CAS; idempotent repeat; invalidates session | 401/403; state/stale code open |
-| `PLAT-AUDIT-02` | `platform.audit.export` | Audit / export filtered events | PLATFORM / same dataset as read | Exact permission; bounded projection/export | Same safe fields as read | Export; no mutation; export audit proposed | 401/403; size-limit error open |
+| `PLAT-SEC-01` | `platform.sessions.session.read` | Security / session metadata | PLATFORM / session→User | Exact permission; privacy allowlist | Safe state/time/device; IP/UA unresolved | Read; read log proposed | 401/403; hiding open |
+| `PLAT-SEC-02` | `platform.sessions.session.revoke` | Security / revoke session | PLATFORM / session→User | Exact permission; current state; no client owner assertion | Revocation result | Mutation; audit + CAS; idempotent repeat; invalidates session | 401/403; state/stale code open |
+| `PLAT-AUDIT-02` | `platform.audit.event.export` | Audit / export filtered events | PLATFORM / same dataset as read | Exact permission; bounded projection/export | Same safe fields as read | Export; no mutation; export audit proposed | 401/403; size-limit error open |
 | `PLAT-SVC-01` | `platform.services.health.read` | Service / approved health | PLATFORM / service registry | Exact permission; allowlist | Health state only | Read; read log proposed | 401/403; upstream code open |
 | `PLAT-SVC-02` | `platform.services.metrics.read` | Service / metrics | PLATFORM / service + metric dimensions | Exact permission; approved catalogue | Aggregates only | Read; read log proposed | 401/403; source error open |
-| `PLAT-JOB-01` | `platform.jobs.read` | Queue / inspect job | PLATFORM / job owner scope resolved | Exact permission; no content bypass | Operational metadata, no payload | Read; read log proposed | 401/403; concealment open |
-| `PLAT-JOB-02` | `platform.jobs.retry` | Queue / retry job | PLATFORM / job owner resolved | Exact permission; retryable state/budget/dedupe | State/result ref | Mutation; audit + idempotency key + CAS; may repeat cost/side effects | 401/403; state/dependency code open |
-| `PLAT-JOB-03` | `platform.jobs.cancel` | Queue / cancel job | PLATFORM / job owner resolved | Exact permission; cancellable state | State/result | Mutation; audit + CAS; idempotent terminal state; stops work | 401/403; state/stale code open |
-| `PLAT-JOB-04` | `platform.jobs.requeue` | Queue / requeue job | PLATFORM / job owner resolved | Exact permission; eligibility/dedupe | State/result ref | Mutation; audit + key + CAS; schedules execution | 401/403; conflict/dependency code open |
+| `PLAT-JOB-01` | `platform.jobs.job.read` | Queue / inspect job | PLATFORM / job owner scope resolved | Exact permission; no content bypass | Operational metadata, no payload | Read; read log proposed | 401/403; concealment open |
+| `PLAT-JOB-02` | `platform.jobs.job.retry` | Queue / retry job | PLATFORM / job owner resolved | Exact permission; retryable state/budget/dedupe | State/result ref | Mutation; audit + idempotency key + CAS; may repeat cost/side effects | 401/403; state/dependency code open |
+| `PLAT-JOB-03` | `platform.jobs.job.cancel` | Queue / cancel job | PLATFORM / job owner resolved | Exact permission; cancellable state | State/result | Mutation; audit + CAS; idempotent terminal state; stops work | 401/403; state/stale code open |
+| `PLAT-JOB-04` | `platform.jobs.job.requeue` | Queue / requeue job | PLATFORM / job owner resolved | Exact permission; eligibility/dedupe | State/result ref | Mutation; audit + key + CAS; schedules execution | 401/403; conflict/dependency code open |
 | `PLAT-RAG-01` | `platform.rag.indexes.read` | RAG / index status | PLATFORM / index owner resolved | Exact permission; preserve content ACL | Status only, no chunks | Read; read log proposed | 401/403; hiding open |
 | `PLAT-RAG-02` | `platform.rag.indexes.rebuild` | RAG / rebuild index | PLATFORM / index + source resolved | Exact permission; source/state/idempotency | Operation status | Mutation; audit + job tracking + CAS; resource/cost impact | 401/403; state/dependency open |
 | `PLAT-AI-01` | `platform.ai.runtime.read` | Laya / runtime status | PLATFORM / registered runtime | Exact permission; approved registry | Status only; no prompts/content | Read; read log proposed | 401/403; authority integration absent |
 | `PLAT-AI-02` | `platform.ai.runtime.manage` | Laya / finite control | PLATFORM / runtime resolved | Exact permission; command allowlist/state | Safe result/status | Mutation; audit; per-command idempotency; declare destructive effect | 401/403; command errors unapproved |
 | `PLAT-LLM-01` | `platform.llm.providers.read` | LLM / provider status | PLATFORM / provider catalogue | Exact permission; redact secrets | Non-secret metadata | Read; read log proposed | 401/403; provider error map open |
 | `PLAT-LLM-02` | `platform.llm.providers.manage` | LLM / finite provider operation | PLATFORM / provider resolved | Exact permission; approved workflow; secret ref only | Redacted metadata/result | Mutation; audit + CAS/idempotency; impact per action | 401/403; secret API absent |
-| `PLAT-INT-01` | `platform.integrations.read` | Integration / status | PLATFORM / integration resolved | Exact permission; redact credentials | Non-secret metadata | Read; read log proposed | 401/403; dependency map open |
-| `PLAT-INT-02` | `platform.integrations.manage` | Integration / enable/disable/reconnect | PLATFORM / integration resolved | Exact permission; finite transitions, secret refs | Redacted result | Mutation; audit + CAS/idempotency; may interrupt delivery | 401/403; control/secret API absent |
-| `PLAT-CFG-01` | `platform.configuration.read` | Config / read allowlisted key | PLATFORM / config key resolved | Deny until A-04 conflict resolved | None approved | Not callable; audit unresolved | Do not implement |
-| `PLAT-CFG-02` | `platform.configuration.manage` | Config / manage allowlisted key | PLATFORM / config key resolved | Deny until A-04 conflict resolved | Redacted only if later approved | Mutation/audit/idempotency unapproved | Do not implement |
-| `PLAT-INC-01` | `platform.incidents.read` | Incident / metadata read | PLATFORM / incident resolved | Exact permission; sanitized fields | Operational metadata | Read; read log proposed | 401/403; source contract absent |
-| `PLAT-INC-02` | `platform.incidents.manage` | Incident / create/update/resolve | PLATFORM / incident resolved | Exact permission; transition/reason/version | Safe state/summary | Mutation; audit + CAS/idempotency; resolution workflow effect | 401/403; lifecycle codes unapproved |
-| `PLAT-SUP-01` | `platform.diagnostics.read` | Support / diagnostics lookup | PLATFORM / exact request/correlation/job/op ref | Exact permission; bounded window/allowlist | Sanitized diagnostics, no payload | Read; read log proposed | 401/403; disclosure policy open |
+| `PLAT-INT-01` | `platform.integrations.integration.read` | Integration / status | PLATFORM / integration resolved | Exact permission; redact credentials | Non-secret metadata | Read; read log proposed | 401/403; dependency map open |
+| `PLAT-INT-02` | `platform.integrations.integration.manage` | Integration / enable/disable/reconnect | PLATFORM / integration resolved | Exact permission; finite transitions, secret refs | Redacted result | Mutation; audit + CAS/idempotency; may interrupt delivery | 401/403; control/secret API absent |
+| `PLAT-INC-01` | `platform.incidents.incident.read` | Incident / metadata read | PLATFORM / incident resolved | Exact permission; sanitized fields | Operational metadata | Read; read log proposed | 401/403; source contract absent |
+| `PLAT-INC-02` | `platform.incidents.incident.manage` | Incident / create/update/resolve | PLATFORM / incident resolved | Exact permission; transition/reason/version | Safe state/summary | Mutation; audit + CAS/idempotency; resolution workflow effect | 401/403; lifecycle codes unapproved |
+| `PLAT-SUP-01` | `platform.diagnostics.record.read` | Support / diagnostics lookup | PLATFORM / exact request/correlation/job/op ref | Exact permission; bounded window/allowlist | Sanitized diagnostics, no payload | Read; read log proposed | 401/403; disclosure policy open |
 | `PLAT-SUP-02` | `platform.support.actions.manage` | Support / finite action | PLATFORM / target/action resolved server-side | Exact permission; action allowlist/state/reason | Safe result only | Mutation; audit + per-action CAS/idempotency; declare destructive effect | 401/403; action catalogue absent |
 
-**Operation count: 42.** Each permission has exactly one operation row. Proposed/blocked rows do not authorize implementation.
+**Operation count: 40.** Each permission has exactly one operation row. Proposed/blocked rows do not authorize implementation.
 ## 7. Actor → Action → Resource → Scope
 
 1. **Authenticate:** validate access token, current user state and revocation as the existing auth service does.
@@ -233,7 +229,7 @@ No privileged tenant-content access is defined. If support needs it, that is a s
 | Laya / AI | Runtime status and finite controls | SAG/Laya has separate product auth; shared platform authority/control interface unproven | PROPOSED / BLOCKED |
 | LLM Provider | Non-secret status and finite approved management | No shared secret/provider control contract | PROPOSED / BLOCKED |
 | Integration | Safe status and finite enable/disable/reconnect | Credential values never visible; common control interface absent | PROPOSED / BLOCKED |
-| Configuration | None until read/write decision | A-04 defers configuration permission while DATN-293 lists full config | CONFLICT / BLOCKED |
+| Configuration | Deferred; no permission or operation in active V1 | DEC-ACCESS-09 defers config read/write; DATN-293 includes the domain | OUT OF ACTIVE SCOPE / SCOPE DECISION REQUIRED |
 | Incident | Read and defined lifecycle transitions | Incident state model/owner/error contract absent | PROPOSED / BLOCKED |
 | Support / Diagnostic | Bounded sanitized diagnostics and finite support actions | No payload/tenant-content/secret exposure; action catalogue absent | PROPOSED / BLOCKED |
 ## 10. Authorization Behavior
@@ -267,7 +263,7 @@ Only A-04's 401/403 behavior and current generic codes are confirmed. New operat
 | Conflict/duplicate/idempotency mismatch | Proposed 409 | New code DECISION_REQUIRED | No internal identifiers/secrets | Record outcome per audit policy |
 | Stale version/CAS | Proposed 409 | New code DECISION_REQUIRED | Indicate reload/retry safely | Record outcome per audit policy |
 | Service/dependency unavailable | Proposed 503 | New code DECISION_REQUIRED | Generic dependency failure; no topology/secrets | Preserve operation/correlation ID if available |
-| Configuration/secret-provider failure | No config operation until conflict resolved; otherwise generic dependency failure | DECISION_REQUIRED | Never reveal value, path, key or provider credential | Do not log secret; audit attempted privileged change per approved policy |
+| Configuration/secret-provider failure | No Configuration operation exists in active V1; any later addition requires a new approved contract | DECISION_REQUIRED | Never reveal value, path, key or provider credential | Do not log secret; audit attempted privileged change per approved policy |
 | Unexpected failure | 500 | Existing generic server-error convention to confirm | Never stack trace, database detail or credential | Record sanitized correlation metadata only |
 
 ## 12. Audit Contract
@@ -364,10 +360,10 @@ Every operation is assigned to at least one child task for delivery planning. A 
 |---|---|---|---|---|---|---|
 | Permission registry, operator assignment, approved bootstrap/audit lifecycle | 295 | 296 | — | — | — | 300 |
 | `PLAT-DASH-01`, `PLAT-ORG-01..04`, `PLAT-USER-01..03`, `PLAT-MEM-01..04`, `PLAT-PROJ-01..05`, `PLAT-SEC-01..02`, `PLAT-AUDIT-01..02` | 295 | 296 | — | 298 | — | 300 |
-| `PLAT-HEALTH-01`, `PLAT-SVC-01..02`, `PLAT-JOB-01..04`, `PLAT-RAG-01..02`, `PLAT-AI-01..02`, `PLAT-LLM-01..02`, `PLAT-INT-01..02`, `PLAT-CFG-01..02`, `PLAT-INC-01..02`, `PLAT-SUP-01..02` | 295 | — | 297 | — | 299 | 300 |
+| `PLAT-HEALTH-01`, `PLAT-SVC-01..02`, `PLAT-JOB-01..04`, `PLAT-RAG-01..02`, `PLAT-AI-01..02`, `PLAT-LLM-01..02`, `PLAT-INT-01..02`, `PLAT-INC-01..02`, `PLAT-SUP-01..02` | 295 | — | 297 | — | 299 | 300 |
 | Shared auth/errors/audit/secret redaction and cross-scope behavior | 295 | 296 | 297 | 298 | 299 | 300 |
 
-DATN-295/296/297/298/299/300 are the expected owners from Jira. Configuration operations are listed for traceability only and have no implementation authorization while blocked. Dashboard metric ownership is unassigned at source level; the dashboard implementation row is blocked until data/source owners are named.
+DATN-295/296/297/298/299/300 are the expected owners from Jira. Configuration is excluded from the active V1 operation set and handoff under DEC-ACCESS-09; DATN-293 scope reconciliation remains blocked. Dashboard metric ownership is unassigned at source level; the dashboard implementation row is blocked until data/source owners are named.
 
 ## 19. Decision Register
 
@@ -379,9 +375,9 @@ DATN-295/296/297/298/299/300 are the expected owners from Jira. Configuration op
 | PO-D04 | Exact current permission match and fail-closed current evidence remain authorization baseline | DERIVED | DATN_BE authorization policy/guard | No wildcard or stale-token authority |
 | PO-D05 | Namespace new permissions as `platform.<domain>.<resource>.<action>` | PROPOSED | Existing names plus explicit platform namespace | DB/BE permission identifiers |
 | PO-D06 | Platform grant scope is separate from server-resolved Organization/Project/resource target scope | DERIVED | A-04 scope and DATN-82/85 boundaries | All target operations |
-| PO-D07 | Adopt the finite 37-code expansion in this matrix (plus existing three), excluding conflicted config | PROPOSED | DATN-293 domain scope; operation draft | DB/BE/FE cannot implement until owner approves |
+| PO-D07 | Adopt the finite 37-code non-Configuration expansion in this matrix (plus existing three), subject to owner approval; Configuration remains deferred pending DATN-293 scope reconciliation | PROPOSED | DATN-293 domain scope; accepted DEC-ACCESS-09 deferral; operation draft | DB/BE/FE cannot implement until owner approves |
 | PO-D08 | Platform admin authority does not grant tenant-content visibility | APPROVED | DATN-85, A-04 boundary, explicit V1 requirements | Protects Project/document/chat/RAG content |
-| PO-D09 | Platform Configuration read/manage inclusion | BLOCKED | DATN-293 includes configuration; DEC-ACCESS-09/A-04 defers it | Must resolve before DATN-295–299 config work |
+| PO-D09 | Whether to add Platform Configuration to V1 after DEC-ACCESS-09 deferral | BLOCKED | DATN-293 lists configuration; accepted DEC-ACCESS-09/A-04 defers config read/write | No config permission/operation is in active V1; explicit scope decision required before adding it |
 | PO-D10 | Initial operator issuer and bootstrap route/process | BLOCKED | No accepted issuer/runbook found in A-04/code | Critical bootstrap dependency |
 | PO-D11 | Full permission-bundle atomicity and assignment lifecycle | BLOCKED | Current model stores exact individual assignments; no bundle atomicity decision | DATN-295/296 |
 | PO-D12 | Audit immutability, complete producers, retention/redaction, read/export and denied-attempt logging | BLOCKED | Current append service/projection does not prove these controls | DB/BE/QA |
@@ -399,11 +395,11 @@ DATN-295/296/297/298/299/300 are the expected owners from Jira. Configuration op
 
 This checklist records the present review state rather than marking blocked policy as complete.
 
-- [x] Permission matrix has 42 rows with ID, domain, action/resource, scope, role intent, authorization, visibility, audit and evidence/status.
-- [x] Operation catalog contains 42 concrete rows; each has one permission, actor, action/resource, scope, authorization, response data, mutation/audit, repeat/concurrency/destructive notes and error behavior.
+- [x] Permission matrix has 40 rows with ID, domain, action/resource, scope, role intent, authorization, visibility, audit and evidence/status.
+- [x] Operation catalog contains 40 concrete rows; each has one permission, actor, action/resource, scope, authorization, response data, mutation/audit, repeat/concurrency/destructive notes and error behavior.
 - [x] Every catalog permission maps one-to-one to a permission-matrix row.
-- [x] Sixteen required domains are covered.
-- [x] Organization, User, Membership, Project, Session/Security, Audit, Job/RAG/Service/Integration/Configuration/Incident/Support boundaries are stated.
+- [x] Sixteen requested domain areas are addressed: 15 have proposed active operations; Configuration is explicitly deferred from the active V1 set pending scope reconciliation.
+- [x] Organization, User, Membership, Project, Session/Security, Audit, Job/RAG/Service/Integration/Configuration/Incident/Support boundaries are stated; Configuration is deferred, not assigned a DENY permission.
 - [x] Actor → action → resource → scope flow is explicit; client scope is not trusted.
 - [x] Tenant-content visibility is separated from platform administration.
 - [x] Authentication, exact permission match and fail-closed baseline follow evidence.
@@ -413,7 +409,7 @@ This checklist records the present review state rather than marking blocked poli
 - [x] Non-goals, DATN-79 relationship and child-task handoff are included.
 - [x] Evidence labels prevent proposals/conflicts from being presented as approved policy.
 - [ ] Permission expansion / exact role bundle is approved; 37 new codes remain proposals.
-- [ ] Platform Configuration conflict is resolved.
+- [ ] DATN-293 Configuration scope and DEC-ACCESS-09 deferral are reconciled by the policy owner; meanwhile no Configuration permission or operation is active in V1.
 - [ ] Initial operator issuer, bootstrap assignment, atomicity and recovery process are approved.
 - [ ] DEC-ACCESS-10 settles resource concealment and new error behavior.
 - [ ] Audit integrity/producers/read-export logging policy is approved.
@@ -429,7 +425,7 @@ This checklist records the present review state rather than marking blocked poli
 |---|---|---|---|
 | Critical | First operator issuer/bootstrap/recovery absent; current code has no approved assignment path | Name authorized issuer, verify identity, specify controlled assignment, idempotency/atomicity, audit and recovery | 294, 295, 296, 300 |
 | Critical | 37 new permission IDs and role bundle are not in A-04/runtime | Approve exact finite bundle, names, role-resolution and assignment lifecycle | 294–300 |
-| Critical | Configuration is in DATN-293 but deferred by DEC-ACCESS-09 | Resolve scope and amend decision before config permission/operations | 294–299 |
+| Critical | Configuration scope in DATN-293 conflicts with DEC-ACCESS-09, which defers config read/write | Resolve scope and amend decision before config permission/operations | 294–299 |
 | High | Audit append code does not prove immutable history or full mutation producers | Define append-only enforcement, event coverage, redaction/retention, read/export and denied-attempt policy | 295–300 |
 | High | DEC-ACCESS-10 is open | Set missing-vs-forbidden rule and new operation error codes | 294, 296, 297, 300 |
 | High | Organization status/usage fields and lifecycle semantics are absent | Define suspension effects, reactivation, usage metrics and migration/rollback behavior | 295, 296, 298, 300 |
