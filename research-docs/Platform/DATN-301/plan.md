@@ -24,7 +24,7 @@
 4. Specified audit events/fields, redaction, read/export/denial handling, atomic failure semantics, proposed retention/archive/deletion and exact external signers.
 5. Resolved DEC-ACCESS-10 for the active A-04 catalog; left broader resource classifications for unrelated capabilities open.
 6. Marked DB deployment reality UNVERIFIED and created a read-only runbook. No collection data was queried or changed.
-7. Synchronized canonical contract, decision record, readiness references and Jira descriptions without status transitions; identified stale `DATN-301 blocks` links to DATN-296–300 for removal while retaining the historical DATN-294 prerequisite and external gate for DATN-295.
+7. Synchronized canonical contract, decision record, readiness references and Jira descriptions without status transitions or link changes; preserved existing issue links per KeyT's explicit choice.
 8. Cross-checked for count/permission/operation/readiness consistency; docs only.
 
 ## Remaining gates

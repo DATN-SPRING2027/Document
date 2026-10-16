@@ -14,7 +14,7 @@ Jira: DATN-301 · Parent: DATN-293 · Contract: [DATN-294](../platform-operator-
 - [x] Resolve DEC-ACCESS-10 for active A-04 operations; preserve broader global decision scope.
 - [x] Create read-only DB verification runbook and record actual DB as UNVERIFIED.
 - [x] Set deterministic readiness for DATN-295–300 without changing Jira workflow statuses.
-- [ ] Remove obsolete `DATN-301 blocks` links to DATN-296–300; retain the historical DATN-294 prerequisite and the DATN-295 link until its external gates close.
+- [x] Preserve all existing Jira issue links per KeyT's explicit choice; DATN-301 is Done and the retained links remain traceability, while DATN-295 still has external approval/evidence gates.
 - [x] No runtime code, migration, seed, DB write, ACL, RAG or ingestion change.
 
 ## External approvals/evidence only
@@ -35,4 +35,4 @@ Jira: DATN-301 · Parent: DATN-293 · Contract: [DATN-294](../platform-operator-
 | DATN-299 | READY | No operations UI or Configuration |
 | DATN-300 | READY | Test oracle fixed; bootstrap transaction tests follow DATN-295 tool |
 
-Do not infer approval from Jira status Done or transition child statuses. The only planned dependency cleanup is removal of the obsolete DATN-301 blockers to DATN-296–300; preserve the DATN-294 historical prerequisite and DATN-295 external gate.
+Do not infer Security/IAM or Audit approval from Jira status Done, and do not transition child statuses. Existing issue links are intentionally preserved; READY describes deterministic implementation scope, not a request to edit Jira dependencies.
