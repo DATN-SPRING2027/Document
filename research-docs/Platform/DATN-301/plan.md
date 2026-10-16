@@ -4,47 +4,48 @@
 |---|---|
 | Jira | [DATN-301](https://trankimthang0207.atlassian.net/browse/DATN-301) |
 | Parent | [DATN-293](https://trankimthang0207.atlassian.net/browse/DATN-293) |
-| Contract đầu vào | [PLATFORM_OPERATOR V1 Contract](../platform-operator-v1-contract.md) — DATN-294 |
-| Trạng thái tài liệu | Chuẩn bị quyết định; chưa phải phê duyệt policy |
-| Phạm vi | Tài liệu / quyết định; không thay đổi runtime |
+| Canonical contract | [PLATFORM_OPERATOR V1 Contract](../platform-operator-v1-contract.md) |
+| Decision record | [design.md](design.md) |
+| Trạng thái | Đã chốt một phần; vẫn In Progress vì còn chữ ký Security/IAM và operation decisions |
+| Phạm vi | Policy/documentation và Jira scope; không thay đổi runtime |
 
 ## Mục tiêu
 
-Tạo một quy trình quyết định có thể review và truy vết cho sáu nhóm policy đang chặn các task DATN-295–300: bundle 37 quyền, bootstrap/recovery, Configuration, error/concealment, audit và semantics của operation. Đầu ra cuối cùng phải ghi rõ quyết định nào được duyệt, bởi ai, dựa trên evidence nào, phạm vi áp dụng và các task con nào được mở khóa.
+Đóng các policy decisions DATN-301 đang chặn DATN-295–300, ghi nguồn phê duyệt, phần còn chờ owner, và giữ implementation không suy diễn từ permission membership.
 
-## Ranh giới đã biết
+## Disposition đã nhận ngày 2026-10-16
 
-- V1 chỉ có một `PLATFORM_OPERATOR` với quyền hiệu lực đầy đủ trong tập Platform Administration V1 được duyệt; không chia tier, không wildcard và không Break-glass.
-- Authentication vẫn bắt buộc. Role này không tự cấp quyền Organization/Project membership hoặc đọc nội dung tenant.
-- Secret/credential không được trả về API/FE; privileged mutation phải được audit.
-- Ba permission hiện có của DATN-79 được giữ nguyên cho đến khi có phê duyệt thay đổi riêng.
-- `DEC-ACCESS-09` hiện hoãn config read/write; DATN-293 lại liệt kê Configuration. Chưa có quyết định hòa giải hai nguồn này.
-- Các lựa chọn còn mở trong DATN-294 là proposal/blocker, không phải quyền runtime.
+KeyT phê duyệt:
 
-## Kế hoạch thực hiện
+- PLATFORM_OPERATOR có đúng 40 exact codes: 3 permission hiện hữu của DATN-79/A-04 và toàn bộ 37 code cụ thể trong DATN-294 matrix. Không wildcard, không tự mở rộng runtime.
+- Tiếp tục dùng exact permission assignments; grant/revoke toàn bộ tập là atomic, all-or-nothing. Assignment một phần không tạo role operator; không viết lại/backfill các grant legacy.
+- Hoãn Platform Configuration khỏi V1 theo DEC-ACCESS-09; cần sửa scope DATN-293, DATN-297 và DATN-299.
+- Giữ 401/403; dùng 404 chỉ theo resource-concealment policy; dùng 422/409/503/500 cho validation, conflict/stale, dependency và unexpected failure; response theo safe allowlist IAM envelope.
+- Operator API không sửa/xóa audit history; privileged mutations fail closed nếu audit chưa ghi bền vững.
 
-1. **Đóng gói evidence:** đối chiếu DATN-294, DATN-293, DATN-79/A-04, DEC-ACCESS-09 và DEC-ACCESS-10; đánh dấu rõ fact, derived constraint, proposal và conflict.
-2. **Xin disposition theo từng nhóm:** người phụ trách Platform/Security duyệt phạm vi và audit; IAM/Authorization duyệt role resolution, grant, bootstrap và lỗi; domain owner duyệt state/side-effect của operation thuộc domain mình.
-3. **Ghi decision record:** lưu lựa chọn, người duyệt, ngày, lý do, evidence, ngoại lệ, ảnh hưởng API/schema và task con. Mục chưa có owner approval giữ `BLOCKED` hoặc `DEFERRED`.
-4. **Đồng bộ contract:** sau khi có quyết định, cập nhật DATN-294 và các nguồn kiến trúc liên quan; sửa DATN-293/child tasks nếu scope thay đổi; không để proposal trông như approved.
-5. **Đánh giá readiness:** chỉ gỡ dependency tương ứng khi quyết định đã được owner duyệt và contract có thể implement mà không cần suy diễn. DATN-300 cần giữ gate cho test evidence sau khi các contract được chốt.
+Security/IAM cần ký issuer/executor và bootstrap/recovery procedure; Security/IAM cũng cần chốt audit retention. Audit producer coverage, read/export/denial behavior, durability controls và operation-specific contracts vẫn cần audit/domain owners. Chi tiết và exact codes ở [design.md](design.md).
 
-## Điều kiện hoàn tất DATN-301
+## Ranh giới bắt buộc
 
-- Có disposition được người/nhóm có thẩm quyền xác nhận cho đủ sáu nhóm trong [design.md](design.md).
-- Từng permission trong danh sách 37 mã có trạng thái `APPROVE`, `MODIFY`, `REJECT` hoặc `DEFER`, có rationale và liên kết đến role bundle cuối cùng.
-- Bootstrap/recovery có issuer, identity verification, no-self-grant, atomicity/lifecycle, audit, revoke, rollback và hậu kiểm.
-- Configuration có quyết định nhất quán với DEC-ACCESS-09 hoặc decision được sửa chính thức.
-- Error/concealment, audit invariant và semantics của từng operation còn active được ghi thành contract có thể triển khai.
-- Contract DATN-294, phạm vi DATN-293 và dependencies DATN-295–300 đồng bộ; không còn TBD implementation-affecting bị ngầm coi là đã duyệt.
+- Authentication luôn bắt buộc; không bypass Organization/Project ACL hoặc tenant-content boundary.
+- Secret/credential không trả ra API/FE; không có Break-glass, hidden account, production seed hoặc wildcard.
+- Ba mã A-04 không đổi tên hoặc semantics; không backfill tự động các assignment cũ.
+- Permission membership tự nó không bật API/UI: operation mới đang deferred cho đến khi domain owner phê duyệt semantics.
+- Configuration không thuộc active V1.
 
-### Điều kiện tối thiểu để bắt đầu DATN-295
+## Kế hoạch hoàn tất
 
-DATN-295 không thể tự chọn authority representation. Trước implementation phải có owner disposition cho permission bundle/scope, persisted bundle-vs-exact-assignment semantics, atomicity/partial failure và issuer/bootstrap/recovery/audit path. Các lỗi API chi tiết và operation semantics không liên quan DB có thể tiếp tục chặn task API tương ứng nếu DATN-295 được giới hạn đúng và dependency được owner sửa rõ ràng.
+1. [x] Ghi exact permission set và assignment atomicity theo disposition của KeyT.
+2. [x] Ghi nhận Configuration deferral và D4 error baseline; resource classes cho concealment/404 còn chờ owner.
+3. [x] Ghi nhận audit API append-only và privileged-mutation fail-closed baseline; giữ retention/coverage là blocker.
+4. [x] Ghi rõ cả 37 operation mới DEFERRED trong V1; operation nào muốn bật về sau cần domain-owner record riêng.
+5. [ ] Security/IAM ghi tên issuer/executor, identity verification, approval path và bootstrap/recovery/revoke/rollback runbook.
+6. [ ] Security/IAM ghi retention period và enforcement boundary.
+7. [ ] Security/Audit/domain owners chốt audit producers, fields/reason, redaction, read/export/denial coverage và failure/durability behavior.
+8. [x] Đồng bộ Configuration deferral và current blockers trong DATN-293/294/295–300.
+9. [ ] DEC-ACCESS-10 owner chốt resource classes cần concealment/404 trong shared readiness và các contract liên quan.
+10. [ ] Chỉ gỡ dependency khi evidence cho đúng task đã được duyệt và acceptance contract được cập nhật.
 
-## Không thuộc phạm vi của PR này
+## Readiness
 
-- Không cấp 37 permission mới, tạo role/bundle runtime hoặc đổi authorization.
-- Không chọn policy thay cho Platform/Security, IAM/Authorization hay domain owner.
-- Không thay đổi schema, migration, API, UI, seeds, production configuration hoặc audit store.
-- Không chuyển DATN-295–300 sang trạng thái sẵn sàng chỉ vì decision worksheet đã được tạo.
+DATN-301 chưa đạt acceptance hoàn chỉnh; DATN-295–300 vẫn bị chặn. Exact permission set, Configuration deferral, D4 baseline và hai audit invariants đã có disposition. Issuer/recovery, retention, audit completeness và resource classes cần concealment/404 còn mở. 37 operation mới đã được DEFERRED; đây là ranh giới V1, không phải một quyết định còn chờ của DATN-301. Xem [design.md §5–7](design.md) để biết gate theo child.
