@@ -38,6 +38,10 @@ Tạo một quy trình quyết định có thể review và truy vết cho sáu 
 - Error/concealment, audit invariant và semantics của từng operation còn active được ghi thành contract có thể triển khai.
 - Contract DATN-294, phạm vi DATN-293 và dependencies DATN-295–300 đồng bộ; không còn TBD implementation-affecting bị ngầm coi là đã duyệt.
 
+### Điều kiện tối thiểu để bắt đầu DATN-295
+
+DATN-295 không thể tự chọn authority representation. Trước implementation phải có owner disposition cho permission bundle/scope, persisted bundle-vs-exact-assignment semantics, atomicity/partial failure và issuer/bootstrap/recovery/audit path. Các lỗi API chi tiết và operation semantics không liên quan DB có thể tiếp tục chặn task API tương ứng nếu DATN-295 được giới hạn đúng và dependency được owner sửa rõ ràng.
+
 ## Không thuộc phạm vi của PR này
 
 - Không cấp 37 permission mới, tạo role/bundle runtime hoặc đổi authorization.

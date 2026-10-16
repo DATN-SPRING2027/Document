@@ -206,3 +206,36 @@ Downstream tasks unblocked:
 | D6 — Operation semantics | `TBD` | — | — | — | — |
 
 **Readiness:** `NOT READY`. Worksheet này ghi nhận vấn đề, evidence và lựa chọn để review; không tự phê duyệt một policy nào, không thay DATN-294 và không gỡ dependency DATN-295–300.
+
+## 11. Cổng bắt đầu riêng cho DATN-295
+
+### Evidence BE hiện hành
+
+Đối chiếu DATN-BE `main` tại [`3b839198cfcbc40d6b11e1167ae8c68c54afea99`](https://github.com/DATN-SPRING2027/DATN-BE/commit/3b839198cfcbc40d6b11e1167ae8c68c54afea99):
+
+- [DEC-ACCESS-09](https://github.com/DATN-SPRING2027/DATN-BE/blob/3b839198cfcbc40d6b11e1167ae8c68c54afea99/docs/decisions/dec-access-09-platform-operator-authorization.md) hiện `PARTIAL overall`; A-04 chỉ duyệt đúng `organization.create`, `platform.health.read`, `platform.audit.read`. Không có permission A-04 mới nào được duyệt trong quyết định này. `platform.configuration.read/write` vẫn `FUTURE / DECISION_REQUIRED`.
+- [A-04 implementation record](https://github.com/DATN-SPRING2027/DATN-BE/blob/3b839198cfcbc40d6b11e1167ae8c68c54afea99/docs/decisions/a-04-platform-operator-authorization-implementation.md) xác nhận model hiện hành là assignment theo từng subject + exact permission + `PLATFORM`; không phải một role-bundle record. Schema chỉ enum ba mã đã duyệt; index unique theo `(subjectUserId, permission, scope)`. Record có trạng thái, grant/revoke attribution/time và optional expiry.
+- Cùng implementation record ghi rõ chưa có issuer/bootstrap/recovery mechanism được duyệt; không thêm public grant/revoke API hoặc seed. Grant/revoke audit producer và event contract vẫn là follow-up.
+- DEC-ACCESS-09 cho phép ranh giới business là authority riêng, platform-scoped; collection/entity/index/migration cụ thể thuộc implementation design. Điều đó không tự duyệt một role bundle 37 mã hay thao tác cấp bundle.
+
+### Kết luận readiness
+
+| Điều kiện của DATN-295 | Evidence hiện tại | Kết luận |
+|---|---|---|
+| Exact permission set cho `PLATFORM_OPERATOR` | A-04 duyệt 3 mã; 37 mã DATN-294 là proposal; scope Configuration mâu thuẫn với DEC-ACCESS-09 | **BLOCKED** — cần owner phê duyệt/amend scope và disposition exact 37 mã |
+| Representation của role/bundle và grant/revoke | BE có per-permission assignments; chưa có role bundle, bundle version, atomic grant/revoke hoặc partial-failure contract | **BLOCKED** — DATN-295 không được tự chọn role row hay multi-assignment bundle |
+| Bootstrap/recovery đáp ứng acceptance của DATN-295 | Issuer, recipient verification, assignment route/runbook và recovery authority chưa được quyết định | **BLOCKED** — task không thể tuyên bố bootstrap hoạt động theo contract |
+| Audit của grant/bootstrap/revoke | Có attribution fields trên assignment; event producer/schema/failure/retention chưa được duyệt | **BLOCKED** nếu DATN-295 cần tạo audit persistence hoặc ghi event trong cùng transaction |
+| Error/concealment DEC-ACCESS-10 | A-04 giữ 401/403 và 404 theo policy resource-hiding; body/problem codes còn mở | Không chặn schema-only design nếu không mở API; vẫn chặn API contract/BE task |
+| Semantics các operation domain | Nhiều operation còn cần state machine/source/side-effect owner | Không chặn authority storage thuần túy nếu permission disposition đã được duyệt; vẫn chặn operation implementation tương ứng |
+
+Jira [DATN-295](https://trankimthang0207.atlassian.net/browse/DATN-295) còn yêu cầu migration/schema được review và bootstrap operator hoạt động theo contract. Vì vậy chỉ thu hẹp task xuống migration/schema cũng chưa đủ để đạt acceptance hiện tại; cần owner quyết định rõ phần bootstrap/audit hoặc sửa phạm vi và dependency trước.
+
+**Kết luận:** với evidence hiện tại, DATN-295 chưa đủ điều kiện bắt đầu implementation theo Jira acceptance. Có thể làm design spike cho mô hình hiện có, nhưng không được thêm 37 code vào schema/migration, tạo role bundle, seed/grant operator hoặc bỏ dependency trước khi owner chốt ba điều kiện chính: exact permission/scope, storage/atomicity model, và issuer/bootstrap/audit path. D4/D6 có thể tiếp tục chặn các API/operation downstream nếu được tách rõ khỏi phần authority DB.
+
+### Đề xuất để owner duyệt — không phải quyết định
+
+1. Giữ `platform_authority_assignments` tách biệt khỏi Organization roles; đây là boundary đã có evidence. Chọn rõ giữa (A) tiếp tục lưu một exact permission mỗi assignment và cấp/thu hồi cả bundle trong transaction, hoặc (B) thêm một platform role-assignment record trỏ tới một bundle version hữu hạn. Không chọn dựa vào convenience; phải xác định deny/partial-assignment semantics và cách giữ ba code A-04 tương thích.
+2. Disposition từng 37 mã trong §3; nếu giữ đúng intent full Platform Administration, phê duyệt tập mã hữu hạn chính xác. Configuration cần lựa chọn riêng vì DEC-ACCESS-09 hiện hoãn nó.
+3. Ghi issuer, xác minh danh tính, no-self-grant, approval evidence, cấp/thu hồi nguyên tử, audit event và recovery/rollback runbook. Không mặc định API, seed, một hay hai người duyệt.
+4. Chỉ sau các approval trên mới mở DATN-295. DEC-ACCESS-10 và semantics operation có thể tiếp tục là dependency riêng cho DATN-296–300 nếu task DB được giới hạn đúng và decision owner đồng ý.

@@ -12,9 +12,9 @@ Jira: [DATN-301](https://trankimthang0207.atlassian.net/browse/DATN-301) · Cont
 
 ## Chờ người có thẩm quyền quyết định
 
-- [ ] **D1 — Bundle:** disposition đủ 37 permission; chốt role resolution, grant/revoke, bundle atomicity và partial failure. Giữ nguyên 3 mã DATN-79 nếu chưa có duyệt riêng.
-- [ ] **D2 — Bootstrap/recovery:** ghi rõ issuer, cách xác minh người cấp/người nhận, assignment path, chống self-grant/race/duplicate, revoke, mất operator duy nhất, rollback và kiểm tra sau phục hồi.
-- [ ] **D3 — Configuration:** chọn tiếp tục defer và reconcile scope DATN-293, hoặc sửa DEC-ACCESS-09 theo quy trình quyết định; không tạo quyền/operation config khi chưa duyệt.
+- [ ] **D1 — Bundle:** DEC-ACCESS-09 A-04 hiện duyệt ba mã; disposition đủ 37 mã mới, chốt role resolution, grant/revoke, bundle atomicity và partial failure. Giữ nguyên ba mã A-04 trừ khi có duyệt riêng.
+- [ ] **D2 — Bootstrap/recovery:** ghi rõ issuer, xác minh issuer/recipient, assignment path, no-self-grant, race/duplicate, revoke, mất operator duy nhất, audit, rollback và hậu kiểm.
+- [ ] **D3 — Configuration:** DEC-ACCESS-09 hiện giữ config read/write là `FUTURE / DECISION_REQUIRED`; chọn defer và reconcile DATN-293, hoặc amend DEC-ACCESS-09 trước khi thêm quyền/operation.
 - [ ] **D4 — Error/concealment:** duyệt missing-vs-forbidden theo DEC-ACCESS-10 và status/body cho validation, stale/conflict, dependency, unexpected failure.
 - [ ] **D5 — Audit:** duyệt invariant, event coverage, field allowlist, redaction, retention, read/export/denial logging, audit-write failure behavior và cách bảo đảm append-only.
 - [ ] **D6 — Operation semantics:** duyệt preconditions/state transitions, scope/target resolution, input/output, idempotency/concurrency, side effect/destructive impact, audit và error cho mỗi operation còn active.
@@ -38,3 +38,14 @@ Jira: [DATN-301](https://trankimthang0207.atlassian.net/browse/DATN-301) · Cont
 | D4 — Error/concealment | `BLOCKED` | Công bố status/mã lỗi mới hoặc chọn 404/403 để che resource |
 | D5 — Audit | `BLOCKED` | Tuyên bố audit append-only/đầy đủ hoặc cho phép mutation không audit |
 | D6 — Operation semantics | `BLOCKED` theo từng domain | Bật operation mà state, side-effect hoặc retry chưa có contract |
+
+## Gate riêng để bắt đầu DATN-295
+
+Đối chiếu schema/DEC-ACCESS-09 trong [design.md §11](design.md): hiện **chưa đủ điều kiện implementation**. Trước khi bỏ liên kết DATN-301 → DATN-295, cần owner duyệt:
+
+- [ ] Exact finite permission bundle (3 mã A-04 + disposition của 37 mã mới; Configuration có scope riêng).
+- [ ] Một authority representation và semantics khi thiếu/partial assignment; atomic grant/revoke và bundle version.
+- [ ] Issuer/bootstrap/recovery path, identity evidence và transaction/rollback.
+- [ ] Tối thiểu audit contract cho grant/bootstrap/revoke mà DATN-295 phải persist hoặc bảo đảm.
+
+D4 (chi tiết error codes/bodies) và D6 (semantics từng operation) có thể là dependency riêng cho API/operation downstream, nhưng chỉ sau khi owner xác nhận phạm vi DATN-295 không đòi các field/state đó. Không tự chuyển DATN-295 sang Ready hoặc gỡ blocker bằng worksheet này.
