@@ -1,51 +1,35 @@
 # DATN-301 — Todo và cổng gỡ blocker
 
-Jira: [DATN-301](https://trankimthang0207.atlassian.net/browse/DATN-301) · Contract: [DATN-294](../platform-operator-v1-contract.md)
+Jira: [DATN-301](https://trankimthang0207.atlassian.net/browse/DATN-301) · Contract: [DATN-294](../platform-operator-v1-contract.md) · Decision record: [design.md](design.md)
 
-## Đã chuẩn bị trong PR tài liệu này
+## Đã được KeyT phê duyệt ngày 2026-10-16
 
-- [x] Ghi rõ evidence hiện có và các ranh giới đã được xác nhận.
-- [x] Tạo decision worksheet cho sáu nhóm policy trong DATN-301.
-- [x] Liệt kê riêng 37 permission proposal để owner disposition từng mã.
-- [x] Gắn decision với chủ thể phê duyệt và tác động lên DATN-295–300.
-- [x] Giữ nguyên trạng thái chưa duyệt; không thay đổi runtime.
+- [x] Exact set gồm 3 permission DATN-79/A-04 hiện có + đúng 37 code trong DATN-294; không wildcard.
+- [x] Giữ exact-permission assignment; cấp/thu hồi toàn tập atomic, all-or-nothing; không đổi hoặc tự backfill assignment legacy.
+- [x] Configuration deferred khỏi active V1 theo disposition DATN-301; DEC-ACCESS-09 vẫn ghi `FUTURE / DECISION_REQUIRED`.
+- [x] 401/403 baseline; 404 chỉ khi concealment áp dụng; 422/409/503/500 theo error class; IAM envelope và body an toàn.
+- [x] Operator không sửa/xóa audit history; privileged mutation fail closed nếu audit chưa ghi bền vững.
+- [x] Ghi contract durability: mutation + required audit event có chung durable commit boundary; external side effect cần durable intent/audit trước dispatch hoặc chưa vào active catalog.
+- [x] Ghi lại A-04 platform login/refresh và exact permission check hiện hành; không thay đổi DATN-79.
+- [x] Ghi resolver boundary: 3 A-04 operation giữ single-code check; operation mới yêu cầu đủ exact 40-code set và exact operation permission.
+- [x] Operation mới chưa có owner-approved semantics không được bật; permission không tự bật API/UI.
 
-## Chờ người có thẩm quyền quyết định
+## Chờ Security/IAM và domain owners
 
-- [ ] **D1 — Bundle:** DEC-ACCESS-09 A-04 hiện duyệt ba mã; disposition đủ 37 mã mới, chốt role resolution, grant/revoke, bundle atomicity và partial failure. Giữ nguyên ba mã A-04 trừ khi có duyệt riêng.
-- [ ] **D2 — Bootstrap/recovery:** ghi rõ issuer, xác minh issuer/recipient, assignment path, no-self-grant, race/duplicate, revoke, mất operator duy nhất, audit, rollback và hậu kiểm.
-- [ ] **D3 — Configuration:** DEC-ACCESS-09 hiện giữ config read/write là `FUTURE / DECISION_REQUIRED`; chọn defer và reconcile DATN-293, hoặc amend DEC-ACCESS-09 trước khi thêm quyền/operation.
-- [ ] **D4 — Error/concealment:** duyệt missing-vs-forbidden theo DEC-ACCESS-10 và status/body cho validation, stale/conflict, dependency, unexpected failure.
-- [ ] **D5 — Audit:** duyệt invariant, event coverage, field allowlist, redaction, retention, read/export/denial logging, audit-write failure behavior và cách bảo đảm append-only.
-- [ ] **D6 — Operation semantics:** duyệt preconditions/state transitions, scope/target resolution, input/output, idempotency/concurrency, side effect/destructive impact, audit và error cho mỗi operation còn active.
-- [ ] Ghi tên/nhóm owner, ngày, rationale, evidence và phạm vi cho từng quyết định.
+- [ ] Security/IAM chỉ định issuer và executor, identity verification, approval/change evidence và quy trình cấp operator đầu tiên.
+- [ ] Security/IAM hoàn tất recovery khi mất operator duy nhất, revoke, no-self-grant, chống race/duplicate, rollback và hậu kiểm.
+- [ ] Security/IAM + DB owner chốt full-set grant/revoke đối với legacy A-04 assignments và regrant-after-revoke theo unique index hiện tại.
+- [ ] Security/IAM chốt audit retention period và enforcement boundary.
+- [ ] Security/Audit/domain owners chốt event producer coverage, required fields/reason, redaction, read/export/denial policy, retention enforcement và evidence storage đáp ứng durable commit boundary.
+- [ ] Authorized domain owners ghi disposition từng mapping trong 37 mapping mới: `ACTIVE` với operation record/test oracle đầy đủ hoặc `DEFERRED FROM V1` với rationale/evidence. Hiện chúng ở ngoài active V1 catalog và bị chặn triển khai; thiếu approval không phải defer hay final operation status.
+- [x] Ghi baseline error/concealment đã được KeyT duyệt vào shared access-readiness record.
+- [ ] DEC-ACCESS-10 owner chỉ định resource classes cần concealment/404; cập nhật security tests và API/FE contracts tương ứng.
+- [x] Đồng bộ scope Configuration và current blockers trong Jira DATN-293–300; giữ nguyên DATN-301 → DATN-295–300 links.
 
-## Sau khi được duyệt
+## Gate DATN-295
 
-- [ ] Cập nhật decision register, permission matrix và operation catalog trong DATN-294.
-- [ ] Đồng bộ `research-docs/02_ACTORS_ROLES_AND_PERMISSIONS.md` và `architecture/05_SECURITY_AND_GOVERNANCE.md` nếu quyết định làm thay đổi các mô tả tổng quát hiện tại.
-- [ ] Cập nhật DATN-293, DEC-ACCESS-09/10 và các child task liên quan; không sửa decision gốc nếu chưa theo quy trình owner của tài liệu đó.
-- [ ] Chỉ gỡ từng dependency DATN-295–300 khi điều kiện cụ thể của task đó đã có evidence.
-- [ ] Bàn giao các test oracle cho DATN-300; sau đó domain task chạy validation riêng theo yêu cầu repository.
+**BLOCKED.** D1 đã chốt exact codes/atomic grant-revoke; DATN-294 đã chốt contract rằng assignment change và required audit event phải cùng durable commit boundary, audit failure phải rollback/no success. DATN-295 vẫn cần Security/IAM issuer/executor, identity evidence, first-grant/recovery/revoke runbook, retention/enforcement và producer/event schema decisions; DB-specific persistence design must implement the contract invariant. Không thêm runtime code/API, seed hoặc gỡ dependency khi các owner decision còn thiếu.
 
-## Trạng thái blocker tại thời điểm lập worksheet
+## Trạng thái Jira
 
-| Nhóm | Trạng thái | Không được làm trước khi đóng |
-|---|---|---|
-| D1 — 37 mã và bundle | `BLOCKED` | Tạo role bundle hoặc grant quyền mới |
-| D2 — Bootstrap/recovery | `BLOCKED` | Gán operator đầu tiên hoặc tạo đường phục hồi ngầm |
-| D3 — Configuration | `BLOCKED / SCOPE CONFLICT` | Thêm config permission/API |
-| D4 — Error/concealment | `BLOCKED` | Công bố status/mã lỗi mới hoặc chọn 404/403 để che resource |
-| D5 — Audit | `BLOCKED` | Tuyên bố audit append-only/đầy đủ hoặc cho phép mutation không audit |
-| D6 — Operation semantics | `BLOCKED` theo từng domain | Bật operation mà state, side-effect hoặc retry chưa có contract |
-
-## Gate riêng để bắt đầu DATN-295
-
-Đối chiếu schema/DEC-ACCESS-09 trong [design.md §11](design.md): hiện **chưa đủ điều kiện implementation**. Trước khi bỏ liên kết DATN-301 → DATN-295, cần owner duyệt:
-
-- [ ] Exact finite permission bundle (3 mã A-04 + disposition của 37 mã mới; Configuration có scope riêng).
-- [ ] Một authority representation và semantics khi thiếu/partial assignment; atomic grant/revoke và bundle version.
-- [ ] Issuer/bootstrap/recovery path, identity evidence và transaction/rollback.
-- [ ] Tối thiểu audit contract cho grant/bootstrap/revoke mà DATN-295 phải persist hoặc bảo đảm.
-
-D4 (chi tiết error codes/bodies) và D6 (semantics từng operation) có thể là dependency riêng cho API/operation downstream, nhưng chỉ sau khi owner xác nhận phạm vi DATN-295 không đòi các field/state đó. Không tự chuyển DATN-295 sang Ready hoặc gỡ blocker bằng worksheet này.
+DATN-301 đang In Progress; giữ trạng thái này. Jira hiện ghi DATN-301 block DATN-295–300. Không gỡ links hoặc chuyển task con sang Ready chỉ vì decision record đã được cập nhật một phần. Epic DATN-293 và các child descriptions hiện thể hiện Configuration deferred theo DATN-301, DEC-ACCESS-09 source-accurate, và 37 operation đang chờ disposition (không ghi như approved deferred); xem [design.md §5](design.md).
