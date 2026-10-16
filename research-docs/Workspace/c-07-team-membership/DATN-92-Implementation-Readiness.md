@@ -9,7 +9,7 @@
 - DATN-BE main inspected read-only at `3b839198cfcbc40d6b11e1167ae8c68c54afea99`.
 - Document branch starts at `origin/main` `6143f0dd2a6f4e396b8d21a0511fb7f9da2f8eef`.
 - Team Foundation source is present in BE, but Team Membership mutation provider/write path is absent in inspected main. Team Foundation runtime flags remain fail-closed per the existing DATN-90 gate work; this is code evidence, not runtime acceptance.
-- Current `team_memberships` schema has no status or generation snapshots; declared `(teamId,userId)` unique index conflicts with the approved new-ID rejoin if old rows are retained.
+- Current `team_memberships` schema has no status or generation snapshots; declared `(teamId,userId)` unique index conflicts with the approved new-ID rejoin if old rows are retained. The earlier proposed partial unique index also fails if a stale-generation row remains `ACTIVE`; F-07 now recommends a stable pair slot plus retained admission history, pending DB/domain approval and MongoDB 7 replica-set proof.
 - API has an older Team Membership GET draft; DATN-92 scope excludes GET. No shared contract change is made by this package.
 - A canonical Team audit event mapping and authoritative retention duration were not found. The `365` value in the audit schema is an example, not an approved Team retention policy.
 - Required DB/domain, IAM/Security, API/Gateway, Audit/Security owner decisions remain open in the [Decision Register](DATN-92-Decision-Register.md).
@@ -20,7 +20,7 @@ Gate A passes only when every applicable item is evidenced and linked from DATN-
 
 - [ ] R0 identifies authorized C-04 decision owner and validates the exact C-04 record/revision, or TQ-09 is replaced/deferred with an authorized C-07 decision.
 - [ ] IAM/Security approves exact action permission IDs, Project-wide TEAM_LEADER scope, provision/revoke/assignment ownership, no-implicit-grant rule, and commit-time actor evidence.
-- [ ] Team/DB/API owners approve retained admission identity/storage, active pair uniqueness, stale-generation re-admission, explicit new-ID/new-`joinedAt`, repeat removal, rejoin response semantics, and audit no-op behavior.
+- [ ] Team/DB/API owners approve retained admission identity/storage, stable pair-slot uniqueness, stale-generation pointer replacement, explicit new-ID/new-`joinedAt`, repeat removal, rejoin response semantics, and audit no-op behavior.
 - [ ] User/Organization/Project/DB owners approve generation fields/source, User suspend/reactivate scope, all parent/role writers, transaction fences/retry behavior, legacy-row fail-closed treatment, migration and recovery boundary.
 - [ ] API/IAM/Security/Gateway approves exact POST/DELETE DTOs, statuses, headers, error codes/precedence, shared ErrorResponse mapping, CSRF, concealment, cache behavior, and GET exclusion/disposition.
 - [ ] Audit/Security approves canonical collection/schema, event/action mapping, allowlisted fields, dedupe/no-op/rejected-attempt policy, history-read scope, and exact retention/archival source or explicitly keeps the affected write deferred.
@@ -38,7 +38,8 @@ Gate A passes only when every applicable item is evidenced and linked from DATN-
 - [ ] Every User, Organization Membership, Project Membership, Project/RoleAssignment/Role and Team Membership writer is inventoried; owning domain owners attest in-repo and external/admin/seed/import/repair paths.
 - [ ] Parent writer changes use the approved generation and transaction fence; retry re-reads current authority; race tests prove no stale admission or privilege restoration.
 - [ ] MongoDB 7 replica-set support is verified for every transaction participant including canonical audit and idempotency records; late failure rolls back all required writes.
-- [ ] Partial active-pair unique index and historical admission queries are implemented and tested; legacy rows without proof fail closed.
+- [ ] Approved stable pair-slot CAS and distinct admission-history design are implemented and tested; stale snapshots never become effective, and legacy rows without proof fail closed.
+- [ ] MongoDB 7 replica-set integration tests prove first-slot uniqueness, pointer CAS replacement, concurrent add/remove/rejoin, parent-generation races, transaction rollback and unknown-commit recovery; link the executed CI/report evidence.
 - [ ] Idempotency provider and durable operation result semantics are established if TQ-09 applies; expiry/CAS, replay authorization, contention and unknown commit are tested.
 - [ ] Gateway/BFF/IAM routing and required context/CSRF/idempotency/correlation headers are contract-verified and integration-tested.
 - [ ] Audit schema/event mapping and retention dependency are implemented as approved; no guessed duration.

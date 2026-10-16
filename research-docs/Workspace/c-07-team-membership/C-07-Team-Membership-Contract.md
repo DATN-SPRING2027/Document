@@ -20,7 +20,7 @@ These are the exact bounded C-07 approvals made by KeyT at 11:17 ICT on 2026-10-
 |---|---|---|
 | TQ-05 authorization | Project-scoped `TEAM_LEADER`; explicit Team add/remove authority; no implicit grant. | Canonical permission codes, assignment provisioning/revocation path, actor evidence/fence, and exact scope checks. |
 | TQ-06 parent lifecycle | Admission-generation and transaction-fencing direction to prevent silent access restoration after a parent membership is activated again. | Generation source/fields, User suspension scope, all writers, transaction protocol, migration, and proof. |
-| Membership lifecycle | Active duplicate add returns `409`; repeated removal returns `204`; after explicit removal, rejoin creates a **new Membership ID and new `joinedAt`**. | Storage/history model and active-only uniqueness, rejoin status/Location, and stale-generation re-admission identity. |
+| Membership lifecycle | Active duplicate add returns `409`; repeated removal returns `204`; after explicit removal, rejoin creates a **new Membership ID and new `joinedAt`**. | Storage/history model, stable pair-slot strategy, rejoin status/Location, and stale-generation re-admission identity. |
 | TQ-07/08 scope | Implement POST/DELETE membership operations only; GET/list is excluded from DATN-92; follow the proposed API/error contract subject to consistency verification. | Exact API status/error/precedence, headers, DTO, Gateway forwarding, shared error mapping, and any amendment required for compatibility. |
 | TQ-10 consistency | Mutation and audit are in the same transaction; if audit fails, roll back the mutation. | Canonical event/action mapping, allowlist, dedupe/no-op behavior, transaction topology proof, history access, and retention/archival policy. |
 
@@ -54,9 +54,13 @@ The recommended action permission identifiers are `team.members.add` and `team.m
 
 Recommended response for explicit rejoin is `201 Created` with the new resource `Location` because it creates a distinct admission identity. This is not represented as approved; the API owner must select or amend it.
 
+### Recommended storage constraint — F-07 correction (awaiting DB/domain approval)
+
+The earlier draft proposed a partial unique index on admission rows with `status=ACTIVE`. That conflicts with generation invalidation: a stale admission can remain marked ACTIVE and occupy the unique pair even though it is ineffective, blocking a fresh authorized POST. The recommended logical design uses one stable unique Team/User slot pointing to the current admission ID and separate per-admission history records. Removal clears the slot pointer using a compare-and-set (CAS) while preserving the old admission identity; explicit rejoin or stale-generation re-admission creates a new history ID and `joinedAt`, then replaces the slot pointer transactionally. Exact status/removal-history fields and indexes remain subject to DB/Audit owner approval and MongoDB 7 replica-set proof. See the [DB/parent-writer proposal](DATN-92-DB-Parent-Writer-Design.md#2-recommended-logical-model--awaiting-dbdomain-approval) and finding [F-07](DATN-92-Approval-Evidence-and-Findings.md#f-07--stale-active-row-blocks-fresh-re-admission).
+
 ## 5. Invariants
 
-1. At most one **effective** Team admission exists for a Team/User pair.
+1. At most one **effective** Team admission exists for a Team/User pair; the recommended unique slot key is stable across admission lifecycle changes.
 2. Historical removed admissions remain distinguishable from later admissions; explicit rejoin always creates a new ID/time.
 3. A missing or stale generation snapshot fails closed; no backfill or parent restoration grants access.
 4. Actor authorization and parent eligibility are current at commit, not just at request entry.

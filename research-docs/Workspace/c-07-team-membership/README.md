@@ -22,6 +22,7 @@ This directory is the single review surface for the C-07 decisions required by D
 - **Approved — verified within stated scope:** KeyT's 2026-10-16 11:17 ICT approval of TQ-05 direction, TQ-06 generation/fencing direction, the proposal's membership lifecycle, POST/DELETE-only TQ-07/08 scope, and TQ-10 same-transaction audit with rollback on audit failure.
 - **Approved — conditional:** TQ-09 contract semantics only if R0 validates the referenced C-04 decision as authoritative and still effective. Runtime writes remain subject to Gate C.
 - **Recommended — awaiting owner approval:** exact IAM permission identifiers/provisioning, DB fields and complete writer/fence protocol, API response/error details, audit event mapping/retention, and R0 authority evidence.
+- **Review findings in this Document PR:** F-07 corrects the stale-`ACTIVE`/partial-unique-index conflict with a stable pair-slot plus retained-admission recommendation; F-08 adds explicit target eligibility cases A–H; F-09 aligns C-07 resource IDs with reusable non-empty opaque `ResourceId`. F-07 remains pending DB/domain approval and MongoDB 7 replica-set proof.
 - **Not approved:** schema/index or migration; parent-writer changes; final API details beyond the bounded approved scope; audit retention; runtime write enablement.
 
 ## Historical source documents

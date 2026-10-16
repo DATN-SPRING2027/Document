@@ -4,6 +4,8 @@
 **Status:** POST/DELETE-only scope is approved for DATN-92. Routes below reflect the current proposal; response details, transport/error semantics, and shared-contract compatibility remain subject to API/IAM/Security review.
 **Machine-readable companion:** [draft OpenAPI](c-07-team-membership.openapi.json).
 
+**Resource IDs:** the C-07 OpenAPI reuses one opaque `ResourceId` schema (`type: string`, `minLength: 1`) for Team, Membership, User, Organization, and Project identifiers, matching the BE OpenAPI convention. It intentionally does not constrain IDs to UUID/ObjectId syntax. Correlation `requestId` is not a resource identifier.
+
 **Current source comparison:** [BE `iam-v1.openapi.json` at inspected main](https://github.com/DATN-SPRING2027/DATN-BE/blob/3b839198cfcbc40d6b11e1167ae8c68c54afea99/docs/openapi/iam-v1.openapi.json) already contains POST, DELETE and a shared-draft GET for Team Membership. POST uses a strict `userId` request and `201`; DELETE by `membershipId` uses `204`; the current response includes `organizationId` and `projectId`. This C-07 companion preserves the POST/DELETE shapes and response fields, adds no GET, and proposes `Location`, no-store, CSRF, and conditional idempotency details for owner review.
 
 ## 1. Operations in scope

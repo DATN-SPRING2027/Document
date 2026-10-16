@@ -33,6 +33,19 @@ Do not assert a rejoin HTTP code until API-owner approval; recommended `201` wit
 
 ## 3. Authorization and boundary test matrix
 
+The cases below make target eligibility explicit. The actor context is otherwise valid and authorized under the recommended TQ-05 model (active actor, exact Project-scoped `TEAM_LEADER`, explicit POST grant, trusted Team ancestry); the exact permission identifier and provisioning path remain IAM/Security decisions. API status codes remain pending TQ-07/08 approval. For each denied or raced-out case, assert no slot change, no admission/history write, no durable success result, and no successful business audit event. Rejected-attempt security logging is only asserted if its separate policy is approved. No case may create Project Membership, RoleAssignment, or another authority side effect.
+
+| ID | Target setup / operation | Expected eligibility and result | Persistence / audit assertion |
+|---|---|---|---|
+| A | Target User is inactive; attempt POST. | Ineligible; deny after actor and Team authorization, without exposing target details to unauthorized actors. | No slot/admission/command-success mutation; no success business audit event. |
+| B | Target has no Organization Membership in the Team's Organization; attempt POST. | Ineligible; deny. | No writes or success business audit event. |
+| C | Target Organization Membership is suspended or removed; attempt POST. | Ineligible; deny. | No writes or success business audit event. |
+| D | Target has no ACTIVE Project Membership in the Team's Project; attempt POST. | Ineligible; deny. | No writes or success business audit event. |
+| E | Target is admitted to a different Organization; attempt POST to this Team. | Cross-Organization target; deny with approved concealed/sanitized response. | No writes or success business audit event; no foreign membership details disclosed. |
+| F | Target has ACTIVE Project Membership, but only in a different Project; attempt POST. | Wrong Project; deny with approved concealed/sanitized response. | No writes or success business audit event; no foreign Project details disclosed. |
+| G | Target is eligible at initial read, then a parent/User eligibility generation changes before commit. | Fence/CAS fails; abort and re-read. If target is now ineligible, deny; if still eligible, only a separately validated retry with current facts may proceed. Never commit from stale reads. | No admission/slot success pointer or durable success result from the aborted stale attempt; no success business audit event from that attempt. |
+| H | Existing admission snapshot is stale after parent restore; target is eligible again and a fresh authorized POST is made. | Old admission remains ineffective. Fresh POST creates a different Membership ID and new `joinedAt`, then CAS-replaces the stale slot pointer; approved lifecycle semantics apply. | Exactly one current slot pointer and one new admission; old identity is retained but ineffective. One success audit event only if the eventual approved mapping requires it, in the same transaction; no invented stale-close event. |
+
 - Actor User inactive, Organization Membership suspended/removed, Project Membership inactive, Project archived/inactive, Team hidden/archived, wrong Organization/Project, stale RoleAssignment/Role, or permission revoked during request → no mutation; hidden parent returns scoped `404` under the approved concealment contract.
 - Organization ADMIN without explicit Team permission, Project creator without grant, public/visible Project user, ordinary Project member, existing Team member, stale former TEAM_LEADER, and a role name without current scoped assignment → denied.
 - `team.members.add` cannot authorize DELETE and `team.members.remove` cannot authorize POST; colon-delimited `team:children.manage` is not an alias after canonicalization.
@@ -46,14 +59,17 @@ After owner decisions and DB dependencies are implemented, use MongoDB 7 replica
 
 1. Two concurrent add commands for one active pair: exactly one admission; losing command has approved conflict behavior.
 2. Add racing with Organization/Project/User suspension or Project/Role revocation: no commit using stale authority; every retry reads current facts.
-3. Parent removal/reactivation racing with add/rejoin: stale snapshots never become effective; no silent restoration.
-4. Remove racing with rejoin: old Membership ID remains removed; new ID/time is unique; one active pair only.
-5. Transient transaction conflict and retry: permission, target eligibility, generation, and key state are re-read.
-6. Audit write failure after attempted Membership write: entire transaction aborts; no success response or durable command success record.
-7. Idempotency same key/same fingerprint: approved original result after current authorization is checked; one domain effect and one business event maximum.
-8. Same key/different fingerprint: stable `409`, no side effect.
-9. Crash/connection loss at commit: committed, aborted, and unknown outcomes reconcile from durable operation result; never blind-repeat or produce a duplicate audit event.
-10. Privacy allowlist: no profile/credential/token/full payload; verify cross-Organization/Project errors and logs disclose no target state.
+3. Parent removal/reactivation racing with add/rejoin: stale snapshots never become effective; no silent restoration; fresh POST conditionally replaces only the stale slot pointer.
+4. Remove racing with rejoin: old Membership ID remains ineffective; new ID/time is unique; a stale DELETE cannot clear the slot after it has been replaced.
+5. Concurrent first slot creation and competing stale-slot replacements: unique slot creation has one winner; CAS losers re-read all actor/target/parent facts and cannot overwrite a newer pointer.
+6. Transient transaction conflict and retry: permission, target eligibility, generation, slot pointer, and key state are re-read.
+7. Audit write failure after attempted Membership write: entire transaction aborts; no success response or durable command success record.
+8. Idempotency same key/same fingerprint: approved original result after current authorization is checked; one domain effect and one business event maximum.
+9. Same key/different fingerprint: stable `409`, no side effect.
+10. Crash/connection loss at commit: committed, aborted, and unknown outcomes reconcile from durable operation result; never blind-repeat or produce a duplicate audit event.
+11. Privacy allowlist: no profile/credential/token/full payload; verify cross-Organization/Project errors and logs disclose no target state.
+
+**F-07 test limitation:** these are acceptance cases only. MongoDB 7 replica-set behavior for slot CAS, history insert, audit transaction, and competing writes has not been run in this environment; do not treat the design as Gate B proof.
 
 Exact event mapping, replay behavior, and retention are not test acceptance criteria until Audit/Security signs the corresponding decision. The transaction rollback invariant is approved.
 

@@ -12,28 +12,27 @@ The inspected BE `origin/main` Team Membership schema contains only `organizatio
 
 ## 2. Recommended logical model — awaiting DB/domain approval
 
-Represent each admission as its own record:
+**F-07 correction:** the earlier partial unique index proposal is unsafe for the approved generation behavior. A stale-generation admission can remain `status=ACTIVE` while being ineffective. Its pair still occupies the partial unique index, so a fresh authorized POST after parent reactivation cannot create the required new Membership ID. This is a contract-design conflict, not a verified production defect; no MongoDB 7 reproduction was possible in this environment.
 
-| Field | Purpose | Proposal status |
+Recommend separating the stable pair-uniqueness key from per-admission history. This is a logical design only; collection names and fields below are not approved:
+
+| Logical record | Candidate contents | Behavior / status |
 |---|---|---|
-| `_id` / `membershipId` | Immutable identity for this admission; explicit rejoin gets a different ID. | Required by approved lifecycle; storage field implementation pending. |
-| `organizationId`, `projectId`, `teamId`, `userId` | Immutable exact parent and subject scope. | Existing IDs; keep authoritative. |
-| `status: ACTIVE \| REMOVED` | Distinguish effective admission from retained removal history. | Proposed. |
-| `joinedAt`, `removedAt` | Admission/removal timeline; each rejoin has a new `joinedAt`. | New `joinedAt` approved; `removedAt` proposed. |
-| `userEligibilityGeneration` | Snapshot of User eligibility generation. | Proposed. |
-| `organizationMembershipGeneration` | Snapshot of Organization Membership eligibility generation. | Proposed. |
-| `projectMembershipGeneration` | Snapshot of Project Membership eligibility generation. | Proposed. |
-| `createdBy`, `removedBy`, `operationId` | Safe actor and command attribution for audit correlation/recovery. | Exact field names and retention pending DB/Audit approval. |
+| Current-membership slot, unique by `{teamId,userId}` | Exact Organization/Project scope, current admission ID (nullable), and a CAS/version value. | One stable slot per pair; never delete/reinsert it to release and reuse a unique pair key. Proposed; DB owner approval required. |
+| Admission history record | New immutable admission ID, exact parent/subject IDs, `joinedAt`, and User/Organization/Project generation snapshots. | Every explicit rejoin or fresh re-admission after a stale snapshot receives a new ID/time. Records are retained; exact removal representation is pending DB/Audit approval. |
+| Removal/lifecycle evidence | The approved durable representation for removal and audit correlation. | Must not mutate/reuse an old admission identity. Exact event/field mapping and retention are pending Audit/DB approval. |
 
-Effective membership requires `status=ACTIVE`, current `ACTIVE` User/Organization Membership/Project Membership, exact parent IDs, and equality between every admission snapshot and the current generation. Missing or stale proof denies; never backfill it in a way that restores access.
+Effective membership requires the slot to point to that admission, exact parent IDs, current `ACTIVE` User/Organization Membership/Project Membership, and equality between each stored admission snapshot and current generation. Missing, stale, or mismatched proof denies; never backfill it in a way that restores access. Parent restoration only advances parent generation and does not rewrite the slot or admission snapshot. A fresh authorized POST may CAS the slot from its stale admission pointer to a newly inserted admission ID; the stale admission remains ineffective and retained as history.
 
-### Recommended indexes
+### Slot uniqueness and conditional replacement
 
-1. Partial unique `{ teamId: 1, userId: 1 }` for rows where `status=ACTIVE`, enforcing at most one active pair while allowing retained removed admissions and new IDs on rejoin.
-2. Non-unique history lookup `{ organizationId: 1, projectId: 1, teamId: 1, userId: 1, joinedAt: -1 }` if the approved audit/history need requires the query.
-3. Operation-key uniqueness/expiry indexes only as specified by the effective TQ-09 contract; TTL must not be the correctness mechanism.
+1. Enforce a unique stable slot key `{teamId: 1, userId: 1}`. The slot's key never changes and is not released/reused during removal or rejoin.
+2. Store each admission under its distinct Membership ID; index that identity uniquely. Add only owner-approved non-unique history lookup indexes.
+3. For a fresh add, create a slot if absent (duplicate-key loser rereads); otherwise CAS the expected slot version/current admission pointer. Create the new admission and update the slot in the same transaction. A current effective admission remains a duplicate (`409`); a stale pointer may be replaced only by a freshly authorized POST under the approved stale-generation policy.
+4. On removal, CAS the slot only if it still points to the path Membership ID, and record the approved removal/history evidence in the same transaction. A racing rejoin cannot be cleared by a stale DELETE.
+5. Operation-key uniqueness/expiry indexes only follow the effective TQ-09 contract; TTL must not be the correctness mechanism.
 
-The unconditional unique pair index must not be dropped until DB owner verifies actual deployed index names/definitions, duplicate active rows, application compatibility, and the migration cutover plan. Do not edit an immutable committed migration.
+This design avoids relying on releasing and reusing a partial unique-index key in one transaction. Its MongoDB 7 replica-set behavior, transaction participants, write-conflict handling, audit topology, concurrency and recovery still require DB owner review and runtime evidence. The current unconditional unique pair index must not be dropped until DB owner verifies deployed index definitions, duplicate slots/pairs, application compatibility, and migration cutover. Do not edit an immutable committed migration.
 
 ## 3. Generation and transaction-fence proposal
 
@@ -53,7 +52,7 @@ Within one Mongo session/transaction, the command should:
 2. Read actor and target Users, Organization Memberships, Project Memberships, Project RoleAssignment/Role, and current generation/version facts.
 3. Require current ACTIVE parents, exact scoped TEAM_LEADER and action permission, and expected admission snapshots.
 4. Conditionally update/CAS each relevant source document using its observed `__v` and current status, with explicit `$inc: { __v: 1 }` in the same session. Check the admission's expected `eligibilityGeneration` separately. Parent writers must update the same fenced source record in the same transaction when changing eligibility/authority and increment the relevant generation on eligibility transitions. If a source cannot use `__v`, its owner must approve a dedicated same-document fence with the same conflict semantics; no read-only/status-only fallback is allowed.
-5. Enforce one ACTIVE Team/User pair, record state and durable command result if TQ-09 applies, and write the required audit event in the same transaction.
+5. CAS the stable Team/User slot, create a distinct admission history record, record a durable command result if TQ-09 applies, and write the required audit event in the same transaction.
 6. Commit all records together. On conflict, abort and retry from step 1 with fresh authorization evidence. On audit/result failure, abort. On unresolved commit, use the approved idempotency operation record to determine outcome; never blind-repeat a domain write.
 
 This causes a conditional write to each actor/target/parent/role/team source document for each mutation, so it may increase write contention; the established Project Access helper makes this the smallest supported protocol now visible in code. Mongo multi-document transaction semantics, write conflicts, transaction participants, and audit database membership in the same cluster/session must be validated against the supported MongoDB 7 replica-set deployment. A session existing in code is not proof that every parent writer participates. If any parent authority source cannot be fenced, the path remains fail-closed pending redesign; do not downgrade to status-only checks.
@@ -85,4 +84,4 @@ This is complete only for the in-repository production paths located in the insp
 
 ## 6. DB/domain decision required
 
-**DB owner + IAM/User + Organization Membership + Project Membership/Access + Security + Team product owner:** approve or amend the logical model, exact generation fields/sources, full production writer inventory, fence/retry protocol, stale-row identity rule, partial unique index, deployed-index reconciliation, legacy handling, and migration/rollback plan. Name each owner and provide race/transaction evidence. This review does not itself approve or implement schema changes. See [Decision Register](DATN-92-Decision-Register.md#3-consolidated-decision-table).
+**DB owner + IAM/User + Organization Membership + Project Membership/Access + Security + Team product owner:** approve or amend the stable pair-slot plus retained admission-history model, exact generation fields/sources, full production writer inventory, fence/retry protocol, stale-pointer replacement rule, deployed-index reconciliation, legacy handling, and migration/rollback plan. Name each owner and provide MongoDB 7 replica-set race/transaction evidence. This review does not itself approve or implement schema changes. See [Decision Register](DATN-92-Decision-Register.md#3-consolidated-decision-table).
