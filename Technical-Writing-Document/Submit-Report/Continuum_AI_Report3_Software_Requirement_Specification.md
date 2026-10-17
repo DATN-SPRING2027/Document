@@ -43,6 +43,7 @@
 | 22/09/2026 | A | [All Members] | Add use case diagrams and screen flows |
 | 22/09/2026 | A | [All Members] | Add functional requirements for all modules |
 | 02/10/2026 | M | [All Members] | Amend governance hierarchy, Organization Context, confidential-content boundary, and Project creation rule; this amendment supersedes conflicting grant-based Project requirements below |
+| 17/10/2026 | A | Nguyen Hong Phuc | Add functional specifications for Organization User Directory (DATN-351), Profile Detail Drawer (DATN-352), and Member Profile Administration (DATN-353) |
 
 ---
 
@@ -729,22 +730,139 @@ This table is a high-level screen map, not the final action-level permission mat
 
 ---
 
-#### 3.3.4 Manage Organization Membership and Role/Scope Administration
+#### 3.3.4 Organization User Directory & Search (DATN-351)
 
-**Function trigger:** An Organization Admin manages a user's Organization Membership or assigns an Organization-level role/scope through the Organization administration interface.
+**Function trigger:** User navigates to the "Members" or "User Directory" page from the Organization administration sidebar (`/app/users`).
 
-**Actors:** Admin
+**Function description:**
 
-**Purpose:** Manage Organization membership and Organization-scoped role/scope assignments. This operation does not create Project Membership and does not grant Project content access by itself.
+**Actors:** Admin, Team Leader, Member
 
-**Approved authorization boundary:**
-- `OrganizationMembership` is the authoritative relationship between User and Organization; only `ACTIVE` establishes Organization Context.
-- Admin authority is limited to Organization user/membership, Organization roles/scopes and Organization settings/policy.
-- The exact invitation, activation, suspension, removal, role-transition and delegation workflows are not specified by this report and must follow the approved Organization Membership API contract.
-- Assigning an Organization role does not silently create a Project/Team membership or grant access to confidential Project content.
-- The former `project.create` grant workflow in this report is superseded. Project creation uses the separate active-membership rule in §3.3.1. This report does not decide whether remaining capability grants will be retained for other policies.
+**Purpose:** Provide a searchable, filterable directory of all organization members, displaying their identity, system roles, active projects, and account status.
 
-**Audit requirement:** Record the actor, subject, Organization, changed membership/assignment, scope, timestamp and reason where required by the final contract. Do not place sensitive content in audit metadata.
+**Data Processing:**
+1. Retrieve paginated list of organization members via `GET /api/v1/organizations/:orgId/members`.
+2. Apply search queries (matching full name or email, debounced 300ms).
+3. Apply faceted filters: Role (`ADMIN`, `TEAM_LEADER`, `MEMBER`), Status (`ACTIVE`, `PENDING_INVITE`, `SUSPENDED`), and Project affiliation.
+4. Render data table with responsive layout (Desktop 1440px, Tablet 1024px, Mobile 375px).
+
+**Screen layout:**
+
+> *[Screenshot placeholder: User Directory Table - Desktop 1440px]*
+
+**Function Details:**
+
+**Validation:**
+- Search query must be sanitized to prevent injection attacks.
+- Organization ID must match the active trusted Organization Context.
+
+**Business Rules:**
+- `OrganizationMembership` is the authoritative relationship between User and Organization; only `ACTIVE` status enables active system access.
+- Persistent Roles are strictly bounded to `ADMIN`, `TEAM_LEADER`, `MEMBER`.
+- Admin users have access to action menus (Invite, Edit, Suspend); Members have view-only access.
+- High-volume data uses client/server pagination with 10/25/50 items per page.
+
+**Functionalities:**
+
+**Normal case:**
+1. User enters Directory page. System loads members matching default filters.
+2. User enters search keywords or toggles filters. System refreshes data instantly.
+3. User clicks on a member row. System opens the Profile Detail Slide-over Drawer (`DATN-352`).
+
+**Abnormal case:**
+1. If user lacks Organization access: System renders 403 Permission Denied screen.
+2. If no members match search criteria: System displays Empty Filter State with a "Clear all filters" button.
+3. If network/server fails: System displays Error state with a "Retry" button.
+
+---
+
+#### 3.3.5 Organization Member Profile Detail Drawer (DATN-352)
+
+**Function trigger:** User clicks on any member row in the User Directory table or navigates to member profile URL.
+
+**Function description:**
+
+**Actors:** Admin, Team Leader, Member
+
+**Purpose:** Display comprehensive 360-degree profile details for a selected organization member in a slide-over drawer without losing the directory context.
+
+**Data Processing:**
+1. Fetch member detailed record including identity, governance roles, capability grants, and project memberships.
+2. Render 4 organized tabs: Overview, Roles & Governance, Projects & Teams, and Activity Footprint.
+
+**Screen layout:**
+
+> *[Screenshot placeholder: Slide-over Profile Drawer (Width: 560px)]*
+
+**Function Details:**
+
+**Validation:**
+- Member ID must exist in the active Organization.
+- Current user must possess valid active Organization Membership.
+
+**Business Rules:**
+- Role vs Capability separation: Displays persistent role alongside any active capability grants (e.g., `project.create` with expiration and issuing admin).
+- Scoped assignments: Displays temporary assignments (`SME`, `KNOWLEDGE_OWNER`) bounded to specific domains.
+- Suspended account banner: Displays warning alert if the account is `SUSPENDED` with an option for Admin to reactivate.
+- Drawer width is 560px on desktop with backdrop overlay (30% black blur) and `Esc` key dismissal.
+
+**Functionalities:**
+
+**Normal case:**
+1. User clicks member row. Drawer slides in smoothly from the right (560px width).
+2. User navigates across tabs (Overview, Roles, Projects, Activity).
+3. User presses `Esc` or clicks backdrop overlay to close drawer.
+
+**Abnormal case:**
+1. If member record fails to load: Displays error notification and automatically closes drawer.
+2. If member has no assigned projects: Displays clean Empty State within Projects tab.
+
+---
+
+#### 3.3.6 Member Profile & Role Administration (DATN-353)
+
+**Function trigger:** Admin clicks "Edit" button in Member Profile Drawer or action menu, or User edits their own basic profile.
+
+**Function description:**
+
+**Actors:** Admin (for administrative management), Authenticated User (for self-service profile updates)
+
+**Purpose:** Allow updating user profile information with strict separation between self-service editable fields and administrative role/status governance.
+
+**Data Processing:**
+1. Load current user data into modal form.
+2. Validate input fields against Zod validation schema.
+3. Submit updates: `PATCH /api/v1/users/:userId` for basic info, `PUT /api/v1/organizations/:orgId/members/:userId/role` for role changes.
+4. Emit immutable audit log record capturing actor, target, changed attributes, and timestamp.
+
+**Screen layout:**
+
+> *[Screenshot placeholder: Edit Profile Modal (Width: 640px)]*
+
+**Function Details:**
+
+**Validation:**
+- Full name: Required, 2-100 characters.
+- Email: Read-only identifier in basic form; cannot be altered arbitrarily without secondary security verification.
+- Avatar: Image upload max 2MB (JPEG, PNG, WebP).
+- Role: Must belong to enum `['ADMIN', 'TEAM_LEADER', 'MEMBER']`.
+
+**Business Rules:**
+- **Sole Admin Protection Rule**: System disallows demoting or suspending the sole active Admin of an Organization to prevent orphaned workspaces.
+- **Deny Precedence & Confirmation**: Suspending an account requires a critical confirmation modal and immediately revokes active user sessions.
+- Self-service users cannot modify their own role, capability grants, or organization status.
+
+**Functionalities:**
+
+**Normal case:**
+1. Admin modifies full name, role (`ADMIN`/`TEAM_LEADER`/`MEMBER`), or status (`ACTIVE`/`SUSPENDED`).
+2. System validates input, executes backend update transaction, and displays success notification.
+3. Directory table automatically refreshes to reflect new state.
+
+**Abnormal case:**
+1. Attempting to demote sole active Admin: Displays validation warning preventing submission.
+2. Invalid inputs: Highlights field-level error messages in red below relevant controls.
+3. Concurrency conflict: Displays warning if another Admin modified the user concurrently.
 
 ---
 

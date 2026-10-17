@@ -46,6 +46,8 @@ Mỗi khi có thay đổi về tài liệu, **phải thêm một dòng vào bả
 | 22/09/2026 | **Phúc** | Khởi tạo SRS | `Submit-Report/Report3_SRS.md` | Tạo khung đặc tả yêu cầu phần mềm | Commit trong repo | Approved |
 | 23/09/2026 | **Phúc** | Vẽ sơ đồ hệ thống | `Output-DrawIo/` | Vẽ Context, Use Case, Screen Flow, ERD | 10 file `.drawio` | Approved |
 | 24/09/2026 | **Phúc** | Thiết lập workspace tài liệu | `Technical-Writing-Document/` | Chuyển xưởng tự động hóa + tạo folder 5 thành viên + viết Workflow | Commit trong repo | Approved |
+| 28/09/2026 | **Phúc** | Rà soát & kiểm chứng Functional Requirements | `members/phuc/FUNCTIONAL_REQUIREMENTS_AUDIT_REPORT.md` | Lập báo cáo kiểm chứng độc lập 50 FRs, Non-Screen Functions và đối chiếu Jira/ScreenFlow | Commit local | Draft |
+| 17/10/2026 | **Phúc** | DATN-351, DATN-352, DATN-353: Nghiên cứu & Thiết kế User Directory & Profile | `members/phuc/user-management-figma-research/` | Hoàn thành bộ 5 tài liệu nghiên cứu Benchmark SaaS (Atlassian, GitHub, Linear), đặc tả FE, Drawer 360°, Form phân quyền và Tokens i18n | Jira DATN-351, 352, 353 / Commit local | Draft |
 | *[Ngày]* | *[Phúc / Thắng / Danh / Tài / Tiên]* | *[Tên task đã làm]* | *[File tài liệu]* | *[Mô tả nội dung]* | *[Link PR hoặc Commit]* | *[Draft / Approved]* |
 
 ---
