@@ -52,7 +52,7 @@ This document verifies the current state of user creation, invite/resend invitat
 - **Password Hashing**: `[PASS]` The schema correctly stores `passwordHash` rather than plaintext passwords.
 
 ## 8. FE Architecture & Mismatches
-- **Signup vs Invite Flow**: `[FACT / VERIFIED]` `DATN-FE` has a `SignUpForm.tsx` component, implying self-registration. However, the backend OpenAPI and schema (`PENDING_INVITE`) heavily imply an invitation-only B2B flow. `[DECISION REQUIRED]` Which flow is the intended product requirement?
+- **Signup vs Invite Flow**: `[RESOLVED / PRODUCT CONTRACT APPROVED 2026-10-17]` Public email/password registration creates an account only after email verification and password setup; it does not create Organization membership. Organization invitations remain a separate access-grant flow governed by DEC-ORG-05. See [the account-registration decision](../Workspace/12-email-password-registration-decision.md). The earlier FE component and `PENDING_INVITE` evidence did not by themselves determine product policy.
 - **Password Reset UI**: `[FACT / VERIFIED]` FE has UI linking to `/reset-password`, but there are no corresponding backend APIs or FE data-fetching hooks (`useResetPasswordMutation`) to support it.
 - **Static Auth UI**: `[FACT / VERIFIED]` The current `SignInForm` is a pure visual mock. It does not bind to the `useLoginMutation` hook, lacks `onSubmit` handling, and completely omits `isLoading` (spinners) and `isError` (validation/server error) visual feedback states.
 - **Missing Protected Routes**: `[FACT / VERIFIED]` There are no `AuthGuard` components or Next.js middleware configured to redirect unauthenticated users away from private dashboard routes.
@@ -62,7 +62,6 @@ This document verifies the current state of user creation, invite/resend invitat
 - **Email Provider (e.g., SendGrid/AWS SES)**: Missing architectural dependency for sending invite and password reset emails.
 
 ## 10. UNKNOWN / DECISION REQUIRED
-- **Self-Registration vs Invitation-Only**: `[DECISION REQUIRED]` Does the system allow public self-registration (as implied by FE `SignUpForm`), or is it strictly invite-only by Organization Admins (as implied by BE `PENDING_INVITE`)?
 - **Soft Delete**: `[DECISION REQUIRED]` Should we implement a Soft Delete (e.g., `isDeleted` flag) or is moving a user to `SUSPENDED` status sufficient for offboarding?
 - **Email Uniqueness Constraint**: `[DECISION REQUIRED]` Must verify if the database explicitly enforces a unique index on the `email` field per organization (or globally).
 
