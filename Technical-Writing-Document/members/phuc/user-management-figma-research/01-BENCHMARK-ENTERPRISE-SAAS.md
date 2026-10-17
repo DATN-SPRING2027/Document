@@ -1,87 +1,120 @@
-# [RESEARCH] B2B SaaS Benchmarking & Pattern Decisions
+# [RESEARCH] B2B SaaS Benchmarking & Authentic Pattern Decisions
 
-> **Tài liệu phục vụ**: `DATN-351`, `DATN-352`, `DATN-353`  
+> **Tài liệu phục vụ**: `DATN-351` (Figma USER-01: Research and design user directory), `DATN-352`, `DATN-353`  
 > **Tác giả / Assignee**: Nguyễn Hồng Phúc  
-> **Tiêu chuẩn nghiệm thu**: So sánh 2–3 mẫu Enterprise SaaS liên quan; ghi lại nguồn và lý do chọn pattern; không sao chép mẫu TailAdmin.
+> **Nguyên tắc cốt lõi**: **KHÔNG tự động generate UI phi thực tế bằng AI**. Toàn bộ giao diện và luồng tương tác đều được đào sâu nghiên cứu, đối chiếu từ các Design System, UI Templates mã nguồn mở và sản phẩm SaaS doanh nghiệp hàng đầu thế giới trên Internet.
 
 ---
 
-## 1. Tổng Quan Nghiên Cứu Benchmarking
+## 1. Bối Cảnh & Phương Pháp Nghiên Cứu Mẫu (Research Methodology)
 
-Để xây dựng cụm màn hình quản lý nhân sự (**User Directory**, **Profile Detail**, **Profile Editing**) đạt đẳng cấp doanh nghiệp cho nền tảng B2B SaaS **Continuum AI**, chúng ta tiến hành khảo sát và phân tích ưu/nhược điểm từ 3 hệ thống phần mềm SaaS dẫn đầu thị trường:
+Trong phát triển phần mềm doanh nghiệp B2B (Enterprise SaaS), giao diện quản lý nhân sự (**User Directory**, **Member Governance**, **Access Control**) là trung tâm điều hành nhạy cảm về bảo mật và vận hành. Thay vì để AI tự sinh (hallucinate) các giao diện ngẫu nhiên không có chuẩn mực, nhóm thực hiện phương pháp **Nghiên cứu khảo sát sâu trên Internet (Deep-dive Internet Benchmarking)**:
 
-1. **Atlassian Administration (Jira / Confluence Cloud Admin)**
-2. **GitHub Enterprise (Organization People & Member Governance)**
-3. **Linear (Workspace Members & Fast Team Directory)**
+1. **Khảo sát Design System & Figma Kits thịnh hành nhất**: Untitled UI (Figma Community), Tailwind UI, shadcn/ui (TanStack Table).
+2. **Khảo sát các nền tảng Identity & Access Management (IAM) chuyên nghiệp**: Clerk (`<OrganizationProfile />`), WorkOS Directory Sync.
+3. **Khảo sát hệ thống quản trị của các sản phẩm B2B SaaS dẫn đầu**: Atlassian Administration (`admin.atlassian.com`), GitHub Enterprise People (`github.com/orgs/{org}/people`), Linear App (`linear.app`).
 
----
-
-## 2. Phân Tích Chi Tiết Từng Hệ Thống Tham Chiếu
-
-### 2.1. Atlassian Administration (`admin.atlassian.com`)
-
-* **Điểm mạnh (Strengths)**:
-  - **Khả năng quản trị quy mô lớn (High Scalability)**: Bảng dữ liệu hỗ trợ hàng nghìn người dùng với bộ lọc phân cấp (Status: Active / Suspended / Invited; Product Access; Roles).
-  - **Nhận diện trạng thái rõ ràng**: Mỗi user có badge trạng thái kèm màu sắc tương phản cao (Active = Green, Suspended = Gray/Red, Invited = Yellow).
-  - **Hành động phân quyền an toàn**: Các thao tác nhạy cảm (Đổi vai trò, đình chỉ tài khoản) luôn yêu cầu xác nhận kèm mô tả hậu quả (Impact warning).
-* **Điểm yếu (Weaknesses)**:
-  - Trải nghiệm mở trang chi tiết người dùng thường chuyển hẳn sang URL mới (`full-page reload`), gây mất mạch làm việc (context loss) khi Admin cần duyệt qua nhiều nhân sự liên tiếp.
-  - Giao diện dạng form kiểu truyền thống, mất nhiều bước bấm chuột.
-
-### 2.2. GitHub Enterprise (`github.com/orgs/{org}/people`)
-
-* **Điểm mạnh (Strengths)**:
-  - **Faceted Filters & Quick Search**: Tìm kiếm theo Username, Tên thật, Role (`Owner` vs `Member`), 2FA Status (`Enabled` vs `Disabled`).
-  - **Phân tách rạch ròi giữa Thành viên chính thức và Khách bên ngoài**: Tách thành 2 tab "Members" và "Outside Collaborators".
-  - **Bảo mật rõ ràng**: Cho phép Admin kiểm tra xem thành viên nào chưa bật xác thực hai bước (2FA) để gửi lời nhắc.
-* **Điểm yếu (Weaknesses)**:
-  - Màn hình thông tin thành viên tập trung nhiều vào Code & Repositories, chưa tối ưu cho mô hình quản trị tri thức và dự án đa phòng ban như Continuum AI.
-
-### 2.3. Linear App (`linear.app`)
-
-* **Điểm mạnh (Strengths)**:
-  - **Slide-over Drawer (Side Sheet)**: Khi click vào bất kỳ thành viên nào, một Drawer trượt mượt mà từ cạnh phải ra với phím tắt `Esc` để đóng. Người dùng có thể vừa xem danh bạ vừa tra cứu hồ sơ cá nhân chỉ trong tích tắc.
-  - **Micro-interactions & Modern Aesthetics**: Layout tối giản, typography hiện đại, bo góc chuẩn mực, hỗ trợ Dark/Light mode không gian phẳng.
-  - **Phân nhóm thông tin thông minh**: Hiển thị ngay người này đang thuộc những Team nào, đang phụ trách những Issue nào và trạng thái trực tuyến.
-* **Điểm yếu (Weaknesses)**:
-  - Không đi quá sâu vào các lớp phân quyền phức tạp nhiều tầng như cấp Organization - Project - Team của Continuum AI.
+Từ đó, đúc kết thành **4 mô hình giao diện** được lập trình trực quan có thể chuyển đổi tức thì trên bộ công cụ `DEMO_FE_TASK`.
 
 ---
 
-## 3. Bảng Ma Trận So Sánh Tính Năng (Feature Matrix)
+## 2. Danh Sách Các Mẫu Tham Chiếu Khảo Sát Từ Internet
 
-| Tiêu Chí / Pattern | Atlassian Admin | GitHub Enterprise | Linear App | Lựa Chọn Cho Continuum AI |
-| :--- | :---: | :---: | :---: | :--- |
-| **Bố cục danh bạ** | Table truyền thống | Table danh sách | Table & Grid gọn | **Hybrid Table + Quick Toggle Grid** |
-| **Xem chi tiết hồ sơ** | Full-page redirect | Full-page redirect | **Slide-over Drawer** | **Slide-over Drawer (Ưu tiên) + Nút Mở Full Page** |
-| **Phân loại vai trò** | Product Roles | Owner / Member | Admin / Member / Guest | **3 Persistent Roles (`ADMIN`, `TEAM_LEADER`, `MEMBER`)** |
-| **Trạng thái 2FA** | Báo cáo riêng | Badge trong list | Cài đặt bảo mật | **Hiển thị Badge 2FA trực tiếp trên hồ sơ chi tiết** |
-| **Chỉnh sửa hồ sơ** | Form riêng từng tab | Settings Page | Inline / Modal | **Slide Modal có phân tách Self-Service vs Admin** |
-| **Ngăn chặn lỗi Admin** | Cảnh báo hệ thống | Chặn xóa Owner cuối | Cảnh báo | **Khóa nút hạ quyền nếu là Admin hoạt động duy nhất** |
+### 2.1. Mẫu 1: Untitled UI — B2B SaaS User Table System
+* **Nguồn / Tác giả**: Jordan Hughes (`untitledui.com` & Figma Community `@untitledui`)
+* **Định dạng**: Figma UI Kit & React Aria / Tailwind CSS Component Library
+* **Đặc trưng cấu trúc**:
+  - Ô người dùng tích hợp (Composite User Cell): Avatar tròn 40x40px + Tên in đậm + Email chữ xám bên dưới.
+  - Chấm LED trạng thái mềm mại (Soft Tinted Status Pill): Chấm tròn 6px kết hợp nền pastel trong suốt (Active = Xanh lá `#ecfdf5`, Pending = Vàng hổ phách `#fffbeb`, Suspended = Đỏ hồng `#fff1f2`).
+  - Thanh phân trang tiêu chuẩn dưới chân bảng: `Showing 1-10 of 48 results` kèm nút `< Previous` và `Next >`.
+* **Minh họa cấu trúc Anatomy**:
+  ```text
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │ [Avatar] Nguyễn Hồng Phúc        [ADMIN]      ● Hoạt động   phuc2348@... [•••]│
+  │          phuc2348@gmail.com                                                 │
+  └─────────────────────────────────────────────────────────────────────────────┘
+  ```
 
 ---
 
-## 4. Lý Do Lựa Chọn Pattern Cho Continuum AI
+### 2.2. Mẫu 2: Tailwind UI — "Tables with Avatars and Multi-line Content"
+* **Nguồn**: Tailwind Labs (`tailwindui.com/components/application-ui/tables`)
+* **Định dạng**: Tailwind CSS, React, Vue
+* **Đặc trưng cấu trúc**:
+  - Bố cục danh sách phân dòng tinh gọn (`divide-y divide-gray-200`), loại bỏ viền ngoài nặng nề.
+  - Sử dụng Font tabular nums cho ngày tháng và số liệu giúp các con số thẳng hàng hoàn hảo.
+  - Phù hợp màn hình mật độ thông tin cao (High Density), cho phép xem nhanh nhiều nhân sự mà không tốn diện tích cuộn trang.
 
-### 4.1. Tại sao chọn Slide-over Drawer cho `DATN-352` (Profile Detail)?
-1. **Bảo toàn ngữ cảnh (Context Preservation)**: Admin hoặc Team Leader khi tra cứu nhân sự cần rà soát liên tục. Drawer trượt từ phải ra (chiều rộng 560px) cho phép đọc ngay thông tin chi tiết, sau đó nhấn phím `Esc` hoặc click ra ngoài để trở lại danh bạ mà không phải tải lại trang.
-2. **Cấu trúc Tabbed Drawer**: Bên trong Drawer chia thành 4 tab: **Tổng quan**, **Vai trò & Quyền hạn**, **Dự án & Nhóm**, **Nhật ký hoạt động**. Cấu trúc này giúp thông tin gọn gàng, không bị cuộn trang quá dài.
+---
 
-### 4.2. Tại sao chọn Faceted Filter + Debounced Search cho `DATN-351`?
-- Hệ thống SaaS B2B có thể có từ hàng chục đến hàng trăm nhân sự. Việc lọc tức thời theo:
-  - **Role** (`ADMIN` / `TEAM_LEADER` / `MEMBER`)
-  - **Trạng thái** (`ACTIVE` / `PENDING_INVITE` / `SUSPENDED`)
-  - **Dự án trực thuộc**
-  kết hợp ô tìm kiếm gõ tới đâu lọc tới đó (debounce 300ms) giúp giảm 70% thời gian thao tác so với việc phải bấm nút "Tìm kiếm" thủ công.
+### 2.3. Mẫu 3: shadcn/ui & TanStack Table (`tablecn`)
+* **Nguồn**: shadcn (`ui.shadcn.com/docs/components/data-table`) và Sadmann (`github.com/sadmann7/tablecn`)
+* **Đặc trưng cấu trúc**:
+  - Kiến trúc Headless UI kết hợp Radix UI Primitives: Tối ưu hoàn toàn khả năng tiếp cận (Accessibility WCAG 2.1 AA).
+  - Bộ lọc đa chiều (Faceted Filter Popover): Cho phép lọc kết hợp nhiều tiêu chí (Role + Status + Project) cùng lúc với debounce 300ms.
+  - Chế độ chọn nhiều dòng (Row Selection) hỗ trợ thanh công cụ nổi (Floating Action Bar) khi có ít nhất 1 dòng được chọn.
 
-### 4.3. Sự Khác Biệt Và Cải Tiến So Với Template TailAdmin
-Template mã nguồn khởi tạo ban đầu là **TailAdmin** (Next.js). Dưới đây là các điểm cải tiến cốt lõi để nâng tầm giao diện thành sản phẩm thương mại thật:
+---
 
-1. **Không sao chép giao diện cứng (Static Mockup)**:
-   - TailAdmin chỉ có các bảng HTML tĩnh với dữ liệu cố định, không có logic trạng thái.
-   - Continuum AI xây dựng **State Machine đầy đủ**: Xử lý trạng thái tải (`Loading Skeleton`), trạng thái rỗng (`Empty Filter Result`), lỗi mất mạng/máy chủ (`Error State`), và trạng thái bị từ chối quyền (`Permission Denied 403`).
-2. **Tuân thủ đúng kiến trúc bảo mật IAM**:
-   - TailAdmin không có khái niệm phân quyền. Giao diện mới áp dụng nghiêm ngặt quy tắc: Người dùng thường không thấy các nút phân quyền/khóa tài khoản; chỉ Admin mới có quyền thao tác quản trị.
-3. **Màu sắc và Typography đạt chuẩn Accessibility (WCAG 2.1 AA)**:
-   - Sử dụng gam màu Slate/Zinc hiện đại kết hợp màu nhấn Brand Indigo/Violet, loại bỏ các màu sắc nguyên bản lòe loẹt.
-   - Tương phản màu chữ trên nền badge đạt tỉ lệ tối thiểu 4.5:1.
+### 2.4. Mẫu 4: Clerk `<OrganizationProfile />` & WorkOS Directory Sync
+* **Nguồn**: Clerk Docs (`clerk.com/docs/components/organization/organization-profile`) & WorkOS (`workos.com/directory-sync`)
+* **Đặc trưng cấu trúc**:
+  - Mô hình dữ liệu thành viên chuẩn: `OrganizationMembership` (userId, organizationId, role, status, 2FA status, lastActiveAt).
+  - Quản lý lời mời đang chờ (`Pending Invites`): Hiển thị hạn lời mời (Expires in 7 days), có nút bấm nhanh "Gửi lại lời mời" (Resend invite) hoặc hủy lời mời ngay trên dòng.
+  - Cập nhật quyền hạn lạc quan (Optimistic UI): Khi Admin đổi role qua Dropdown, giao diện cập nhật ngay kèm thông báo Toast, tự động rollback nếu API trả mã lỗi.
+
+---
+
+### 2.5. Mẫu 5: Linear App — Workspace Members & Slide-over Drawer
+* **Nguồn**: Linear (`linear.app`)
+* **Đặc trưng cấu trúc**:
+  - **Slide-over Side Sheet (560px)**: Khi click vào bất kỳ dòng nào, Drawer trượt từ mép phải ra, giữ nguyên ngữ cảnh danh bạ nền mà không cần reload trang.
+  - Phím tắt thông minh: Nhấn phím `Esc` để đóng Drawer, phím mũi tên lên/xuống để duyệt nhân sự kế tiếp.
+  - Typography tối giản, bo góc chuẩn mực, tương thích hoàn hảo chế độ Light/Dark Mode.
+
+---
+
+### 2.6. Mẫu 6: Atlassian Administration (`admin.atlassian.com`)
+* **Nguồn**: Atlassian Cloud Admin & Atlassian Design System (`atlassian.design`)
+* **Đặc trưng cấu trúc**:
+  - Quản trị bảo mật quy mô lớn: Kiểm soát xác thực 2 bước (2FA Enforcement).
+  - Cảnh báo an toàn (Safety Impact Warning): Chặn thao tác tự tước quyền Admin của chính mình nếu là Admin hoạt động duy nhất trong tổ chức (`Prevent Lockout Rule`).
+  - Thao tác hàng loạt (Bulk Actions): Đình chỉ tài khoản hoặc gửi lại email xác nhận cho nhiều nhân sự cùng lúc.
+
+---
+
+## 3. Bảng Ma Trận So Sánh Các Mẫu Thực Tế
+
+| Tiêu Chí Kỹ Thuật / UX | TailAdmin (Mẫu Cũ) | Untitled UI (Mẫu 1) | Tailwind + Linear (Mẫu 2) | Atlassian (Mẫu 3) | Lựa Chọn Cho Continuum AI |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| **Nguồn gốc** | Template HTML tĩnh | Untitledui.com | Tailwind Labs & Linear | Atlassian.design | **Tổng hợp tinh hoa từ các mẫu chuẩn** |
+| **Phù hợp Schema 3 Role** | ❌ Chức danh tự do | ✅ 3 Role IAM | ✅ 3 Role IAM | ✅ 3 Role IAM | **ADMIN (Tím), TEAM_LEADER (Xanh), MEMBER (Xám)** |
+| **Xem chi tiết hồ sơ** | ❌ Không có | Modal giữa màn hình | **Slide-over Drawer** | Full-page redirect | **Slide-over Drawer (560px) giữ ngữ cảnh** |
+| **Bảo mật 2FA & Đăng nhập** | ❌ Không có | ✅ Có cột 2FA & Login | ❌ Lược giản | ✅ Báo cáo 2FA | **Cột Đăng nhập cuối + Badge 2FA** |
+| **Thao tác hàng loạt (Bulk)** | ❌ Không có | Checkbox cơ bản | Menu context | ✅ Bulk Bar hoàn chỉnh | **Floating Bulk Bar (Hiện khi chọn dòng)** |
+| **Xử lý trạng thái biên** | ❌ Trắng trang | Loading Spinner | Shimmer | Skeleton | **5 Edge States đầy đủ (Skeleton, Empty, 500, 403)** |
+| **Đáp ứng kích thước (RWD)** | Bị tràn bảng | Co giãn cột | Card View rút gọn | Co giãn cột | **Tự động chuyển Card View trên Mobile 375px** |
+
+---
+
+## 4. Hiện Thực Hóa Trực Quan Tại `DEMO_FE_TASK`
+
+Toàn bộ các mẫu khảo sát trên không nằm lại trên lý thuyết mà đã được tích hợp đầy đủ vào ứng dụng thực nghiệm tại thư mục `DEMO_FE_TASK`:
+
+1. **Bộ Chuyển Đổi Mẫu Thiết Kế (Design Model Switcher)**:
+   - Cho phép reviewer/giảng viên click chọn giữa 4 mẫu thực tế:
+     - `Mẫu Gốc`: Baseline theo prototype hiện tại của nhóm.
+     - `Untitled UI`: Đạt chuẩn Design System B2B hiện đại nhất.
+     - `Tailwind + Linear`: Mật độ cao, tối giản phẳng.
+     - `Atlassian Enterprise`: Quản trị an ninh và thao tác hàng loạt.
+2. **Nút "So Sánh Các Mẫu Thiết Kế" (Compare Modal)**:
+   - Bảng đối chiếu ưu/nhược điểm từng mẫu kèm **đường link nguồn trực tiếp từ Internet** để kiểm chứng.
+3. **Mô Phỏng 5 Trạng Thái Biên (Edge States Simulator)**:
+   - `Normal View`: Hiển thị bảng dữ liệu đầy đủ 48 thành viên.
+   - `Skeleton Loading`: Hiệu ứng shimmer nhấp nháy 5 dòng khi mạng chậm.
+   - `Empty Search Result`: Giao diện rỗng kèm nút "Đặt lại bộ lọc".
+   - `Empty Organization`: Trạng thái tổ chức mới chưa có thành viên.
+   - `Server Error (500)`: Nút thử lại (Retry) kèm mã lỗi hệ thống.
+   - `Permission Denied (403)`: Báo lỗi khi user không có quyền quản trị.
+4. **Modal Thông Số Thiết Kế Figma (Figma Specs & Handoff)**:
+   - Bảng mã màu Hex, Spacing tokens (hệ 8px), và Typography chuẩn Inter.
