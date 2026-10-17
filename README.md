@@ -8,6 +8,7 @@ Repository này lưu đặc tả, phạm vi MVP, mô hình actor/role, nghiên c
 - [Actor, role và permission](research-docs/02_ACTORS_ROLES_AND_PERMISSIONS.md)
 - [Luồng chọn Organization sau khi đăng nhập](research-docs/Auth/02-organization-selection-after-authentication.md)
 - [Organization, workspace và readiness hợp đồng truy cập](research-docs/Workspace/00-organization-and-access-contract-readiness.md)
+- [Quyết định đăng ký tài khoản bằng email/mật khẩu](research-docs/Workspace/12-email-password-registration-decision.md)
 - [Use Case quản lý Project, Team và Membership](research-docs/Workspace/05-project-team-access-use-cases.md)
 - [DATN-87 — Organization Membership Administration V1 đã duyệt và readiness gates](research-docs/Workspace/09-organization-membership-administration-v1.md)
 - [DATN-89 — Team Foundation evidence và decision gaps](research-docs/Workspace/09-team-management-foundation-decision-gap-report.md)
