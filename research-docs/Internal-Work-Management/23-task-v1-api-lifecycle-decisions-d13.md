@@ -1,6 +1,6 @@
 # DATN-373 — D-13 Task V1 API, Lifecycle and Contract Decisions
 
-- **Document Revision:** D13-R3 (18/10/2026, Asia/Bangkok).
+- **Document Revision:** D13-R4 (18/10/2026, Asia/Bangkok).
 - **Document Status:** PROPOSED DISPOSITION & CONTRACT SPECIFICATION FOR REVIEW.
 - **Review Authority Framework:**
   - Product Approver: Trần Kim Thắng (Leader, per [`Member.md`](../../Member.md)).
@@ -19,15 +19,15 @@
   - State Machine Baseline: [DATN-94 / D-02 Contract Review](16-task-v1-state-machine-contract.md) (All 25 transitions currently `UNKNOWN / Enabled: NO`).
   - Architecture Seam: [ADR-009](../../research-tech/ADR-009-internal-task-source-and-mongodb.md) and [ADR-010](../../research-tech/ADR-010-task-service-in-existing-repositories.md).
 - **Scope & Implementation Gate:**
-  - This document provides contract specifications, an exact source-ID inventory crosswalk, candidate dispositions, and executable test oracle designs. It does **NOT** constitute human approval by itself and does not include backend application source code.
-  - D-03 seven-field persistence and D-04 runtime-seam boundaries remain completed within their accepted scopes and are neither reopened nor expanded.
+  - This document provides contract specifications, an exact source-ID inventory crosswalk, candidate dispositions, an authority blocker register, and deterministic executable test oracle designs. It does **NOT** constitute human approval by itself and contains no backend application source code.
+  - D-03 seven-field persistence (private slice) and D-04 runtime-seam boundaries remain completed within their accepted scopes and are neither reopened nor modified.
   - All downstream implementation under **DATN-97**, **DATN-99 (D-07)**, **DATN-100 (D-08)**, and **DATN-101 (D-09)** remains strictly **BLOCKED** until this specification receives a formal Human Approval Record from the Leader.
 
 ---
 
 ## 1. Executive Summary & Review Framework
 
-The objective of **DATN-373 (D-13)** is to bring the Task V1 specification to full technical closure by resolving every `UNKNOWN` item across the contract readiness baseline. This revision (D13-R3) strictly satisfies the follow-up review criteria for **DATN-374**, **DATN-375**, and **DATN-376**.
+The objective of **DATN-373 (D-13)** is to bring the Task V1 specification to full technical closure by resolving every `UNKNOWN` item across the contract readiness baseline. This revision (D13-R4) addresses all remaining review findings for **DATN-374**, **DATN-375**, and **DATN-376**.
 
 ### 1.1. Accepted Baseline vs. Proposed Dispositions
 
@@ -38,13 +38,13 @@ To prevent unauthorized assumptions, all policy elements in this document are st
 3. **`PROPOSED_EXCLUSION_AWAITING_PRODUCT_DECISION`**: Features candidate for exclusion from V1 (e.g. Work Note/Handover integration, durable outbox) pending formal Product confirmation. Downstream issues remain blocked.
 4. **`UNKNOWN / DISABLED`**: Elements awaiting authority determination where no transition or operation is permitted.
 
-| Policy Domain | Accepted Baseline (PR #30 / PR #31) | Proposed Disposition in D-13-R3 (Awaiting Human Approval) | Status |
+| Policy Domain | Accepted Baseline (PR #30 / PR #31) | Proposed Disposition in D-13-R4 (Awaiting Human Approval) | Status |
 |---|---|---|---|
 | **Data Foundation** | Exactly 7 fields approved for D-03 private slice: `_id`, `projectId`, `title`, `createdBy`, `createdAt`, `updatedAt`, `version`. | 8 candidate extension fields: `status`, `description`, `priority`, `assigneeId`, `teamId`, `dueDate`, `completedAt`, `tags`. | 7 Fields: `APPROVED`<br>Extension: `PROPOSED_DISPOSITION` |
 | **Version Semantics** | Internal creation ordinal `1`. No public CAS/ETag semantics in private slice. | Introduces `expectedVersion` for optimistic concurrency control (OCC) on public mutations. | Baseline: `APPROVED`<br>OCC: `PROPOSED_DISPOSITION` |
 | **Lifecycle Transitions** | All 25 cells in D-02 are disabled (`Enabled: NO`). | Reaffirms 25 cells `Enabled: NO`. Details 8 Candidate Permitted vs. 17 Candidate Forbidden transitions with explicit guards. | Baseline: `UNKNOWN / DISABLED`<br>Candidate: `PROPOSED_DISPOSITION` |
 | **Organization Scope** | Contextual isolation derived from owning Project. No standalone storage in V1. | `organizationId` is derived contextually via trusted Project lookup; NOT persisted independently in Task document. | `APPROVED` (Reaffirmed) |
-| **History & Audit** | B4/P3: Atomic Task + Event persistence. Whole-task snapshots & PII prohibited. | Discriminative allowlist schema (`changedFields` + restricted delta). Excludes descriptions, snapshots, credentials. | `PROPOSED_DISPOSITION` |
+| **History & Audit** | B4/P3: Atomic Task + Event persistence. Whole-task snapshots & PII prohibited. | Discriminative allowlist schema (`changedFields` + restricted delta + ADR-010 provenance fields). Excludes snapshots, credentials. | `PROPOSED_DISPOSITION` |
 | **Mutation Reliability** | Commit exceptions do not prove rollback; must distinguish uncertain commit. | Client `operationId` (Idempotency Key), SHA-256 payload fingerprint, 24h dedupe, and three-way commit handling. | `PROPOSED_DISPOSITION` |
 | **Work Note & Handover** | Integration optional; only enters V1 if contract approved by owner (Record #20 §16). | Integration proposed excluded from Task V1 core. DATN-387 and DATN-452 remain BLOCKED. | `PROPOSED_EXCLUSION_AWAITING_PRODUCT_DECISION` |
 
@@ -52,38 +52,62 @@ To prevent unauthorized assumptions, all policy elements in this document are st
 
 ## 2. DATN-374 (D-13.1): Complete 1-to-1 Source Inventory & Crosswalk
 
-In compliance with DATN-374 pass criteria, this inventory maintains the exact original question identifiers from [D-01 Contract Readiness (Doc 13 §4)](13-task-v1-contract-readiness.md), [D-02 State Machine Review (Doc 16 §2–3)](16-task-v1-state-machine-contract.md), and [D-03 Delta Approval (Doc 21 / 22)](22-task-v1-d03-delta-approval-record.md). No original Q codes are reassigned or omitted.
+In strict compliance with DATN-374 pass criteria, this master crosswalk maintains the exact original question identifiers from [D-01 Contract Readiness (Doc 13 §4)](13-task-v1-contract-readiness.md), [D-02 State Machine Review (Doc 16 §2–3, Doc 18 §2)](16-task-v1-state-machine-contract.md), and [D-03 Delta Approval (Doc 21 / 22)](22-task-v1-d03-delta-approval-record.md). All items from `SRC-13-Q1` through `SRC-13-Q9`, `SRC-D02-01` through `SRC-D02-10`, and D-03 follow-ups are represented 1-to-1.
 
 ### 2.1. Master Source Inventory Crosswalk
 
-| Original Source ID | Source Reference | Exact Source Question / Item | Disposition Status | Proposed Disposition in D-13-R3 | Required Authority Role | Impacted Downstream Jira Issue | Test Oracle ID |
+| Original Source ID | Source Reference | Exact Source Question / Item | Disposition Status | Proposed Disposition in D-13-R4 | Required Authority Role | Impacted Downstream Jira Issue | Test Oracle ID |
 |---|---|---|---|---|---|---|---|
-| **SRC-13-Q1** | Doc 13 §4.1 / Doc 20 §16 | **V1 Scope & Use Cases:** Exact UC-TM use cases included in V1; inclusion of Work Note / Handover. | `PROPOSED_DISPOSITION` / `PROPOSED_EXCLUSION` | Core Task CRUD + Status + Assignment included; Work Note and Handover proposed excluded from V1. | Product Approver (Leader) | DATN-97, DATN-387, DATN-452 | O1, O2, O8, O12 |
-| **SRC-13-Q2** | Doc 13 §4.2 / Doc 20 §18, §19 | **Ownership & Relationships:** One Project per Task; 0..1 Team, 0..1 Assignee; Organization derivation. | `APPROVED` & `PROPOSED_DISPOSITION` | Project owns Task; 0..1 Team (`teamId`) and 0..1 Assignee (`assigneeId`); contextual Org derivation. | Architecture & Product | DATN-97, DATN-99 (D-07) | O1, O9, O12 |
-| **SRC-13-Q3** | Doc 13 §4.3 / Doc 21 §5 | **Field Dictionary & Constraints:** Exact field names, types, nullability, defaults, mutability, lengths. | `APPROVED` (7 fields) / `PROPOSED_DISPOSITION` (8 fields) | Approved 7 D-03 fields + 8 candidate extension fields (`status`, `description`, `priority`, `assigneeId`, `teamId`, `dueDate`, `completedAt`, `tags`). | Product Approver (Leader) | DATN-97, DATN-99, DATN-100 | O1, O13, O14, O15 |
+| **SRC-13-Q1** | Doc 13 §4.1 / Doc 20 §16 | **V1 Scope & Use Cases:** Exact UC-TM use cases included in V1; inclusion of Work Note / Handover. | `PROPOSED_DISPOSITION` / `PROPOSED_EXCLUSION` | Core Task CRUD + Status + Assignment included; Work Note and Handover proposed excluded from V1 pending Product contract. | Product Approver (Leader) | DATN-97, DATN-387, DATN-452 | O1, O2, O8, O12 |
+| **SRC-13-Q2** | Doc 13 §4.2 / Doc 20 §18, §19 | **Ownership & Relationships:** One Project per Task; 0..1 Team, 0..1 Assignee; Organization derivation. | `APPROVED` & `PROPOSED_DISPOSITION` | Project owns Task; 0..1 Team (`teamId`) and 0..1 Assignee (`assigneeId`); contextual Org derivation. | Architecture & Product | DATN-97, DATN-99 (D-07) | O0, O1, O9, O12 |
+| **SRC-13-Q3** | Doc 13 §4.3 / Doc 21 §5 | **Field Dictionary & Constraints:** Exact field names, types, nullability, defaults, mutability, lengths. | `APPROVED` (7 fields) / `PROPOSED_DISPOSITION` (8 fields) | Approved 7 D-03 fields + 8 candidate extension fields (`status`, `description`, `priority`, `assigneeId`, `teamId`, `dueDate`, `completedAt`, `tags`). | Product Approver (Leader) | DATN-97, DATN-99, DATN-100 | O0, O1, O13, O14, O15 |
 | **SRC-13-Q4** | Doc 13 §4.4 / Doc 16 §2 | **Lifecycle Catalogue & Terminals:** State enum catalogue, initial state, and terminal semantics. | `PROPOSED_DISPOSITION` | 5 states: `TODO` (initial), `IN_PROGRESS`, `BLOCKED`, `DONE` (reopenable), `CANCELLED` (terminal, no exit). | Product Approver (Leader) | DATN-97, DATN-100 (D-08) | O1, O2, O7, O8 |
 | **SRC-13-Q5** | Doc 13 §4.5 / Doc 20 §16, §32 | **Authorization & RBAC:** Actor, role, and scope permission matrix; cross-project isolation. | `PROPOSED_DISPOSITION` (Policy Conflict Under Review) | 4D RBAC using `ADMIN`, `TEAM_LEADER`, `MEMBER`. Reassignment limited to Lead/Admin. Masking foreign projects via 404. | Security & Product | DATN-97, DATN-99, DATN-100 | O9, O12 |
-| **SRC-13-Q6** | Doc 13 §4.6 / ADR-010 §3 | **API Surface & Route Boundary:** Route schemas, pagination, filter grammar, Gateway vs. Internal Service. | `PROPOSED_DISPOSITION` | 7 REST endpoints; Gateway `/api/v1/projects/:projectId/tasks` vs Internal `/internal/tasks`; pagination & sorting rules. | Architecture Approver (ADR-010) | DATN-97, DATN-99, DATN-100, DATN-101 | O1, O2, O4, O11, O12 |
-| **SRC-13-Q7** | Doc 13 §4.7 / Doc 22 §1 | **Version, Mutation & Idempotency:** Version counter vs. public OCC; operation replay; uncertain commits. | `APPROVED` (D-03) / `PROPOSED_DISPOSITION` (D-13) | D-03 ordinal preserved; `expectedVersion` proposed for public OCC; `operationId` 24h replay; 3-way commit outcome. | Architecture Approver | DATN-97, DATN-99, DATN-100 | O10, O11, O16 |
-| **SRC-13-Q8** | Doc 13 §4.8 / Doc 21 §8 | **History Event Boundary:** Event coverage, projection, prohibition of whole-task snapshots, retention. | `PROPOSED_DISPOSITION` | `task_events` allowlist schema (`changedFields` + delta); no whole-task snapshots; ADR-010 provenance fields. | Architecture & Security | DATN-97, DATN-101 (D-09) | O2, O8, O10, O17 |
+| **SRC-13-Q6** | Doc 13 §4.6 / ADR-010 §3 | **API Surface & Route Boundary:** Route schemas, pagination, filter grammar, Gateway vs. Internal Service. | `PROPOSED_DISPOSITION` | 7 REST endpoints; Gateway `/api/v1/projects/:projectId/tasks` vs Internal `/internal/tasks`; pagination & sorting rules. | Architecture Approver (ADR-010) | DATN-97, DATN-99, DATN-100, DATN-101 | O1, O2, O4, O11, O12, O30 |
+| **SRC-13-Q7** | Doc 13 §4.7 / Doc 22 §1 | **Version, Mutation & Idempotency:** Version counter vs. public OCC; operation replay; uncertain commits. | `APPROVED` (D-03) / `PROPOSED_DISPOSITION` (D-13) | D-03 ordinal preserved; `expectedVersion` proposed for public OCC; `operationId` 24h replay; 3-way commit outcome. | Architecture Approver | DATN-97, DATN-99, DATN-100 | O0, O10, O11, O16, O27, O28 |
+| **SRC-13-Q8** | Doc 13 §4.8 / Doc 21 §8 | **History Event Boundary:** Event coverage, projection, prohibition of whole-task snapshots, retention. | `PROPOSED_DISPOSITION` | `task_events` allowlist schema (`changedFields` + delta); no whole-task snapshots; ADR-010 provenance fields. | Architecture & Security | DATN-97, DATN-101 (D-09) | O0, O2, O8, O10, O17, O29 |
 | **SRC-13-Q9** | Doc 13 §4.9 / Doc 20 §25 | **Durable Consumer & Outbox:** Transactional outbox requirement and event delivery queue. | `PROPOSED_EXCLUSION_AWAITING_PRODUCT_DECISION` | Outbox deferred from Task V1 due to absence of an approved durable consumer. History is append-only audit. | Product & Architecture | DATN-97 | N/A (Deferred) |
 | **SRC-D02-01** | Doc 16 §2 | **Candidate State Meanings:** Semantic validation of `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`, `CANCELLED`. | `PROPOSED_DISPOSITION` | Accepted candidate definitions in §3.1. Reason mandatory for `BLOCKED`. | Product Approver (Leader) | DATN-97, DATN-100 | O1, O2, O5, O7 |
-| **SRC-D02-02** | Doc 16 §3 | **25-Cell Transition Matrix:** Cartesian evaluation of T01 through T25. | `UNKNOWN / DISABLED` (Baseline) / `PROPOSED_DISPOSITION` | All 25 cells `Enabled: NO` in baseline. Proposed candidate matrix: 8 Permitted vs. 17 Forbidden cells. | Product & Architecture | DATN-97, DATN-100 | O2–O8, O18–O30 |
+| **SRC-D02-02** | Doc 16 §3 | **25-Cell Transition Matrix:** Cartesian evaluation of T01 through T25. | `UNKNOWN / DISABLED` (Baseline) / `PROPOSED_DISPOSITION` | All 25 cells `Enabled: NO` in baseline. Proposed candidate matrix: 8 Permitted vs. 17 Forbidden cells. | Product & Architecture | DATN-97, DATN-100 | O2–O8, O18–O26 |
 | **SRC-D02-03** | Doc 16 §3 | **Transition Reasons:** Rules for mandatory reasons on state transitions. | `PROPOSED_DISPOSITION` | Mandatory `reason` (min 5 chars) on `BLOCKED`, `CANCELLED`, `RESUME`, `REOPEN`. Optional on `START`, `COMPLETE`. | Product Approver (Leader) | DATN-100 (D-08) | O5, O6, O8 |
-| **SRC-D02-10** | Doc 16 §3 | **History Event Mapping:** Exact event emitted per state transition. | `PROPOSED_DISPOSITION` | Emits `TASK_STATUS_TRANSITIONED` with `{ fromStatus, toStatus, reason }`. | Architecture Approver | DATN-101 (D-09) | O2, O8, O10 |
+| **SRC-D02-04** | Doc 16 §4 | **Guard Layers G1–G6 & Actor Scope:** Validation, IAM active membership, Project/Team fence, freshness. | `PROPOSED_DISPOSITION` | Explicit G1–G6 guard pipeline; active membership check; project isolation masking. | Security & Architecture | DATN-97, DATN-99, DATN-100 | O9, O12, O13, O14, O15 |
+| **SRC-D02-05** | Doc 17 §2 | **Concurrency & CAS:** Aggregate versioning, stale conflict resolution, uncertain transaction boundaries. | `PROPOSED_DISPOSITION` | `expectedVersion` aggregate CAS; stale returns 409; three-way commit outcome handling. | Architecture Approver | DATN-97, DATN-100 | O10, O11 |
+| **SRC-D02-06** | Doc 17 §3 | **Idempotency Namespace & Fingerprinting:** Uniqueness tuple, payload fingerprinting, and parameter normalization. | `PROPOSED_DISPOSITION` | Tuple `(actorId, projectId, operationId)`; SHA-256 canonical payload hash; mismatch returns 422. | Architecture Approver | DATN-97, DATN-100 | O16 |
+| **SRC-D02-07** | Doc 17 §4 | **Operation Replay Resolution:** Replay cache, in-flight duplicate handling, denial caching prohibition. | `PROPOSED_DISPOSITION` | Cached replay returns exact persisted result; concurrent in-flight returns 409; no denial caching. | Architecture Approver | DATN-97, DATN-100 | O16, O27 |
+| **SRC-D02-08** | Doc 17 §5 | **Deduplication Window & Proof Retention:** Key TTL, cleanup window, and post-expiry semantics. | `PROPOSED_DISPOSITION` | 24-hour TTL in Redis / Mongo; expired key treated as fresh request; no indefinite storage. | Architecture & Ops | DATN-97 | O28 |
+| **SRC-D02-09** | Doc 17 §6 | **Cross-Boundary Coordination & Handover:** Handover retry/compensation, operation ID propagation. | `PROPOSED_EXCLUSION_AWAITING_PRODUCT_DECISION` | Handover assignment integration proposed excluded from V1; DATN-452 blocked pending owner contract. | Product & Architecture | DATN-452 | N/A (Blocked) |
+| **SRC-D02-10** | Doc 16 §3 / Doc 18 §2 | **Event Schema & Audit Delta:** History representation, provenance fields, redaction of sensitive content. | `PROPOSED_DISPOSITION` | Allowlist delta (`changedFields`, discriminated delta); ADR-010 provenance fields; successor ACL. | Architecture & Security | DATN-97, DATN-101 (D-09) | O0, O2, O8, O17, O29 |
+| **SRC-D03-P1** | Doc 22 §1 | **Private Slice Foundation:** Private create/read persistence primitives, task/history definitions. | `APPROVED` | Approved in PR #31 for private slice. No public API or status lifecycle introduced. | Product Approver (Leader) | DATN-95, D-03 | O0 |
+| **SRC-D03-P2** | Doc 22 §1 | **Exact 7 Foundation Fields:** `_id`, `projectId`, `title`, `createdBy`, `createdAt`, `updatedAt`, `version`. | `APPROVED` | Approved in PR #31. Exactly 7 non-null fields; version = 1; updatedAt = createdAt. | Product Approver (Leader) | DATN-95, D-03 | O0 |
+| **SRC-D03-P3** | Doc 22 §1 | **Atomic Creation History:** Exactly one creation event, atomic write, append-only history. | `APPROVED` | Approved in PR #31. Single creation event per committed Task version 1; no content snapshots. | Product Approver (Leader) | DATN-95, D-03 | O0 |
 
 ---
 
 ## 3. DATN-375 (D-13.2): Authority Disposition & Contract Specification
 
-### 3.1. Task Lifecycle State Machine (SRC-13-Q4, SRC-D02-01–03)
+### 3.1. Authority & Blocker Register
+
+To ensure transparent governance, each unresolved policy is linked to its required authority, required input, and current blocking status:
+
+| Policy Area | Current Status | Governing Authority Role | Exact Action / Evidence Required to Close Gate | Impacted Issues Kept Blocked |
+|---|---|---|---|---|
+| **Lifecycle 25-Cell Matrix** | `UNKNOWN / DISABLED` (Baseline) / `PROPOSED_DISPOSITION` | Product Approver (Leader per `Member.md`) | Formal Leader Approval Record adopting 8 candidate permitted transitions and confirming 17 forbidden transitions. | DATN-97, DATN-100 (D-08) |
+| **Extended Fields Dictionary** | `PROPOSED_DISPOSITION` | Product Approver (Leader per `Member.md`) | Formal Leader Approval Record approving field dictionary (`status`, `description`, `priority`, `assigneeId`, `teamId`, `dueDate`, `completedAt`, `tags`). | DATN-97, DATN-99 (D-07) |
+| **Public OCC Version Semantics** | `PROPOSED_DISPOSITION` | Architecture Approver (ADR-010) | Architecture sign-off on public `expectedVersion` optimistic concurrency control. | DATN-97, DATN-100, DATN-101 |
+| **Internal Route & mTLS Trust** | `PROPOSED_DISPOSITION` | Architecture Approver (ADR-010) | Architecture sign-off on `/internal/tasks` route prefix and mTLS / `x-service-token` service authentication. | DATN-97 |
+| **RBAC & Project Admin Scope** | `POLICY CONFLICT UNDER REVIEW` | Security Approver & Product Approver | Formal Security sign-off resolving Organization Admin private-project masking vs Project Admin task management rights. | DATN-97, DATN-99, DATN-100 |
+| **Work Note & Handover Exclusion** | `PROPOSED_EXCLUSION` | Product Approver (Leader per `Member.md`) | Formal Product decision confirming exclusion of Work Note and Handover integration from Task V1 core scope. | DATN-387, DATN-452 |
+
+---
+
+### 3.2. Task Lifecycle State Machine (SRC-13-Q4, SRC-D02-01–03)
 
 #### A. State Catalogue
-1. `TODO`: Initial state. Task persisted but unstarted.
-2. `IN_PROGRESS`: Active execution by assignee.
-3. `BLOCKED`: Execution halted by impediment. Mandatory `reason` required.
-4. `DONE`: Execution completed. Can be reopened via `REOPEN`. Sets `completedAt = now()`.
-5. `CANCELLED`: Terminal state. Abandoned work. In V1, no exits are permitted.
+1. `TODO`: Initial state upon creation. Task persisted but execution has not begun.
+2. `IN_PROGRESS`: Active execution by eligible assignee.
+3. `BLOCKED`: Execution halted by an external impediment. Mandatory `reason` required.
+4. `DONE`: Execution completed. Can be reopened via `REOPEN`. Automatically sets `completedAt = now()`.
+5. `CANCELLED`: Terminal state. Work discarded or abandoned. In V1, no exits are permitted.
 
 #### B. Complete 25-Cell State Transition Matrix Evaluation
 **Baseline Authority Rule:** Currently, all 25 cells are **`DISABLED (Enabled: NO)`** under baseline DATN-94. The table below formulates the exact candidate proposal for authority review:
@@ -118,7 +142,7 @@ In compliance with DATN-374 pass criteria, this inventory maintains the exact or
 
 ---
 
-### 3.2. Field Dictionary & Schema Specification (SRC-13-Q3)
+### 3.3. Field Dictionary & Schema Specification (SRC-13-Q3)
 
 #### A. Approved Foundation Fields (D-03 Baseline — PR #31)
 These 7 fields are permanently accepted:
@@ -135,32 +159,31 @@ These 7 fields are permanently accepted:
 | Field Name | Type | Storage Type | Nullable | Default | Mutability | Constraints & Validation Semantics |
 |---|---|---|---|---|---|---|
 | `status` | String | `enum` | No | `"TODO"` | Mutable (Status API only) | Enum: `["TODO", "IN_PROGRESS", "BLOCKED", "DONE", "CANCELLED"]`. Governed by 25-cell matrix. |
-| `description` | String | `string` | Yes | `null` | Mutable | Optional; max length 5,000 UTF-8 characters. Plain text or Markdown. Nullable/clearable. |
+| `description` | String | `string` | Yes | `null` | Mutable | Optional; max length 5,000 UTF-8 characters. Plain text or Markdown. Clearable by passing `null`. |
 | `priority` | String | `enum` | No | `"MEDIUM"` | Mutable | Enum: `["LOW", "MEDIUM", "HIGH", "URGENT"]`. |
 | `assigneeId` | ObjectId | `ObjectId` | Yes | `null` | Mutable | Cardinality 0..1. Must reference active `User` with active `ProjectMembership` in `projectId`. Clearable by passing `null`. |
 | `teamId` | ObjectId | `ObjectId` | Yes | `null` | Mutable | Cardinality 0..1. Must reference active `Team` in `projectId`. Clearable by passing `null`. |
 | `dueDate` | Date | `ISODate` | Yes | `null` | Mutable | ISO-8601 UTC timestamp (`YYYY-MM-DDTHH:mm:ss.sssZ`). Validation rule: `dueDate >= createdAt`. Clearable by passing `null`. |
 | `completedAt` | Date | `ISODate` | Yes | `null` | Server-derived | Automatically set to `now()` on transition T09 (`COMPLETE`). Automatically reset to `null` on T17 (`REOPEN`). |
-| `tags` | Array | `[String]` | No | `[]` | Mutable | Max 10 tags; each tag max 30 characters; trimmed, no empty strings. |
+| `tags` | Array | `[String]` | No | `[]` | Mutable | Max 10 tags; each tag max 30 characters; trimmed, non-empty. **Non-nullable.** To clear tags, client must pass `[]`. Passing `null` returns `400 Bad Request`. |
 
 #### C. Derived Context Boundary
 - `organizationId`: Contextually derived from owning `Project.organizationId` via trusted Project Service lookup. In compliance with D-03 PR #31, `organizationId` is **NOT** persisted as an independent column in the Task collection for V1.
 
 ---
 
-### 3.3. REST API Surface & Network Boundary (SRC-13-Q6)
+### 3.4. REST API Surface & Network Boundary (SRC-13-Q6)
 
 #### A. Network & Route Boundary Separation (ADR-010)
 - **Public API Gateway / BFF Boundary:** `/api/v1/projects/:projectId/tasks...`
   - Gateway validates client session JWT, enforces tenant isolation, and proxies to internal Task Service.
 - **Internal Service Boundary:** `/internal/tasks...`
-  - Per ADR-010 §8, routes carry the `/internal` prefix and require mutual service authentication (mTLS / shared internal service secret `x-service-token`).
-  - Task Service consumes and verifies trusted internal context headers: `x-organization-id`, `x-project-id`, `x-actor-id`, `x-actor-role`. Requests lacking verified internal credentials are rejected with `401 Unauthorized`.
+  - Routes carry `/internal` prefix and require internal service authentication (mTLS / shared internal service secret `x-service-token`).
+  - Task Service consumes and verifies trusted internal context headers: `x-organization-id`, `x-project-id`, `x-actor-id`, `x-actor-role`. Direct requests lacking verified internal credentials are rejected with `401 Unauthorized`.
 
-#### B. Deterministic Field-by-Field Schemas & Endpoints
+#### B. Response & Error DTO Specifications
 
-##### Response DTO Specification: `TaskResponseDTO`
-Every endpoint returning a Task representation serializes to this exact schema:
+##### Response DTO: `TaskResponseDTO`
 ```typescript
 interface TaskResponseDTO {
   id: string;                         // Hex string of _id
@@ -173,7 +196,7 @@ interface TaskResponseDTO {
   teamId: string | null;              // Hex string or null
   dueDate: string | null;             // ISO-8601 UTC string or null
   completedAt: string | null;         // ISO-8601 UTC string or null
-  tags: string[];                     // Array of tag strings
+  tags: string[];                     // Array of tag strings (non-null)
   createdBy: string;                  // Hex string of creator
   createdAt: string;                  // ISO-8601 UTC string
   updatedAt: string;                  // ISO-8601 UTC string
@@ -181,10 +204,46 @@ interface TaskResponseDTO {
 }
 ```
 
+##### Audit History Response DTO: `TaskEventResponseDTO`
+```typescript
+interface TaskEventResponseDTO {
+  id: string;                         // Hex string of event _id
+  taskId: string;                     // Hex string of taskId
+  projectId: string;                  // Hex string of projectId
+  eventType: string;                  // e.g. "TASK_STATUS_TRANSITIONED"
+  actorId: string;                    // Hex string of actor
+  actorType: "USER" | "SYSTEM";       // Actor category
+  source: "WEB" | "API" | "INTERNAL_SERVICE";
+  timestamp: string;                  // ISO-8601 UTC string
+  version: number;                    // Resulting task version
+  operationId?: string;               // Idempotency key if supplied
+  changedFields: string[];            // Allowlist of updated field names
+  delta: Record<string, unknown>;     // Discriminated payload (NO snapshots)
+}
+```
+
+##### Standard Error Response Schema
+```json
+{
+  "success": false,
+  "error": {
+    "code": "TASK_STATE_TRANSITION_CONFLICT",
+    "message": "Cannot transition task from 'TODO' to 'DONE'. Direct completion is forbidden; task must be started first.",
+    "details": {
+      "currentStatus": "TODO",
+      "targetStatus": "DONE",
+      "allowedTransitions": ["IN_PROGRESS", "CANCELLED"]
+    }
+  }
+}
+```
+
+#### C. Endpoint Specifications
+
 ##### 1. Create Task
 - **Route:** `POST /api/v1/projects/:projectId/tasks`
 - **Headers:** `Idempotency-Key` (Optional UUID v4 for `operationId`).
-- **Request Body Schema:**
+- **Request Body:**
   ```json
   {
     "title": "string (required, min 1 non-W char, max 500)",
@@ -192,15 +251,19 @@ interface TaskResponseDTO {
     "priority": "LOW | MEDIUM | HIGH | URGENT (optional, default MEDIUM)",
     "assigneeId": "string | null (optional, valid ObjectId)",
     "teamId": "string | null (optional, valid ObjectId)",
-    "dueDate": "string | null (optional, ISO-8601 UTC)",
-    "tags": ["string"] (optional, max 10 tags, each max 30 chars)
+    "dueDate": "string | null (optional, ISO-8601 UTC timestamp)",
+    "tags": ["string"] (optional, max 10 tags, each max 30 chars; non-nullable)
   }
   ```
-- **Response `201 Created`:** `{ "success": true, "data": TaskResponseDTO }`.
+- **Responses:**
+  - `201 Created`: `{ "success": true, "data": TaskResponseDTO }`.
+  - `400 Bad Request`: `TASK_VALIDATION_ERROR`, `INVALID_TITLE_FORMAT`, `TAGS_MUST_BE_ARRAY`, `INVALID_DUE_DATE`.
+  - `404 Not Found`: `PROJECT_NOT_FOUND` (if project does not exist or caller is not active member).
+  - `422 Unprocessable Entity`: `ASSIGNEE_NOT_PROJECT_MEMBER`, `TEAM_NOT_IN_PROJECT`.
 
 ##### 2. List Project Tasks (Deterministic Pagination & Filtering)
 - **Route:** `GET /api/v1/projects/:projectId/tasks`
-- **Query Parameter Grammar:**
+- **Query Grammar:**
   - `status`: Exact enum or comma-separated list (e.g. `?status=TODO,IN_PROGRESS`).
   - `priority`: Exact enum match (e.g. `?priority=HIGH`).
   - `assigneeId`: Exact ObjectId hex string, or `"null"` for unassigned tasks.
@@ -210,46 +273,44 @@ interface TaskResponseDTO {
   - `limit`: Integer $1 \le \text{limit} \le 100$ (default: `20`).
   - `sort`: Default `-createdAt`. Allowed keys: `createdAt`, `-createdAt`, `updatedAt`, `-updatedAt`, `dueDate`, `-dueDate`, `priority`, `-priority`.
   - **Deterministic Tie-Breaker Rule:** Query engine appends `_id: 1` as secondary sort to prevent page drift across concurrent inserts.
-- **Response `200 OK`:**
-  ```json
-  {
-    "success": true,
-    "data": [ TaskResponseDTO ],
-    "pagination": {
-      "page": 1,
-      "limit": 20,
-      "total": 45,
-      "totalPages": 3
-    }
-  }
-  ```
+- **Responses:**
+  - `200 OK`: `{ "success": true, "data": TaskResponseDTO[], "pagination": { "page": 1, "limit": 20, "total": 45, "totalPages": 3 } }`.
+  - `404 Not Found`: `PROJECT_NOT_FOUND`.
 
 ##### 3. Get Task Detail
 - **Route:** `GET /api/v1/projects/:projectId/tasks/:taskId`
-- **Response `200 OK`:** `{ "success": true, "data": TaskResponseDTO }`.
-- **Masking Invariant:** Returns `404 Not Found` if task does not exist OR if actor is not an active member of `projectId`.
+- **Responses:**
+  - `200 OK`: `{ "success": true, "data": TaskResponseDTO }`.
+  - `404 Not Found`: `TASK_NOT_FOUND` (also returned if actor is not an active member of `projectId`, masking resource existence).
 
 ##### 4. Update Task Metadata (Omitted vs. Null Semantics)
 - **Route:** `PATCH /api/v1/projects/:projectId/tasks/:taskId`
-- **Request Body Schema:**
+- **Semantics:**
   - Omitted fields are left unchanged.
-  - Passing `null` on nullable fields (`description`, `dueDate`, `tags`) clears their value.
+  - Passing `null` on nullable fields (`description`, `dueDate`) clears their value.
+  - Passing `[]` on `tags` clears tags. Passing `null` on `tags` returns `400 Bad Request`.
+- **Request Body:**
   ```json
   {
     "title": "string (optional)",
     "description": "string | null (optional)",
     "priority": "LOW | MEDIUM | HIGH | URGENT (optional)",
-    "dueDate": "string | null (optional)",
-    "tags": ["string"] (optional),
+    "dueDate": "string | null (optional, ISO-8601 UTC timestamp)",
+    "tags": ["string"] (optional, non-nullable array),
     "expectedVersion": 2
   }
   ```
-- **Response `200 OK`:** `{ "success": true, "data": TaskResponseDTO }`.
+- **Responses:**
+  - `200 OK`: `{ "success": true, "data": TaskResponseDTO }`.
+  - `400 Bad Request`: `TASK_VALIDATION_ERROR`, `TAGS_MUST_BE_ARRAY`, `INVALID_DUE_DATE`.
+  - `403 Forbidden`: `INSUFFICIENT_TASK_PERMISSIONS`.
+  - `404 Not Found`: `TASK_NOT_FOUND`.
+  - `409 Conflict`: `CONCURRENT_VERSION_CONFLICT`.
 
 ##### 5. Execute State Transition
 - **Route:** `PATCH /api/v1/projects/:projectId/tasks/:taskId/status`
 - **Headers:** `Idempotency-Key` (Optional UUID v4 for `operationId`).
-- **Request Body Schema:**
+- **Request Body:**
   ```json
   {
     "targetStatus": "IN_PROGRESS | BLOCKED | DONE | CANCELLED (required)",
@@ -257,12 +318,17 @@ interface TaskResponseDTO {
     "expectedVersion": 2
   }
   ```
-- **Response `200 OK`:** `{ "success": true, "data": TaskResponseDTO }`. Returns `409 Conflict` if edge is disabled or forbidden.
+- **Responses:**
+  - `200 OK`: `{ "success": true, "data": TaskResponseDTO }`.
+  - `400 Bad Request`: `MANDATORY_TRANSITION_REASON_MISSING`.
+  - `403 Forbidden`: `INSUFFICIENT_TRANSITION_PERMISSIONS`.
+  - `404 Not Found`: `TASK_NOT_FOUND`.
+  - `409 Conflict`: `TASK_STATE_TRANSITION_CONFLICT`, `CONCURRENT_VERSION_CONFLICT`.
 
 ##### 6. Assign or Clear Assignment
 - **Route:** `PATCH /api/v1/projects/:projectId/tasks/:taskId/assignee`
 - **Headers:** `Idempotency-Key` (Optional UUID v4 for `operationId`).
-- **Request Body Schema:**
+- **Request Body:**
   ```json
   {
     "assigneeId": "string | null (required; pass null to clear assignee)",
@@ -270,16 +336,23 @@ interface TaskResponseDTO {
     "expectedVersion": 2
   }
   ```
-- **Response `200 OK`:** `{ "success": true, "data": TaskResponseDTO }`. Returns `422 Unprocessable Entity` if `assigneeId` is not an active project member.
+- **Responses:**
+  - `200 OK`: `{ "success": true, "data": TaskResponseDTO }`.
+  - `403 Forbidden`: `INSUFFICIENT_PROJECT_PERMISSIONS` (plain members cannot reassign).
+  - `404 Not Found`: `TASK_NOT_FOUND`.
+  - `409 Conflict`: `CONCURRENT_VERSION_CONFLICT`.
+  - `422 Unprocessable Entity`: `ASSIGNEE_NOT_PROJECT_MEMBER`, `TEAM_NOT_IN_PROJECT`.
 
 ##### 7. Get Task Audit History Log
 - **Route:** `GET /api/v1/projects/:projectId/tasks/:taskId/events`
 - **Query Parameters:** `page` (default 1), `limit` (default 20, max 100).
-- **Response `200 OK`:** `{ "success": true, "data": [ TaskEventRecord ], "pagination": { ... } }`.
+- **Responses:**
+  - `200 OK`: `{ "success": true, "data": TaskEventResponseDTO[], "pagination": { "page": 1, "limit": 20, "total": 12, "totalPages": 1 } }`.
+  - `404 Not Found`: `TASK_NOT_FOUND`.
 
 ---
 
-### 3.4. Role-Based Access Control & Policy Conflict Disclosure (SRC-13-Q5)
+### 3.5. Role-Based Access Control & Policy Conflict Disclosure (SRC-13-Q5)
 
 #### A. Role Alignment & Conflict Disclosure
 The permission baseline in [`02_ACTORS_ROLES_AND_PERMISSIONS.md`](../02_ACTORS_ROLES_AND_PERMISSIONS.md) and [`12-continuum-task-management-use-cases.md`](12-continuum-task-management-use-cases.md) §3 contains an unresolved policy tension:
@@ -306,7 +379,7 @@ The permission baseline in [`02_ACTORS_ROLES_AND_PERMISSIONS.md`](../02_ACTORS_R
 
 ---
 
-### 3.5. Audit History Event Schema & Provenance (SRC-13-Q8, ADR-010 §7)
+### 3.6. Audit History Event Schema & Provenance (SRC-13-Q8, ADR-010 §7)
 
 To satisfy ADR-010 §7 provenance requirements while honoring the strict prohibition of whole-task snapshots (PR #31 P3), `task_events` adopts a discriminative, privacy-safe allowlist schema:
 
@@ -343,7 +416,7 @@ type TaskEventDelta =
 
 ---
 
-### 3.6. Mutation Reliability, Idempotency & Three-Way Commit Model (SRC-13-Q7, ADR-010 §6)
+### 3.7. Mutation Reliability, Idempotency & Three-Way Commit Model (SRC-13-Q7, ADR-010 §6)
 
 #### A. Idempotency Key Semantics
 - **Key Header:** `Idempotency-Key` (Client-supplied UUID v4).
@@ -375,7 +448,7 @@ In distributed MongoDB replica set transactions, commit uncertainty is resolved 
 
 This register formally establishes the blocking relationships between DATN-373 and downstream implementation tasks under Epic DATN-75:
 
-| Jira Key | Official Issue Summary | Relationship to DATN-373 | Governing Section in D-13-R3 | Current Status |
+| Jira Key | Official Issue Summary | Relationship to DATN-373 | Governing Section in D-13-R4 | Current Status |
 |---|---|---|---|---|
 | **DATN-97** | Task V1 Core BE Implementation | **BLOCKED** by DATN-373 | §3.2 (Fields), §3.3 (API), §3.4 (RBAC), §3.6 (Reliability) | `To Do` (BLOCKED) |
 | **DATN-99** | **D-07 Task Assignment Service** | **BLOCKED** by DATN-373 | §3.2 (Fields: `assigneeId`, `teamId`), §3.4 (RBAC), §3.5 (Audit) | `To Do` (BLOCKED) |
@@ -386,55 +459,63 @@ This register formally establishes the blocking relationships between DATN-373 a
 
 ---
 
-### 4.2. Executable Test Oracles (O1–O30)
+### 4.2. Comprehensive Executable Test Oracles (O0–O30)
 
 Test oracles are partitioned into:
-- **Approved Baseline Oracles (O1):** Verifies immutable D-03 baseline foundation.
-- **Conditional Proposal Oracles (O2–O30):** Test specifications that become binding **ONLY** upon formal Leader approval of this specification.
+- **Approved Baseline Oracle (O0):** Verifies immutable D-03 baseline foundation (PR #31).
+- **Conditional Proposal Oracles (O1–O30):** Test specifications that become binding **ONLY** upon formal Leader approval of this specification.
 
-#### A. Approved Baseline Oracle
-- **O1 (Creation Baseline & D-03 7 Fields):**
+#### A. Approved Baseline Oracle (D-03 Private Slice)
+- **O0 (Approved Baseline: D-03 Private Slice Persistence Primitive):**
+  - *Setup:* Authenticated internal caller invoking private Task persistence service.
+  - *Input:* `{ projectId: ObjectId, title: "Private Foundation Task", createdBy: ObjectId }`.
+  - *Expectation:* Successfully persists document with **exactly 7 non-null fields**: `_id`, `projectId`, `title`, `createdBy`, `createdAt`, `updatedAt`, `version: 1`. `createdAt == updatedAt`. Atomically persists exactly one `task_events` record with `eventType: "TASK_CREATED"`, `version: 1`, `changedFields: ["_id", "projectId", "title", "createdBy", "createdAt", "updatedAt", "version"]`, and delta `{ type: "CREATED" }`. No whole-task snapshot. **No public HTTP route, no status field, and no public CAS.**
+
+#### B. Conditional Public API & Transition Oracles (O1–O30)
+- **O1 (Proposed Task Creation via Public Gateway API):**
   - *Setup:* Authenticated `MEMBER` of `projectId`.
-  - *Request:* `POST /api/v1/projects/:projectId/tasks` with `{ "title": "Valid Task" }`.
-  - *Expectation:* `201 Created`. Persists exactly 7 fields. `status == "TODO"`, `version == 1`, `createdAt == updatedAt`. Emits `TASK_CREATED` event. No public CAS.
-
-#### B. Conditional Lifecycle Transition Oracles (Governing All 25 Cells)
+  - *Request:* `POST /api/v1/projects/:projectId/tasks` with `{ "title": "Public Task" }`.
+  - *Expectation:* `201 Created`. Persists 7 foundation fields plus proposed defaults `status: "TODO"`, `priority: "MEDIUM"`, `version: 1`. Emits `TASK_CREATED` event.
 - **O2 (T02: START - Permitted Candidate):** `PATCH .../status` `{ "targetStatus": "IN_PROGRESS", "expectedVersion": 1 }` from `TODO`. Task has assignee. `200 OK`. `status = "IN_PROGRESS"`, `version = 2`. Emits `TASK_STATUS_TRANSITIONED`.
-- **O3 (T04: Direct Complete - Forbidden):** `PATCH .../status` `{ "targetStatus": "DONE", "expectedVersion": 1 }` from `TODO`. `409 Conflict` (`TASK_STATE_TRANSITION_CONFLICT`). State unchanged, `version = 1`, `H0`.
+- **O3 (T04: Direct Complete - Forbidden):** `PATCH .../status` `{ "targetStatus": "DONE", "expectedVersion": 1 }` from `TODO`. Returns `409 Conflict` (`TASK_STATE_TRANSITION_CONFLICT`). State unchanged, `version = 1`, `H0`.
 - **O4 (Self-Transitions: T01, T07, T13, T19, T25 - Forbidden):** `PATCH .../status` with identical status returns `409 Conflict`. State unchanged, `H0`.
-- **O5 (T08: BLOCK - Permitted Candidate):** `PATCH .../status` `{ "targetStatus": "BLOCKED", "reason": "Missing API", "expectedVersion": 2 }` from `IN_PROGRESS`. `200 OK`. `status = "BLOCKED"`, `version = 3`. Emits event. Missing reason $\rightarrow$ `400 Bad Request`.
+- **O5 (T08: BLOCK - Permitted Candidate):** `PATCH .../status` `{ "targetStatus": "BLOCKED", "reason": "Missing API", "expectedVersion": 2 }` from `IN_PROGRESS`. `200 OK`. `status = "BLOCKED"`, `version = 3`. Emits event. Missing reason $\rightarrow$ `400 Bad Request` (`MANDATORY_TRANSITION_REASON_MISSING`).
 - **O6 (Cancellation: T05, T10, T15 - Permitted Candidate):** `PATCH .../status` `{ "targetStatus": "CANCELLED", "reason": "No longer needed", "expectedVersion": 2 }`. Actor is Admin/Lead/Creator. `200 OK`. `status = "CANCELLED"`, `version = 3`. Emits event.
-- **O7 (Terminal Exits: T21, T22, T23, T24 - Forbidden):** Any status transition attempt from `CANCELLED` returns `409 Conflict`. State unchanged, `H0`.
+- **O7 (Terminal Exits: T21, T22, T23, T24 from CANCELLED - Forbidden):** Any status transition attempt from `CANCELLED` returns `409 Conflict`. State unchanged, `H0`.
 - **O8 (T17: REOPEN - Permitted Candidate):** `PATCH .../status` `{ "targetStatus": "IN_PROGRESS", "reason": "QA Defect #12", "expectedVersion": 3 }` from `DONE`. `200 OK`. `status = "IN_PROGRESS"`, `completedAt = null`, `version = 4`. Emits event.
-- **O18 (T03: Direct Block - Forbidden):** `PATCH .../status` `{ "targetStatus": "BLOCKED" }` from `TODO`. Returns `409 Conflict`.
-- **O19 (T06: Reset to TODO - Forbidden):** `PATCH .../status` `{ "targetStatus": "TODO" }` from `IN_PROGRESS`. Returns `409 Conflict`.
-- **O20 (T09: COMPLETE - Permitted Candidate):** `PATCH .../status` `{ "targetStatus": "DONE", "expectedVersion": 2 }` from `IN_PROGRESS`. `200 OK`. `status = "DONE"`, `completedAt = now()`, `version = 3`. Emits event.
-- **O21 (T11: Blocked Reset to TODO - Forbidden):** `PATCH .../status` `{ "targetStatus": "TODO" }` from `BLOCKED`. Returns `409 Conflict`.
-- **O22 (T12: RESUME - Permitted Candidate):** `PATCH .../status` `{ "targetStatus": "IN_PROGRESS", "reason": "Unblocked", "expectedVersion": 3 }` from `BLOCKED`. `200 OK`. `status = "IN_PROGRESS"`, `version = 4`.
-- **O23 (T14: Blocked Direct Complete - Forbidden):** `PATCH .../status` `{ "targetStatus": "DONE" }` from `BLOCKED`. Returns `409 Conflict`.
-- **O24 (T16: Complete Reset to TODO - Forbidden):** `PATCH .../status` `{ "targetStatus": "TODO" }` from `DONE`. Returns `409 Conflict`.
-- **O25 (T18: Complete Direct Block - Forbidden):** `PATCH .../status` `{ "targetStatus": "BLOCKED" }` from `DONE`. Returns `409 Conflict`.
-- **O26 (T20: Cancel Completed - Forbidden):** `PATCH .../status` `{ "targetStatus": "CANCELLED" }` from `DONE`. Returns `409 Conflict`.
-
-#### C. Conditional API, Security, & Reliability Oracles
 - **O9 (Assignee Membership Validation):** Setting `assigneeId` to a user without active `ProjectMembership` in `projectId` returns `422 Unprocessable Entity` (`ASSIGNEE_NOT_PROJECT_MEMBER`).
 - **O10 (Atomic Transaction & Uncertainty Guarantee):** Confirmed aborted transaction rolls back both Task and event log (`H0`). Unacknowledged commit exception leaves status as `UNCERTAIN`; replay with identical `operationId` retrieves canonical committed state.
 - **O11 (Optimistic Concurrency Control):** Submitting mismatched `expectedVersion` returns `409 Conflict` (`CONCURRENT_VERSION_CONFLICT`).
 - **O12 (Project Multi-Tenancy Masking):** Non-member querying `/api/v1/projects/:projectId/tasks` receives `404 Not Found`, masking project existence.
 - **O13 (Due Date Boundary):** Submitting `dueDate < createdAt` returns `400 Bad Request` (`INVALID_DUE_DATE`).
-- **O14 (Description Boundary):** Submitting `description.length > 5000` returns `400 Bad Request`.
-- **O15 (Tag Constraint):** Submitting `tags.length > 10` returns `400 Bad Request`.
+- **O14 (Description Boundary):** Submitting `description.length > 5000` returns `400 Bad Request` (`TASK_VALIDATION_ERROR`).
+- **O15 (Tag Constraint & Nullability):**
+  - Submitting `tags.length > 10` returns `400 Bad Request` (`TASK_VALIDATION_ERROR`).
+  - Submitting `"tags": null` returns `400 Bad Request` (`TAGS_MUST_BE_ARRAY`).
 - **O16 (Idempotency Replay & Fingerprint Mismatch):**
   - Re-sending identical payload with same `Idempotency-Key` returns cached `200/201` without `version++` or duplicate history (`H0`).
   - Re-sending altered payload with same key returns `422 Unprocessable Entity` (`IDEMPOTENCY_KEY_PAYLOAD_MISMATCH`).
 - **O17 (Audit Event Non-Snapshot Invariant):** Validating MongoDB `task_events` documents confirms absence of whole-task snapshots, descriptions, or user credentials.
+- **O18 (T03: Direct Block - Forbidden):** `PATCH .../status` `{ "targetStatus": "BLOCKED" }` from `TODO`. Returns `409 Conflict` (`TASK_STATE_TRANSITION_CONFLICT`).
+- **O19 (T06: Reset to TODO - Forbidden):** `PATCH .../status` `{ "targetStatus": "TODO" }` from `IN_PROGRESS`. Returns `409 Conflict`.
+- **O20 (T09: COMPLETE - Permitted Candidate):** `PATCH .../status` `{ "targetStatus": "DONE", "expectedVersion": 2 }` from `IN_PROGRESS`. `200 OK`. `status = "DONE"`, `completedAt = now()`, `version = 3`. Emits event.
+- **O21 (T11: Blocked Reset to TODO - Forbidden):** `PATCH .../status` `{ "targetStatus": "TODO" }` from `BLOCKED`. Returns `409 Conflict`.
+- **O22 (T12: RESUME - Permitted Candidate):** `PATCH .../status` `{ "targetStatus": "IN_PROGRESS", "reason": "Unblocked", "expectedVersion": 3 }` from `BLOCKED`. `200 OK`. `status = "IN_PROGRESS"`, `version = 4`. Emits event.
+- **O23 (T14: Blocked Direct Complete - Forbidden):** `PATCH .../status` `{ "targetStatus": "DONE" }` from `BLOCKED`. Returns `409 Conflict`.
+- **O24 (T16: Complete Reset to TODO - Forbidden):** `PATCH .../status` `{ "targetStatus": "TODO" }` from `DONE`. Returns `409 Conflict`.
+- **O25 (T18: Complete Direct Block - Forbidden):** `PATCH .../status` `{ "targetStatus": "BLOCKED" }` from `DONE`. Returns `409 Conflict`.
+- **O26 (T20: Cancel Completed - Forbidden):** `PATCH .../status` `{ "targetStatus": "CANCELLED" }` from `DONE`. Returns `409 Conflict`.
+- **O27 (Concurrent In-Flight Idempotency Duplicate):** Two concurrent requests with the identical `Idempotency-Key` arriving simultaneously: the second request returns `409 Conflict` (`CONCURRENT_OPERATION_IN_PROGRESS`) until the first completes.
+- **O28 (Idempotency Key Expiry):** Re-submitting the same `Idempotency-Key` after 24 hours results in key eviction; request is processed as a fresh mutation rather than returning a cached response.
+- **O29 (Audit Log Pagination & Successor Scoping):** Querying `GET /tasks/:taskId/events` returns paginated events matching `TaskEventResponseDTO`. Successors only view events after task handover.
+- **O30 (Internal Route Caller Authentication):** Direct HTTP request to `/internal/tasks` without valid mTLS certificate or valid `x-service-token` returns `401 Unauthorized`.
 
 ---
 
 ## 5. Review & Sign-Off Checklist for Lead
 
-- [x] **DATN-374:** Exact 1-to-1 inventory retaining original question IDs (`SRC-13-Q1` through `SRC-13-Q9`, `SRC-D02-01` through `SRC-D02-10`). No remapping. Work Note / Handover classified as `PROPOSED_EXCLUSION_AWAITING_PRODUCT_DECISION`. D-03 and D-04 boundaries fully preserved.
-- [x] **DATN-375:** Tri-state status for every policy item (`APPROVED`, `PROPOSED_DISPOSITION`, `PROPOSED_EXCLUSION`, `UNKNOWN`). Baseline confirms 25 cells `Enabled: NO`. Candidate matrix provides complete transition, guard, actor, reason, event, and oracle specifications.
-- [x] **DATN-376:** Downstream Jira keys corrected (`DATN-97`, `DATN-99 D-07`, `DATN-100 D-08`, `DATN-101 D-09`, `DATN-387`, `DATN-452`). Oracles partitioned into Approved Baseline vs. Conditional Proposals, covering all 25 transition cells (O1–O30).
-- [x] **Contract Precision:** Field-by-field schemas, stable pagination tie-breaking, ADR-010 `/internal` route and mTLS trust, RBAC conflict disclosure, provenance audit event schema, and SHA-256 payload fingerprinting for idempotency.
-- [x] **Jira & Review Boundary:** Document clearly framed as specification and oracle designs; no false claims of executable test code. Subtask statuses remain `In Review` pending reviewer verification.
+- [x] **DATN-374:** Exact 1-to-1 inventory retaining original question IDs (`SRC-13-Q1` through `SRC-13-Q9`, `SRC-D02-01` through `SRC-D02-10`, `SRC-D03-P1..P3`). No gaps, no remapped IDs. Work Note / Handover classified as `PROPOSED_EXCLUSION_AWAITING_PRODUCT_DECISION`. D-03 7-field baseline and D-04 runtime-seam boundaries preserved.
+- [x] **DATN-375:** Formal Authority & Blocker Register (§3.1) stating the exact governing authority role, current status, action required to close gate, and blocked downstream issues. Baseline confirms 25 cells `Enabled: NO`. Candidate matrix details all 25 transition cells.
+- [x] **DATN-376:** Correct downstream Jira keys and official summaries (`DATN-97`, `DATN-99 D-07`, `DATN-100 D-08`, `DATN-101 D-09`, `DATN-387`, `DATN-452`). Comprehensive test oracles covering O0 through O30 with explicit baseline vs conditional classification.
+- [x] **Contract Precision:** Eliminated O1 status contradiction (split into O0 baseline and O1 public proposal). Resolved tags nullability (`tags` non-nullable; clear via `[]`). Provided complete response & error DTO schemas, deterministic tie-breaker sorting (`_id: 1`), ADR-010 `/internal` mTLS trust contract, RBAC conflict disclosure, provenance audit event schema, and SHA-256 idempotency fingerprinting.
+- [x] **Jira & Review Boundary:** Document explicitly framed as contract specification and oracle designs; no false claims of executed test suites. Subtask statuses remain `In Review` pending human reviewer verification.
