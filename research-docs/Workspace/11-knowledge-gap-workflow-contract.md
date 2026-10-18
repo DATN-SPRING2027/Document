@@ -2,15 +2,16 @@
 
 ## Document status
 
-- Revision: **R0.4, 2026-10-18 (Asia/Saigon)**
-- State: **Versioned J-01 contract package with evidence-backed constraints and explicit decision dispositions. Product/Security approval is not recorded; unresolved policy rows are not implementation-ready.**
+- Revision: **R0.5, 2026-10-18 (Asia/Saigon)**
+- State: **Contract closure revision incorporating the conditional Project Lead disposition in Jira comment #10255. Product decisions include amendments; independent Security and API/Architecture confirmations and several exact policy values remain pending. R0.5 is not implementation-ready until those gates are resolved.**
 - Jira: [DATN-413](https://trankimthang0207.atlassian.net/browse/DATN-413)
 - Related subtasks: [DATN-414](https://trankimthang0207.atlassian.net/browse/DATN-414), [DATN-415](https://trankimthang0207.atlassian.net/browse/DATN-415)
-- Evidence base: Document `origin/main` at `6dfce0f5555f436dac177137465299404fc61c94`, task-linked Jira records, DATN-BE `origin/main` at `9e3227925d01532b6e26336a77b38895392112b5`, DATN-FE `origin/main` at `217a9da38ca8db5334aeab51f2dea854a02844b1`, and SAG `main` at `ab27c61e90fb24ea0e73ea935f68baee36ba9942`, checked 2026-10-18.
-- Approval evidence: **NONE RECORDED**. The decision owners are Product and Security; their named approvers are not established by the inspected sources.
+- Evidence base: Document `origin/main` at merged PR #45 commit `95edc801a68da2d6a4c23efaaf83bbe7d3d42279`; task-linked Jira records; DATN-BE `origin/main` at `9e3227925d01532b6e26336a77b38895392112b5`; DATN-FE `origin/main` at `217a9da38ca8db5334aeab51f2dea854a02844b1`; and SAG `main` at `ab27c61e90fb24ea0e73ea935f68baee36ba9942`, checked 2026-10-18.
+- Decision evidence: Jira comment #10255 records KeyT's conditional, role-labeled disposition. The closure instruction identifies KeyT as Project Lead. Product accepted P1/P2, D-04/D-05, D-10, and G-01–G-12 subject to a D-07 amendment. Security-labeled and API/Architecture-labeled decisions include additional requirements. The comment does not identify separate Security/API approvers or repeat the R0.4 SHA; this revision requests explicit confirmation against R0.5 where role separation applies.
+- Approval evidence: **Conditional Product/Project Lead disposition exists; independent Security and API/Architecture approval against R0.5 is not yet established.** Do not infer approval from role labels, PR #45 merge, or the R0.4 recommendation.
 - Scope gate: DATN-413 is the Phase 1 contract task. Persistence/API, UI, and trigger implementation are separately scoped by DATN-444, DATN-448, and DATN-451 and are blocked by this contract. This document does not create or change application schemas, grants, endpoints, or runtime behavior.
 
-This is the versioned J-01 contract and evidence package. It separates accepted rules, bounded technical choices, existing code that is not yet a contract, and decisions that require Product/Security authority. Jira `Done`, code presence, technical review, and this document do not constitute Product or Security approval.
+This is the versioned J-01 contract and evidence package. It separates accepted rules, bounded technical choices, existing code that is not yet a contract, and decisions that require Product/Security/API-owner authority. Jira `Done`, code presence, technical review, and this document do not constitute a role approval.
 
 ### Revision history
 
@@ -20,17 +21,18 @@ This is the versioned J-01 contract and evidence package. It separates accepted 
 | R0.2 | Add non-binding recommended defaults to make the Product/Security decision review concrete. No recommendation is selected policy. |
 | R0.3 | Reconcile every J-01 criterion with Jira, current DATN-BE/FE source, and current SAG `main`; classify decisions, record the existing schema mismatch, and add an acceptance checklist with completion evidence and remaining approval blockers. |
 | R0.4 | Refresh BE/FE source refs; verify that J-02/J-03/J-04 still own runtime work; record the exact PR/Jira review state and the corrected BE IAM E2E test on current `origin/main`. No Product/Security disposition is presumed. |
+| R0.5 | Incorporate Jira #10255's conditional Product/Project Lead acceptance and amendments; define the exact remaining D-07, retention/deletion, reference create/read, and API/audit confirmation gates; correct PR #45's merged state. |
 
 ## Acceptance checklist (J-01)
 
 | Jira criterion / completion evidence | Result | Evidence and limit |
 |---|---|---|
-| Gap fields, states, ownership, links, and actor/scope are explicit or recorded as decision blockers | **Met at contract level.** Accepted constraints and each unresolved Product/Security/API decision are separated in §§5–9. | Canonical field names, state transitions, and action grants remain blocked only where the authoritative sources do not decide them. |
-| Insufficient-evidence and required-knowledge follow-up can create a gap without inventing a score | **Partly met at contract level.** Both source paths and the non-scoring boundary are mapped; explicit user submission is the recommended path. | Product/Security have not approved whether an action creates a draft or persistent gap, or what context is retained. DATN-451 must wait for that decision and idempotency policy. |
-| Human resolution is explicit; advanced scoring/autonomous crawl is excluded | **Met.** A named human resolution action is required; SAG quality scores and its autonomous bounded research loop remain SAG-owned. | Exact resolution outcome, resolver grant, and whether a knowledge link is required remain Product/Security decisions. |
-| Task/evidence references use owning APIs and cannot widen access | **Met as a contract invariant.** Validate in the owning API, re-check current ACL, and never treat a reference as a grant. | Current DATN Task/Knowledge API maturity and SAG correlation are not inferred from code presence; see §§2.1, 5, and D-08. |
+| Gap fields, states, ownership, links, and actor/scope are explicit or recorded as decision blockers | **Met at contract level, subject to R0.5 role confirmation.** §9.3 records the Project Lead disposition and remaining decisions. | Exact resolution outcomes, retention rules, and reference create/read/error behavior remain explicit owner decisions. |
+| Insufficient-evidence and required-knowledge follow-up can create a gap without inventing a score | **Partly met.** Jira #10255 conditionally accepts explicit user submission for both paths and the minimal-context rule; R0.5 records those decisions. | Confirm Product disposition against R0.5; Security must confirm retention and the reference behavior. No automatic overdue creation is in the accepted proposal. |
+| Human resolution is explicit; advanced scoring/autonomous crawl is excluded | **Partly met.** Human-only `OPEN → IN_PROGRESS → RESOLVED` is accepted conditionally; advanced scoring/autonomous crawl remains excluded. | Product must specify the resolution outcome vocabulary and whether notes/evidence are required; Security must confirm resolver authority. |
+| Task/evidence references use owning APIs and cannot widen access | **Met as an invariant; operation behavior is incomplete.** References never grant access and must be checked by their owning APIs. | Security/API must specify create/read results for missing, stale, inaccessible, and cross-scope references and confirm shared denial/audit conventions. |
 | Required completion evidence: versioned contract/state matrix, source-to-gap mapping, authorization/test scenario matrix | **Met in this package.** See §§3–4, 6–8. | Scenarios are acceptance oracles, not evidence of runtime test execution. J-01 does not implement J-02/J-03/J-04. |
-| Expected result: approved human-owned workflow contract | **Not met.** No revision-specific Product/Security approval or named approver evidence exists in Jira or inspected sources. | DATN-415 permits an explicit blocker list, but that does not make this an approved policy or authorize DATN-413 to be marked Done. |
+| Expected result: approved human-owned workflow contract | **Not met.** Jira #10255 provides a conditional Project Lead disposition against the R0.4 discussion, not complete approval of R0.5. | Security/API authority and the specific amendments in §9.3 must be confirmed before treating the workflow as approved or DATN-413 as Done. |
 
 ## 1. Goal and boundary
 
@@ -119,52 +121,52 @@ DATN-413 requires a versioned record/state contract. The backend source currentl
 | `resolvedByKnowledgeObjectId`, `resolvedAt` | Resolution link/time | Does not identify the human resolver. J-01 requires explicit human resolution; the contract needs resolver actor/audit evidence. Product decides outcome/note/knowledge-link requirements; Security decides who may resolve. |
 | timestamps/index | Mongoose timestamps; index by organization/project/status/severity | Existing persistence metadata only. Retention, audit event, and index changes belong in the approved DB/API design for DATN-444. |
 
-The items below come from DATN-413's required scope. Rows distinguish accepted requirements from decisions that need an owner; a missing runtime implementation is not itself a Product/Security policy blocker.
+The items below come from DATN-413's required scope. Rows distinguish accepted requirements from decisions that need an owner; a missing runtime implementation is not itself a Product/Security policy blocker. Jira #10255 adds conditional dispositions after R0.4; §9.3 is the current status and supersedes earlier open rows only where it explicitly records an acceptance or amendment.
 
 | Concept | Contract need | Status / unresolved detail |
 |---|---|---|
 | Project scope | Every gap has one Project boundary | **Explicit in task and product model.** Project identity is required; current authorization is rechecked on each operation. Cross-Project references are denied. |
-| Team scope | Enforce Team scope when a gap is Team-scoped | **Partly explicit; visibility rule required.** Product supports one Project with multiple Teams and the current scaffold has optional `teamId`. Security/Product must decide what a Teamless Project gap means and which Team members see Team-scoped items. |
-| Reason | Explain why follow-up exists | **Required concept; values need Product approval.** Current trigger families are insufficient authorized evidence and missing/overdue required knowledge. No SAG score or priority is needed. |
-| Source/provenance | Identify what initiated the follow-up | **Required concept; source kinds are bounded by J-01.** Assistant report and configured requirement are supported paths; handover and SAG scored-gap links are not approved J-01 sources. Preserve only source metadata approved by its owner. |
-| Description/context | Give a human enough context to act | **Existing `title`/`description` are candidates, not approved semantics.** Product/Security decide required text, limits, prompt/query retention, and PII controls. Do not persist full prompt/evidence body by default. |
-| Evidence link | Optional reference to evidence | **Optional per task.** Validate with the owning API and re-check actor ACL; no copied body or inherited access. Stale, inaccessible, and cross-scope outcomes need a rule. |
+| Team scope | Enforce Team scope when a gap is Team-scoped | **Conditionally accepted in Jira #10255.** Project gaps are visible to active Project members; Team gaps to active members of that Team unless an explicit scoped grant applies. No sibling-Team or role-title inference. Confirm Security authority against R0.5 if role separation applies. |
+| Reason | Explain why follow-up exists | **Conditionally accepted in Jira #10255.** Reasons are `INSUFFICIENT_EVIDENCE`, `REQUIRED_KNOWLEDGE_MISSING`, and `REQUIRED_KNOWLEDGE_OVERDUE`; severity does not drive MVP prioritization or automation. |
+| Source/provenance | Identify what initiated the follow-up | **Conditionally accepted in Jira #10255.** Require a source kind; retain only validated opaque references. Assistant no-answer and explicit missing/overdue reports are supported; handover and SAG scored-gap links are not approved J-01 sources. |
+| Description/context | Give a human enough context to act | **P2 conditionally accepted.** Store an editable short summary, reason, source kind, reporter, and validated opaque references only. Do not copy protected prompts, answers, or evidence. Retention/deletion specifics remain open in §9.3. |
+| Evidence link | Optional reference to evidence | **Optional.** Owning API validation, current ACL re-check, and no inherited access are required. Create/read handling for missing, stale, inaccessible, and cross-scope references remains open in §9.3. |
 | Knowledge link | Optional reference to knowledge | **Optional per task.** Validate with the owning Knowledge API and confirm the same Project/Team policy. Presence does not mean the linked knowledge is verified or readable. |
 | Task link | Optional reference to an internal task | **Optional per task.** Resolve through the Continuum Task API (not Jira sync); verify owning Project/Team scope and actor access. Decide stale/deleted-reference handling. |
-| Owner / assignee | Human accountability and routing | **Required concept in task; current code has `assignedToUserId` only.** Product decides owner vs assignee semantics, unassigned validity, targets, self-assignment, and reassignment; Security decides grants. |
-| Status | Track lifecycle | **Required concept; existing enum is only a scaffold.** Candidate statuses are in the reconciliation table. Product must approve initial state, transitions, ignored/reopen behavior, and concurrency semantics. |
-| Resolution | Record explicit human outcome | **Human action is explicit in Jira.** Store the human actor and approved outcome; current code's `resolvedByKnowledgeObjectId` is not a resolver actor. Product decides outcome/note/evidence requirements; Security decides resolver authority. Automated resolution is excluded. |
-| Audit / timestamps | Support accountability and change history | **Cross-cutting need; exact fields and retention are not selected.** Reconcile with the owning service's approved audit contract before implementation. |
+| Owner / assignee | Human accountability and routing | **Conditionally accepted in Jira #10255.** Assignee remains optional. Creator may edit unresolved summary; assignee may update progress; appropriately scoped leaders may assign/reassign; assignee or scoped leader may resolve. Security confirmation and target eligibility remain to be recorded. |
+| Status | Track lifecycle | **Conditionally accepted in Jira #10255.** Use user-driven `OPEN → IN_PROGRESS → RESOLVED`; no automatic resolution, `IGNORED`, or reopen behavior in MVP. |
+| Resolution | Record explicit human outcome | **Human resolution is required.** On `RESOLVED`, record the human actor and an explicit outcome. Product has not yet supplied the outcome vocabulary or decided whether notes/evidence are mandatory; Security must confirm resolver authority. Automated resolution is excluded. |
+| Audit / timestamps | Support accountability and change history | **Cross-cutting need; exact event mapping and retention are not selected.** The accepted actor baseline requires auditing relevant changes and excludes full prompts/document bodies from logs. DATN-422/audit owner must confirm the owning service's event/atomicity/retention contract before runtime implementation. |
 
 Existing schema names/enums are noted above but are not approved by J-01. No new field names, API paths, error codes, or index changes are authorized by this document.
 
 ## 6. Lifecycle decision matrix
 
-This matrix states the operations the contract must cover. It intentionally leaves state names and transition rules unset until approval.
+This matrix states the operations the contract must cover. Jira #10255 conditionally accepts the lifecycle and action baseline; the unresolved D-07 and reference details are called out explicitly and summarized in §9.3.
 
 | Operation | Minimum behavior to define | Open contract decision |
 |---|---|---|
-| Create | Create from an allowed report/follow-up action, associate a Project, record an approved reason/source, and enforce links and actor scope | Who may create; whether source signals create a draft or a persisted record; required content; initial status; duplicate/replay behavior. |
-| List | Return only gaps visible to the caller in the selected Project/Team scope | Whether active Project members see all Project gaps, how Team-scoped gaps are filtered, and whether successor/handover context narrows visibility further. |
-| Detail | Return only fields and references allowed by resource/source ACL | Field-level visibility, inaccessible linked-reference presentation, and 403/404 concealment behavior. |
-| Update | Permit only selected mutable fields and authorized actors | Author/assignee/Team Leader/knowledge assignment rights; immutable scope/source fields; update concurrency and reason requirements. |
-| Assign | Route to an eligible in-scope human | Eligible assignee types, assigner permission, unassigned/self-assigned behavior, clearing/reassignment, and audit requirements. |
-| Resolve | Record an explicit human decision and resolution evidence/notes if required | Resolver authority; outcome vocabulary; whether evidence/knowledge linkage is mandatory; resolution note and audit semantics. |
+| Create | Persist only after explicit user submission for both no-answer and missing/overdue reports; bind Project and required fields; validate each supplied reference | Security/API must decide whether an invalid optional reference rejects the whole create or is omitted; exact external error follows the confirmed owning API convention. |
+| List | Return only gaps visible to the caller in current Project/Team scope | Project-member and same-Team visibility are conditionally accepted; Security must confirm role authority and any explicit scoped-grant handling. |
+| Detail | Return only fields and references allowed by resource/source ACL | Reauthorize each reference on read; Security/API must confirm whether an inaccessible reference is omitted or causes the parent read to fail, without protected metadata. |
+| Update | Permit only selected mutable fields and authorized actors | Creator summary edit while unresolved, assignee progress update, and scoped-leader assignment are conditionally accepted; exact immutable fields and role confirmation remain. |
+| Assign | Route to an eligible in-scope human | The scoped-leader assignment baseline is conditionally accepted. Security/API must confirm eligible assignee types, assigner permission, self-assignment, clearing/reassignment, and audit requirements. |
+| Resolve | Human-driven transition to `RESOLVED`; record actor and explicit outcome | Product must choose outcome vocabulary and whether notes/evidence are required; Security must confirm resolver authority against R0.5. |
 | Reopen or withdraw | Not required by the acceptance criteria as written | Decide whether supported in MVP. Until decided, do not invent a transition or imply automatic reopen behavior. |
 
 ## 7. Authorization and reference safety matrix
 
-Accepted baseline constraints: active membership, explicit scope, resource/source ACL, and explicit deny govern access; deny wins. A `TEAM_LEADER` acts only in explicitly assigned Project/Team scope. `MEMBER` may flag gaps, but the baseline does not specify all Knowledge Gap grants. Organization `ADMIN` and `PLATFORM_OPERATOR` receive no default confidential-content access. `SME`, `KNOWLEDGE_OWNER`, and `SUCCESSOR` are scoped assignments, not persistent roles.
+The accepted authorization baseline is active membership, explicit scope, resource/source ACL, and deny precedence. Jira #10255 conditionally accepts Project-member visibility, same-Team visibility for Team-scoped gaps, and the proposed action grants. The comment's author is identified as Project Lead in the closure context; separate Security/API authority is not independently established. Do not treat this matrix as final Security approval until the named Security owner confirms it against R0.5. A `TEAM_LEADER` acts only in explicitly assigned Project/Team scope. Organization `ADMIN` and `PLATFORM_OPERATOR` receive no default confidential-content access. `SME`, `KNOWLEDGE_OWNER`, and `SUCCESSOR` are scoped assignments, not persistent roles.
 
 | Action | Known guardrail | Decision required before implementation |
 |---|---|---|
-| Create/report | Must bind to an authenticated actor and authorized Project/source context | Whether any active Project `MEMBER` may create; whether Team membership is required for a Team gap; permissions for assistant-created drafts or scheduled missing-knowledge follow-up. |
-| List/detail | Must apply current membership, scope, and ACL; links cannot widen visibility | Exact Project-wide vs Team-wide visibility; successor/handover restrictions; field-level exposure. |
-| Update | Must not let an actor change Project/Team or source references to escape scope | Which fields can the reporter, assignee, Team Leader, SME, or Knowledge Owner change, and under what scoped assignment? |
-| Assign | Must target an eligible human in the gap's approved scope | Whether assignment is Team Leader-only or otherwise delegated; exact eligible membership and assignment rules. Task assignment rules do not automatically transfer to gaps. |
-| Resolve | Resolution is an explicit human action | Which human role/assignment may resolve, whether creator may resolve their own report, and required resolution proof. |
-| Link evidence/knowledge/task | Validate the reference using the owning API; require same authorized Project and applicable Team scope; reauthorize on every read; do not copy protected content | Error/concealment behavior for missing, stale, wrong-scope, or unreadable references; whether links are immutable after creation. |
-| Cross-scope attempt | Deny; do not reveal protected object contents or use a link as a grant | Select consistent external response (for example, 403 vs 404) with Security and the owning API contract. |
+| Create/report | Persist only after explicit user submission for both no-answer and missing/overdue reports; bind to an authenticated actor and authorized Project/source context | Product must confirm this baseline against R0.5. Security/API must specify whether an invalid optional reference rejects create or is omitted, plus the safe error response. |
+| List/detail | Apply current membership, scope, and ACL; references cannot widen visibility | Project-member and same-Team visibility are conditionally accepted. Security must confirm authority and field exposure; reauthorize each linked reference on read. |
+| Update | Do not let an actor change Project/Team or source references to escape scope | Proposed grants are conditionally accepted: creator edits unresolved summary, assignee updates progress, scoped leader assigns/reassigns. Security must confirm role authority and exact mutable fields. |
+| Assign | Target an eligible human in the gap's approved scope | Scoped-leader assignment is conditionally accepted; eligible assignee types, membership, reassignment, and audit behavior need Security/API confirmation. Task assignment rules do not automatically transfer to gaps. |
+| Resolve | Resolution is an explicit human action; preserve the human actor and outcome | Product must specify outcome vocabulary and notes/evidence requirements. Security must confirm resolver grant and whether reporter self-resolution is allowed. |
+| Link evidence/knowledge/task | Validate through the owning API, require same authorized Project and applicable Team scope, reauthorize on every read, and do not copy protected content | Define create/read behavior for missing, stale, inaccessible, and wrong-scope references. No protected metadata may be returned. |
+| Cross-scope attempt | Deny; do not reveal protected object contents or use a link as a grant | Security/API must confirm when to conceal existence with 404 versus safely acknowledge denial with 403, consistent with the owning API. |
 
 ## 8. Authorization and behavior scenarios to specify
 
@@ -189,22 +191,22 @@ These are contract scenarios, not evidence that runtime tests have been run.
 
 | ID | Decision needed | Owner domain | Blocks |
 |---|---|---|---|
-| D-01 | Does insufficient evidence only offer a report, create a draft, or persist a gap after explicit user confirmation? Which assistant context can be retained? | Product + Security | Assistant-to-gap behavior and G-01 |
-| D-02 | Is a missing/overdue required-knowledge signal a reminder, an offered action, a draft, or an automatically created gap? What source and overdue rule are authoritative? | Product (with Knowledge Owner input) | Trigger/action mapping and G-02/G-03 |
-| D-03 | Is gap scope Project-only, Team-only, or either? How do Project-level and Team-level visibility interact? | Product + Security | Scope fields, list/detail, all cross-scope cases |
-| D-04 | Which reason and source values are canonical, and can multiple sources/reasons be linked? | Product | Field contract and trigger mapping |
-| D-05 | What are the exact required fields and which are immutable? Is an unassigned gap valid? | Product | Create/update and versioned record contract |
-| D-06 | Which roles/assignments may create, view, update, assign, and resolve, and can a reporter resolve their own gap? | Product + Security | All CRUD/authorization behavior |
-| D-07 | What are the exact states/transitions, resolution outcomes, notes/evidence requirements, and reopen/withdraw behavior? | Product | State matrix and resolve tests |
-| D-08 | Which owning APIs/relationships validate optional evidence, knowledge, task, and any SAG source references? What happens for stale, inaccessible, wrong-Project, or wrong-Team references? How is an evolving SAG signal identified without coupling DATN persistence to SAG internals? | Architecture + owning service owners + Security | Cross-service contract and link tests |
-| D-09 | What response/concealment and field visibility rules apply to unauthorized or cross-scope references? | Security + API owners | Negative test expectations and implementation-ready authorization contract |
-| D-10 | What duplicate/replay behavior applies when the same source signal is submitted again? | Product + Architecture/API | Repeat submission behavior and any persistence/idempotency decision |
+| D-01 | Does insufficient evidence only offer a report, create a draft, or persist a gap after explicit user confirmation? Which assistant context can be retained? | Product + Security | Product conditionally accepts explicit submission and minimal context; confirm against R0.5 and settle retention. |
+| D-02 | What is the authoritative source and overdue rule for missing/overdue follow-up? | Product + Knowledge Owner | Explicit user submission is conditionally accepted; the requirement/overdue source and rule remain open. |
+| D-03 | How do Project-level and Team-level visibility interact? | Product + Security | The proposed Project-member and same-Team visibility is conditionally accepted; Security authority and role confirmation remain. |
+| D-04 | Which reason and source values are canonical? | Product | Conditionally accepted values and source kind are recorded in #10255; Product must confirm the amended R0.5 package. |
+| D-05 | Which fields are required or optional, and which are immutable? | Product | The proposed required/optional field set is conditionally accepted; confirm R0.5 and exact mutability before runtime implementation. |
+| D-06 | Which scoped actors may create, view, update, assign, and resolve? | Product + Security | S1/S2 are labeled accepted in #10255, but independent Security authority and exact role/target eligibility need confirmation. |
+| D-07 | What resolution outcome vocabulary applies, and are notes/evidence required? | Product | Amendment requested in #10255. Keep `OPEN → IN_PROGRESS → RESOLVED`; outcome vocabulary and notes/evidence requiredness remain open. |
+| D-08 | Which owning APIs validate references, and what are the denial/audit conventions? | Architecture + owning service owners + Security | SAG independence is accepted as a boundary; owning-API validation and shared denial/audit conventions still need confirmation. |
+| D-09 | What response and field visibility rules apply to missing, stale, inaccessible, or cross-scope references? | Security + API owners | Amendment requested in #10255; specify safe create/read outcomes and confirm 403/404 convention. |
+| D-10 | What duplicate/replay behavior applies when the same source signal is submitted again? | Product + Architecture/API | No fuzzy merge and stable idempotency key for automatic retries are conditionally accepted; confirm R0.5. |
 
-The named approvers and revision-specific approval evidence remain **UNKNOWN**. Partial decisions should enable only the explicitly approved rows; unresolved dependent operations remain blocked.
+Jira #10255 is the latest disposition, but it is conditional and was made in discussion of R0.4. The comment author is identified as Project Lead in the closure context; separate Security, API/Architecture, and audit-owner authority is not independently established. R0.5 requests confirmation against its exact commit. Until then, only the explicitly recorded constraints are conditional dispositions, not implementation-ready policy.
 
 ### 9.1 R0.2 decision classification and disposition
 
-Classification key: **A** = explicit in an accepted source or Jira acceptance criterion; **T** = bounded technical choice that J-01 may make without changing product/security policy; **P** = Product approval; **S** = Security approval; **API** = owning service/API owner confirmation.
+Classification key: **A** = explicit in an accepted source or Jira acceptance criterion; **T** = bounded technical choice that J-01 may make without changing product/security policy; **P** = Product approval; **S** = Security approval; **API** = owning service/API owner confirmation. This table preserves the R0.2 analysis; current dispositions are recorded in §9.3.
 
 | R0.2 topic / decision | Class | Settled now | Remaining decision and owner |
 |---|---|---|---|
@@ -220,11 +222,11 @@ Classification key: **A** = explicit in an accepted source or Jira acceptance cr
 | D-10 Duplicate/replay | **T + P/API** | Do not fuzzy-merge by text/reason. Do not automate retrying a source trigger until an idempotency key and owner contract exist. | Whether human reports may be separate or merged and exact idempotency semantics — Product + Architecture/API. |
 | SAG correlation | **A + T + API** | SAG's quality/research model remains separate; current SAG main exposes no gap CRUD route or stable DATN reference. Keep IDs independent and do not call an assumed endpoint. | Add a typed SAG source reference only after the SAG owner publishes and confirms an API/event and authorization contract — SAG/API owner + Security. This does not block J-01. |
 
-Thus the unresolved items are not all blockers to this task's contract evidence: the accepted no-answer/missing-knowledge behavior, non-scoring boundary, Project binding, human resolution requirement, owner-API validation invariant, and no-access-expansion rule are already explicit. Only the rows named in the final column require Product/Security/API authority before implementation.
+R0.2 classification is historical. It must not override Jira #10255 or the current status in §9.3. Bounded technical invariants remain usable as contract constraints; proposal-only policy remains unselected until its owner confirms it.
 
 ### 9.2 Recommended defaults for review — proposal only
 
-The following defaults are intended to make Product/Security review actionable. They are not accepted behavior, and no field, state, permission, or integration rule below may be treated as approved until decision evidence is recorded against a later revision.
+The following defaults are the historical R0.2/R0.4 proposal package. Jira #10255 conditionally accepts or amends selected rows; see §9.3 for the current disposition. Any row not explicitly accepted there remains a proposal and must not be treated as approved behavior.
 
 | Topic | Recommended default | Why / limit |
 |---|---|---|
@@ -243,28 +245,52 @@ The following defaults are intended to make Product/Security review actionable. 
 
 Product and Security should accept, amend, or reject each row explicitly. Architecture and API owners should confirm only the cross-service rows; their technical review does not replace Product/Security approval.
 
+### 9.3 R0.5 disposition and closure gates
+
+Jira comment **#10255**, posted 2026-10-18 by KeyT, is the latest role-labeled disposition. The closure context identifies KeyT as Project Lead. The comment discusses R0.4 and does not cite its commit SHA; R0.5 records the disposition without treating it as unconditional approval. Jira does not establish separate Security, API/Architecture, or audit-owner authority for the author. Obtain their explicit confirmations against the R0.5 commit before claiming those approvals.
+
+| Area | Disposition recorded in #10255 | R0.5 state |
+|---|---|---|
+| Product P1/P2, D-04/D-05, D-10, G-01–G-12 | Labeled ACCEPT, subject to the D-07 amendment | Conditional Project Lead disposition. Confirm against R0.5; P1 requires explicit submission for both trigger families, P2 limits stored content to the editable summary and approved metadata/references. |
+| Product P3/D-07 | Labeled AMEND; keep `OPEN → IN_PROGRESS → RESOLVED`, define required resolution outcome and whether notes/evidence are required | **Open.** Product must choose the outcome vocabulary and whether notes/evidence are optional, required, or disallowed. No reopen or automatic resolution is introduced. |
+| Security S1/S2/S3 | Labeled ACCEPT as proposed; specify retention/deletion for summary and reporter metadata | **Conditional; Security authority and exact retention/deletion rules unconfirmed.** No TTL, deletion trigger, or cascade behavior is selected. |
+| Security/API S3, G-05/G-06 | Labeled AMEND; define create/read behavior for missing, stale, inaccessible, and cross-scope references, with no protected metadata returned | **Open.** The no-protected-metadata invariant is recorded; operation outcomes and error/concealment behavior need Security/API confirmation. |
+| API/Architecture D-08 | Labeled ACCEPT for SAG boundary; confirm owning-API validation and existing denial/audit conventions | **Boundary accepted conditionally; conventions open.** Do not assume a SAG endpoint, foreign key, or trigger. Confirm owner APIs and shared API/audit contracts. |
+
+#### Decisions to close
+
+1. **D-07 resolution (Product):** choose one of these requirement shapes and supply the outcome vocabulary: **A.** controlled outcome is required and notes/evidence are optional; **B.** controlled outcome and a short resolution note are required; **C.** controlled outcome plus an approved evidence reference is required. Product may amend the choices. A resolving human and timestamp are required by the accepted human-resolution invariant; outcome labels are not invented here.
+2. **Retention/deletion (Product + Security):** choose **A.** a fixed retention period with deletion or anonymization after resolution; **B.** an existing approved Project/Team records schedule; or **C.** another explicit schedule and deletion trigger. State the period/trigger and treatment for reporter departure/erasure, Project/Team deletion, legal hold, resolved records, and audit events. The covered data includes summary, reporter identifier, reason/source metadata, opaque references, any approved resolution notes/evidence, and audit records. Define application-record and audit retention separately if they differ. No TTL, soft-delete, hard-delete, or cascade rule is authorized by R0.5. A research-only audit proposal's seven-day value is not adopted; DATN-422 remains To Do.
+3. **Reference create behavior (Security + owning API):** for a supplied optional reference that is missing, stale, inaccessible, or cross-scope, choose **A.** reject the whole create with the owning API's safe error; or **B.** omit the invalid reference, create the otherwise valid gap, and return a safe field-level validation result. In either case do not persist or reveal protected target metadata. Confirm status/error conventions from the owning API.
+4. **Reference read behavior (Security + owning API):** if the caller may read the gap but can no longer read a linked object, choose **A.** omit that reference from the response; or **B.** fail the whole gap read with a safe generic response. Reauthorize the gap and every reference on each read. If the caller cannot read the gap, apply the approved concealment rule and return no protected metadata.
+5. **Authorization and denial convention (Security + API/Architecture):** confirm S1/S2 and the conditional S3 baseline against R0.5, including Teamless visibility, scoped-grant semantics, assignee eligibility, resolver authority, and when existing conventions use 403 versus existence-concealing 404. The C-07 examples are recommendations pending API/IAM/Security confirmation; they do not settle the convention for Knowledge Gaps.
+6. **Audit/API boundary (API/Architecture + audit owner):** identify the owning APIs for each supported reference kind, confirm their validation and current-ACL behavior, and confirm event names, atomicity expectations, and audit retention through the approved audit owner/DATN-422. No research-only value is promoted to policy.
+7. **Revision-specific disposition:** Product confirms its accepted/amended entries above against the exact R0.5 commit. A named Security owner and API/Architecture owner separately accept or amend their entries, and the audit owner confirms the audit convention. A Jira/PR merge or an author's role labels alone do not satisfy this gate.
+
+Until these decisions are recorded, the contract evidence is reviewable but not fully approved or implementation-ready. Runtime work in DATN-444/448/451 remains downstream; none of the decisions above authorizes guessing an integration contract while those implementation issues are To Do.
+
 ## 10. Work completed and remaining gates
 
 | Work item | Evidence completed | Remaining gate |
 |---|---|---|
 | DATN-413 scope/dependencies | Read full parent acceptance criteria, DATN-414/415, and linked DATN-444/448/451. DATN-63/64 are Done; DATN-444 (persistence/API), DATN-448 (UI), and DATN-451 (trigger integration) are downstream To Do items blocked by DATN-413. | No application code from those downstream tasks is included in J-01. |
 | DATN-414 — separate SAG signals | Current SAG schema, quality/question services, research task model/planner, API router registry, principal assertion, current `main`, PR 28, and open PR list were inspected. The matrix now distinguishes internal SAG signals from the DATN human record and records that no SAG gap CRUD interface is published. | The owner must confirm any future event/API before a SAG reference is introduced. This does not block J-01. |
-| DATN-415 — fields/ownership/resolution | Contract inventory, existing DATN backend scaffold, state candidates, actor/scope invariants, G-01–G-12, and the classified D-01–D-10 decision register are recorded. | Product/Security approval evidence is absent. DATN-415's allowed blocker-list outcome is documented; exact approval remains required before implementation-ready status. |
+| DATN-415 — fields/ownership/resolution | Contract inventory, existing DATN backend scaffold, state candidates, actor/scope invariants, G-01–G-12, and the updated D-01–D-10 disposition register are recorded. Jira #10255 has a conditional Project Lead disposition and concrete Product/Security/API amendments. | DATN-415 remains In Progress. Product must close D-07 and confirm R0.5; independent Security, API/Architecture, and audit-owner decisions remain unconfirmed. |
 | Runtime implementation survey | DATN-BE/FE current refs and relevant source were inspected. Backend has a gap schema/persistence index but no gap workflow; frontend has no gap UI. | Storage/API, UI, and assistant/coverage triggers belong to DATN-444/448/451, not J-01. No DB, BE, FE, SAG, or runtime behavior was changed. |
 | Verification | The Document repository has no `package.json`, `Makefile`, or CI workflow defining lint/typecheck/unit/integration/E2E/build commands. Source searches were refreshed against current BE/FE `origin/main`. | G-scenarios are contract oracles, not executed J-01 application tests. Separate baseline checks and the latest-main BE E2E result are recorded in the Jira validation comment; they do not validate this documentation change. |
 
 ### Remaining approval blockers
 
-1. **Product:** persistent-create vs draft behavior for each source; overdue/requirement authority; reason/source vocabulary; exact required/mutable fields; status transitions and resolution outcomes; duplicate policy.
-2. **Security:** actor grants for list/detail/update/assign/resolve; Teamless/Project visibility; context/PII retention; resolver/assignment authorization; unauthorized-reference concealment and field visibility.
-3. **Architecture/API owners:** exact source APIs, stale/inaccessible/cross-Team link behavior, audit contract, and whether a future SAG source reference/event exists.
+1. **Product:** choose the D-07 resolution outcome and whether notes/evidence are required; confirm conditional P1/P2, D-04/D-05, D-10, and G-01–G-12 against exact R0.5; identify the authoritative missing/overdue requirement source.
+2. **Security:** a named Security owner must confirm S1/S2 and the amended S3 behavior against R0.5; specify retention/deletion; choose reference create/read behavior and the safe concealment/error rule.
+3. **API/Architecture and audit owner:** confirm owning-API validation, existing denial and audit conventions, and event/atomicity/retention expectations. DATN-422 is To Do, so no audit TTL or event contract is inferred.
 
-No named Product/Security approver or revision-specific approval was found. These are the only reasons the task's expected **approved** contract result is not achieved; the contract evidence and SAG boundary work are complete.
+Jira records a conditional role-labeled disposition, not full authority-backed approval. The contract evidence and SAG boundary work are complete; the expected **approved** contract result is not achieved.
 
 ## 11. Current outcome
 
 - **Contract evidence complete:** versioned contract, accepted-source map, SAG reuse boundary, DATN scaffold reconciliation, lifecycle matrix, authorization/reference matrix, 12 contract scenarios, and decision disposition register.
-- **J-01 acceptance:** criteria allowing explicit decision blockers and required documentation evidence are met. The create behavior criterion is partial pending Product/Security approval of draft-versus-persist and context retention. The expected approved contract is not met.
+- **J-01 acceptance:** the versioned contract, mapping, authorization/scenario matrices, SAG boundary evidence, and explicit blocker list are present. The creation rule is conditionally accepted as explicit user submission for both trigger paths. Human-only lifecycle states are conditionally accepted, but D-07's outcome and notes/evidence requirement remain open. Reference operation behavior, retention, and role-specific confirmations remain incomplete. The expected approved-contract result is not met.
 - **SAG dependency:** DATN-63/64 and PR 28 are complete. Current SAG `main` has internal scored-gap/research persistence but no published gap CRUD API; broader unpushed team work cannot be ruled out. This does not block J-01, only future integration assumptions.
 - **Implementation scope:** no DB, BE, FE, SAG, or runtime changes in J-01. Jira-linked J-02/J-03/J-04 own persistence/API, UI, and trigger integration. App baseline checks were run separately and are not DATN-413 implementation tests.
-- **External state:** DATN-413 is In Progress. PR #45 is open as Draft; at the R0.3 review, GitHub returned no CI statuses, review submissions, review threads, or comments. Product/Security disposition is requested through Jira against the current PR head; no approval is implied. DATN-413 must remain not-Done until the approved-contract acceptance outcome is evidenced.
+- **External state at R0.5 preparation:** DATN-413 and DATN-415 are In Progress; DATN-414 is Done. PR #45 is merged at `95edc801a68da2d6a4c23efaaf83bbe7d3d42279`, based on contract R0.4. GitHub has no review submissions, inline review threads, or PR comments for #45. Jira #10255 is the latest role-labeled disposition but is conditional, discusses R0.4 without citing its SHA, and requests amendments. This does not satisfy approval of R0.5. Record the exact R0.5 commit and review link in Jira when published. Keep DATN-413 not-Done until the approved-contract acceptance outcome is evidenced.
