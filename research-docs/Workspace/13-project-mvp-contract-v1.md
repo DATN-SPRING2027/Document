@@ -49,7 +49,7 @@ The FE may show an action only after its documented access projection succeeds, 
 
 ## 5. Project Members
 
-Member addition follows `email search → select an eligible candidate → add the selected user`. Candidate search is a literal, case-insensitive email search restricted to active Users with active Organization Membership in the Project's Organization. The result identifies whether the candidate already has Project Membership. The FE sends the selected candidate's opaque `userId`; it never asks the person to type an ObjectId.
+Member addition follows `email search → select an eligible candidate → add the selected user`. Candidate search is a literal, case-insensitive email search restricted to active Users with active Organization Membership in the Project's Organization. Eligibility filters run before the 50-result cap. An omitted or blank search returns an empty list without enumerating the Organization directory. The result identifies whether the candidate already has Project Membership. The FE sends the selected candidate's opaque `userId`; it never asks the person to type an ObjectId.
 
 Add creates or reactivates an ordinary Project `MEMBER` and requires `project.members.add`. A duplicate active membership conflicts. Remove requires `project.members.remove`, changes the existing Project Membership to `INACTIVE`, preserves history and emits the existing audit event. A current Project Leader must first be revoked by an Organization Admin; remove does not silently demote a Leader. Generic member role-change is **NOT MVP** and `project.members.role.change` remains disabled/unprovisioned.
 
@@ -83,7 +83,7 @@ The canonical machine-readable API contract is BE's `docs/openapi/iam-v1.openapi
 | `PUT /iam/projects/{projectId}/leaders` | Atomically replace one Leader | Organization `ADMIN` with `project.leader.manage` |
 | `DELETE /iam/projects/{projectId}/leaders/{userId}` | Revoke one Leader | Organization `ADMIN` with `project.leader.manage` |
 
-Requests reject malformed IDs, invalid values, unknown patch fields and unsupported transitions. Responses containing Project or member/Leader data use `Cache-Control: no-store`. Cross-Organization and hidden Project probes retain the existing concealed `404` behavior; authenticated authorization denial is `403`; validation is `422`; state/duplicate conflicts are `409`.
+Requests reject malformed IDs, invalid values, unknown patch fields and unsupported transitions. Project codes are unique within an Organization; duplicate code returns `409 PROJECT_CODE_CONFLICT`. Project creation is not idempotent and accepts no idempotency key, so retrying after a lost success response can return that conflict instead of replaying the original result. Callers must reconcile the Project state before deciding whether to submit another create. Responses containing Project or member/Leader data use `Cache-Control: no-store`. Cross-Organization and hidden Project probes retain the existing concealed `404` behavior; authenticated authorization denial is `403`; validation is `422`; state/duplicate conflicts are `409`.
 
 ## 8. Cross-repository acceptance matrix
 
