@@ -1,5 +1,7 @@
 # Continuum AI — Project, Team and Membership Use Cases
 
+> **Current Project management contract — 2026-10-20:** For Project MVP create/bootstrap, settings, visibility, members and Project Leaders, follow [Project MVP contract V1](13-project-mvp-contract-v1.md). Older Project-specific `DECISION REQUIRED` rows below are historical snapshots superseded only for the behavior explicitly decided by that contract; Team use cases and Team decisions remain unchanged.
+
 ## Document status
 
 - Status: **Proposal for product review**; the use-case package and detailed lifecycle rules are not approved requirements yet.

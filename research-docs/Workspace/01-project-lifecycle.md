@@ -1,5 +1,7 @@
 # [RESEARCH] Workspace - Project Lifecycle
 
+> **Current Project management contract — 2026-10-20:** Follow [Project MVP contract V1](13-project-mvp-contract-v1.md) for the accepted creator Leader bootstrap, settings, visibility and lifecycle scope. Contradictory creator/bootstrap and unresolved settings statements below are historical research evidence, not current policy.
+
 > This document records implementation evidence and gaps. Cross-document Organization/Project access decisions are indexed in [Organization and Workspace Access Contract Readiness](00-organization-and-access-contract-readiness.md); proposed user flows are in [Project, Team and Membership Use Cases](05-project-team-access-use-cases.md).
 
 Status: Research only. No implementation was performed.

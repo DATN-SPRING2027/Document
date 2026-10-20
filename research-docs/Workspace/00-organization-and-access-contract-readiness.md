@@ -29,6 +29,8 @@
 
 ## 1. Purpose and conclusion
 
+> **Project MVP contract update — 2026-10-20:** Current Project creation/bootstrap, settings, visibility, member and Leader decisions are owned by [Project MVP contract V1](13-project-mvp-contract-v1.md). That owner-approved contract supersedes this register's older Project-specific `MEMBER` bootstrap and Project visibility/management gaps for the current MVP. Other Organization, Team and resource-access decisions in this register are unchanged.
+
 The governance hierarchy is now confirmed: `PLATFORM_OPERATOR` operates the platform and provisions Organizations; `ADMIN` administers one Organization; `TEAM_LEADER` manages only explicitly assigned Project/Team scope; `MEMBER` participates within membership and ACL. The documents are **not yet a complete implementation contract** for Organization lifecycle, membership transitions, scoped delegation, or the detailed permission matrix. The evidence reports correctly show implementation gaps, but proposals must remain distinct from accepted policy.
 
 Use this document to:
