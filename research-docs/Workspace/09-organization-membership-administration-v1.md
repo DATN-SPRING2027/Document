@@ -100,10 +100,13 @@ Every list uses page1/pageSize20, maximum100; envelope
 `{data,pagination:{page,pageSize,totalItems,totalPages}}`, empty[]/0/0.
 Fixed createdAtDESC,_idDESC; no role/free-text/global-User search or arbitrary sort.
 Strict allowlist query/body. MembershipSummary:
-`id,organizationId,userId,status,version,createdAt,updatedAt,
-user:{id,fullName,email,accountStatus}|null`. Null reference is an administrative
+`id,organizationId,userId,status,version,roleCode,roleVersion,createdAt,updatedAt,
+user:{id,fullName,email,accountStatus}|null`. `roleCode` is `ADMIN`, `MEMBER`, or
+`null`; `roleVersion` is a non-negative safe integer and is `0` when no Organization
+role assignment exists. These fields project only the Organization-scoped role
+assignment; they never include or inherit Project roles. Null reference is an administrative
 diagnostic, never evidence permitting a command. Membership.status differs from
-User.accountStatus. No password/MFA/token/session/roles/last-login/private content.
+User.accountStatus. No password/MFA/token/session/User-global roles/last-login/private content.
 
 Invitation fields: `id,organizationId,invitedEmail,createdBy,status,version,expiresAt,
 createdAt,updatedAt,acceptedAt?,acceptedByUserId?`. Persistence reuses current `email`,
@@ -133,7 +136,9 @@ requires a separate wire review because current IAM lists use page/pageSize.
 ## 3. Commands and lifecycle (A3, N1/V2/E1)
 
 Every mutation requires a valid CSRF pair and Idempotency-Key. Strict JSON
-allowlist; supplied versions are positive safe integers. ADMIN commands require
+allowlist; membership and invitation versions are positive safe integers. The
+ORG-08 `expectedRoleVersion` is a non-negative safe integer (`0` means no current
+Organization role assignment). ADMIN commands require
 manage. Membership lifecycle commands use `expectedMembershipVersion` (MV); email
 invitation commands use `expectedInvitationVersion` (IV) only because there is no
 pending Membership. Client IDs select resources, never confer authority.
@@ -145,6 +150,7 @@ pending Membership. Client IDs select resources, never confer authority.
 |I/{invitationId}/cancel |IV,reasonCode |200 InvitationMutationAck |Current pending Invitation→CANCELLED |
 |A/{invitationId}/accept |IV |200 AcceptMutationAck |Authenticated email matches; pending/unexpired Invitation→ACCEPTED and create one ACTIVE Membership |
 |M/{membershipId}/suspend |MV,reasonCode |200 MutationAck |ACTIVE→SUSPENDED |
+|M/{membershipId}/role |MV,expectedRoleVersion,roleCode,reason |200 OrganizationRoleMutationAck |Change only the Organization role of another ACTIVE Membership in the same Organization; roleCode ADMIN or MEMBER; response `{operationId,membership,role:{roleCode,version}}` |
 |M/{membershipId}/remove |MV,reasonCode,handoverReceiptId |200 MutationAck |ACTIVE/SUSPENDED→REMOVED, domain handover proof |
 |M/{membershipId}/resume |MV,reasonCode,rightsReviewReceiptId |200 MutationAck |SUSPENDED→ACTIVE, review+restoration gate |
 |M/{membershipId}/reinvite |MV,reasonCode,rightsReviewReceiptId |200 MutationAck |REMOVED→PENDING_INVITE, new Invitation+review+restoration gate |
@@ -152,7 +158,11 @@ pending Membership. Client IDs select resources, never confer authority.
 
 Reason enum: invite/resend/reinvite ACCESS_REQUEST|ACCESS_REVIEW; cancel
 INVITATION_CANCELLED; suspend SECURITY_INCIDENT|ACCESS_REVIEW; remove OFFBOARDING;
-resume/rights-review ACCESS_REVIEW. No free text. Accept records server reason
+resume/rights-review ACCESS_REVIEW. No free text for those lifecycle commands. The
+ORG-08 role-change command has the separately approved required `reason` string,
+trimmed by the server and limited to 500 characters; this is the only free-text
+reason exception in this contract and is included only on the role-change audit event.
+Accept records server reason
 RECIPIENT_ACCEPTED. Email trim/lowercase/max254/valid format; no plus-address
 equivalence, wildcard or account creation. Store the normalized email as the
 invitation identity. If an ACTIVE Membership already exists, reject as already a
@@ -292,12 +302,17 @@ lock system; DB fields alone do not prove all writers/readers are integrated.
 
 One append-only success audit per operation, schemaVersion2. Exact actions:
 ORGANIZATION_MEMBERSHIP_INVITED/ACTIVATED/SUSPENDED/REMOVED/RESUMED/REINVITED,
+ORGANIZATION_MEMBERSHIP_ROLE_CHANGED,
 ORGANIZATION_INVITATION_RESENT/CANCELLED/ACCEPTED/EXPIRED,
 ORGANIZATION_MEMBERSHIP_RIGHTS_REVIEWED.
 Allowlist eventId/operationId/organizationId/actorUserId/action/occurredAt/reasonCode/
 correlationId/membershipId/invitationIds, separate stored before/after(status/version/
-expiresAt), applicable proof/reservation IDs. Exclude email/name/raw body/free text/
-credentials/handover content. Preserve legacy CREATED/ACCEPTED/REVOKED audit history.
+expiresAt/roleCode/roleVersion), applicable proof/reservation IDs. For
+ORGANIZATION_MEMBERSHIP_ROLE_CHANGED only, the allowlist additionally permits the
+validated `reason` field (trimmed, at most 500 characters) under the approved ORG-08
+exception. Exclude email/name/raw request body/other free text/credentials/handover
+content. Do not put secrets or unnecessary sensitive data in `reason`. Preserve legacy
+CREATED/ACCEPTED/REVOKED audit history.
 
 ## 7. A7 dependencies and A8 compatibility
 
