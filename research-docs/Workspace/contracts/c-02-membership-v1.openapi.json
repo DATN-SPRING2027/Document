@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Continuum C-02 Organization Membership Administration",
-    "version": "1.0.0-user-approved",
-    "description": "Owning wire compilation of the requester-approved2026-10-12 decision. Not runtime Swagger or provider readiness. Canonical IAM incorporation follows DB merge and coordinated compatibility cutover."
+    "version": "1.1.0-email-bound",
+    "description": "Email-bound invitation contract amendment approved 2026-10-20. Contract target; runtime remains NOT_IMPLEMENTED and production readiness gates A7/A8 remain OPEN. See the owning decision for security, lifecycle, transactional, and rollout requirements."
   },
   "tags": [
     {
@@ -26,7 +26,7 @@
         ],
         "summary": "List own Organization members across all four states",
         "operationId": "listOrganizationMembershipsV1",
-        "description": "USER-APPROVED A1–A6/A8, runtime NOT_IMPLEMENTED. Only current ACTIVE User and ACTIVE actor OrganizationMembership establish trusted Organization context. ADMIN must resolve Organization-level assignment to actual ADMIN Role with the exact Role.permissions code; JWT/client IDs/role-only evidence do not authorize. Recipient uses authenticated current ACTIVE account and bound User ID/current exact invited email without target Organization context. Strict allowlist; no-store. New mutation revalidates authority/CAS; exact committed replay reauthorizes then returns original ack before new-attempt version/state/expiry checks. Dependency gates in the owning decision remain enforced; approval does not prove provider/cutover readiness.",
+        "description": "USER-APPROVED A1–A6/A8, runtime NOT_IMPLEMENTED. Only current ACTIVE User and ACTIVE actor OrganizationMembership establish trusted Organization context. ADMIN must resolve Organization-level assignment to actual ADMIN Role with the exact Role.permissions code; JWT/client IDs/role-only evidence do not authorize. Recipient acceptance compares authenticated account email, normalized by IAM convention, to immutable invitation.invitedEmail; no target Organization context is required. Strict allowlist; no-store. New mutation revalidates authority/CAS; exact committed replay reauthorizes then returns original ack before new-attempt version/state/expiry checks. Dependency gates in the owning decision remain enforced; approval does not prove provider/cutover readiness.",
         "parameters": [
           {
             "name": "organizationId",
@@ -150,7 +150,7 @@
             }
           },
           "422": {
-            "description": "Strict validation failed; unknown/inactive invite target generic INVITATION_TARGET_NOT_ELIGIBLE.",
+            "description": "Strict email/field validation failed; existing members and pending invitations return explicit conflict errors.",
             "headers": {
               "Cache-Control": {
                 "schema": {
@@ -218,7 +218,7 @@
         ],
         "summary": "Read own scoped Membership details/version",
         "operationId": "getOrganizationMembershipV1",
-        "description": "USER-APPROVED A1–A6/A8, runtime NOT_IMPLEMENTED. Only current ACTIVE User and ACTIVE actor OrganizationMembership establish trusted Organization context. ADMIN must resolve Organization-level assignment to actual ADMIN Role with the exact Role.permissions code; JWT/client IDs/role-only evidence do not authorize. Recipient uses authenticated current ACTIVE account and bound User ID/current exact invited email without target Organization context. Strict allowlist; no-store. New mutation revalidates authority/CAS; exact committed replay reauthorizes then returns original ack before new-attempt version/state/expiry checks. Dependency gates in the owning decision remain enforced; approval does not prove provider/cutover readiness.",
+        "description": "USER-APPROVED A1–A6/A8, runtime NOT_IMPLEMENTED. Only current ACTIVE User and ACTIVE actor OrganizationMembership establish trusted Organization context. ADMIN must resolve Organization-level assignment to actual ADMIN Role with the exact Role.permissions code; JWT/client IDs/role-only evidence do not authorize. Recipient acceptance compares authenticated account email, normalized by IAM convention, to immutable invitation.invitedEmail; no target Organization context is required. Strict allowlist; no-store. New mutation revalidates authority/CAS; exact committed replay reauthorizes then returns original ack before new-attempt version/state/expiry checks. Dependency gates in the owning decision remain enforced; approval does not prove provider/cutover readiness.",
         "parameters": [
           {
             "name": "organizationId",
@@ -317,7 +317,7 @@
             }
           },
           "422": {
-            "description": "Strict validation failed; unknown/inactive invite target generic INVITATION_TARGET_NOT_ELIGIBLE.",
+            "description": "Strict email/field validation failed; existing members and pending invitations return explicit conflict errors.",
             "headers": {
               "Cache-Control": {
                 "schema": {
@@ -385,7 +385,7 @@
         ],
         "summary": "List own current pending/unexpired invitations",
         "operationId": "listOrganizationInvitationsV2",
-        "description": "USER-APPROVED A1–A6/A8, runtime NOT_IMPLEMENTED. Only current ACTIVE User and ACTIVE actor OrganizationMembership establish trusted Organization context. ADMIN must resolve Organization-level assignment to actual ADMIN Role with the exact Role.permissions code; JWT/client IDs/role-only evidence do not authorize. Recipient uses authenticated current ACTIVE account and bound User ID/current exact invited email without target Organization context. Strict allowlist; no-store. New mutation revalidates authority/CAS; exact committed replay reauthorizes then returns original ack before new-attempt version/state/expiry checks. Dependency gates in the owning decision remain enforced; approval does not prove provider/cutover readiness.",
+        "description": "USER-APPROVED A1–A6/A8, runtime NOT_IMPLEMENTED. Only current ACTIVE User and ACTIVE actor OrganizationMembership establish trusted Organization context. ADMIN must resolve Organization-level assignment to actual ADMIN Role with the exact Role.permissions code; JWT/client IDs/role-only evidence do not authorize. Recipient acceptance compares authenticated account email, normalized by IAM convention, to immutable invitation.invitedEmail; no target Organization context is required. Strict allowlist; no-store. New mutation revalidates authority/CAS; exact committed replay reauthorizes then returns original ack before new-attempt version/state/expiry checks. Dependency gates in the owning decision remain enforced; approval does not prove provider/cutover readiness.",
         "parameters": [
           {
             "name": "organizationId",
@@ -495,7 +495,7 @@
             }
           },
           "422": {
-            "description": "Strict validation failed; unknown/inactive invite target generic INVITATION_TARGET_NOT_ELIGIBLE.",
+            "description": "Strict email/field validation failed; existing members and pending invitations return explicit conflict errors.",
             "headers": {
               "Cache-Control": {
                 "schema": {
@@ -559,9 +559,9 @@
         "tags": [
           "Organization Memberships"
         ],
-        "summary": "Invite existing eligible User; create pending pair without role",
+        "summary": "Invite an email address, whether or not it has an account",
         "operationId": "inviteOrganizationMemberV2",
-        "description": "USER-APPROVED A1–A6/A8, runtime NOT_IMPLEMENTED. Only current ACTIVE User and ACTIVE actor OrganizationMembership establish trusted Organization context. ADMIN must resolve Organization-level assignment to actual ADMIN Role with the exact Role.permissions code; JWT/client IDs/role-only evidence do not authorize. Recipient uses authenticated current ACTIVE account and bound User ID/current exact invited email without target Organization context. Strict allowlist; no-store. New mutation revalidates authority/CAS; exact committed replay reauthorizes then returns original ack before new-attempt version/state/expiry checks. Dependency gates in the owning decision remain enforced; approval does not prove provider/cutover readiness.",
+        "description": "EMAIL-BOUND V1 contract; runtime NOT_IMPLEMENTED. Current ACTIVE Organization ADMIN with organization.memberships.manage may invite a normalized email. Request body accepts email and reason only; no User ID is required or accepted. Creating an invitation creates no User or Membership. The invitation is bound to invitedEmail; acceptance derives and normalizes email from the authenticated principal and denies mismatch without trusting request-body email. Invitation URL token is random, opaque, single-invitation, single-use, expires, and is stored only as a one-way hash. No generic/shareable join link. Exact committed idempotency replay returns the original result. A7 provider readiness and A8 coordinated cutover remain required; do not enable production behavior until both gates are approved.",
         "parameters": [
           {
             "name": "organizationId",
@@ -607,7 +607,7 @@
         ],
         "responses": {
           "201": {
-            "description": "Invite existing eligible User; create pending pair without role",
+            "description": "Created one pending email-bound invitation; no Membership is created.",
             "headers": {
               "Cache-Control": {
                 "schema": {
@@ -626,7 +626,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MutationAck"
+                  "$ref": "#/components/schemas/InvitationMutationAck"
                 }
               }
             }
@@ -704,7 +704,7 @@
             }
           },
           "422": {
-            "description": "Strict validation failed; unknown/inactive invite target generic INVITATION_TARGET_NOT_ELIGIBLE.",
+            "description": "Strict email/field validation failed; existing members and pending invitations return explicit conflict errors.",
             "headers": {
               "Cache-Control": {
                 "schema": {
@@ -805,7 +805,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/inviteOrganizationMemberV2Request"
+                "$ref": "#/components/schemas/inviteOrganizationMemberEmailBoundV1Request"
               }
             }
           }
@@ -817,9 +817,9 @@
         "tags": [
           "Organization Memberships"
         ],
-        "summary": "List own recipient pending/unexpired invitations",
+        "summary": "List pending invitations matching the authenticated account email",
         "operationId": "listAccountInvitationsV2",
-        "description": "USER-APPROVED A1–A6/A8, runtime NOT_IMPLEMENTED. Only current ACTIVE User and ACTIVE actor OrganizationMembership establish trusted Organization context. ADMIN must resolve Organization-level assignment to actual ADMIN Role with the exact Role.permissions code; JWT/client IDs/role-only evidence do not authorize. Recipient uses authenticated current ACTIVE account and bound User ID/current exact invited email without target Organization context. Strict allowlist; no-store. New mutation revalidates authority/CAS; exact committed replay reauthorizes then returns original ack before new-attempt version/state/expiry checks. Dependency gates in the owning decision remain enforced; approval does not prove provider/cutover readiness.",
+        "description": "EMAIL-BOUND V1 contract; runtime NOT_IMPLEMENTED. Results are scoped by the authenticated current ACTIVE account email normalized by IAM convention. The client cannot supply or override recipient email. No token is returned.",
         "parameters": [
           {
             "name": "page",
@@ -918,7 +918,7 @@
             }
           },
           "422": {
-            "description": "Strict validation failed; unknown/inactive invite target generic INVITATION_TARGET_NOT_ELIGIBLE.",
+            "description": "Strict email/field validation failed; existing members and pending invitations return explicit conflict errors.",
             "headers": {
               "Cache-Control": {
                 "schema": {
@@ -984,9 +984,9 @@
         "tags": [
           "Organization Memberships"
         ],
-        "summary": "Read bound recipient invitation, including effective expiry",
+        "summary": "Read an invitation only for its matching authenticated email",
         "operationId": "getAccountInvitationV2",
-        "description": "USER-APPROVED A1–A6/A8, runtime NOT_IMPLEMENTED. Only current ACTIVE User and ACTIVE actor OrganizationMembership establish trusted Organization context. ADMIN must resolve Organization-level assignment to actual ADMIN Role with the exact Role.permissions code; JWT/client IDs/role-only evidence do not authorize. Recipient uses authenticated current ACTIVE account and bound User ID/current exact invited email without target Organization context. Strict allowlist; no-store. New mutation revalidates authority/CAS; exact committed replay reauthorizes then returns original ack before new-attempt version/state/expiry checks. Dependency gates in the owning decision remain enforced; approval does not prove provider/cutover readiness.",
+        "description": "EMAIL-BOUND V1 contract; runtime NOT_IMPLEMENTED. The current authenticated account email must normalize to invitedEmail. No Membership is required before acceptance. No token or tokenHash is returned.",
         "parameters": [
           {
             "name": "invitationId",
@@ -1074,7 +1074,7 @@
             }
           },
           "422": {
-            "description": "Strict validation failed; unknown/inactive invite target generic INVITATION_TARGET_NOT_ELIGIBLE.",
+            "description": "Strict email/field validation failed; existing members and pending invitations return explicit conflict errors.",
             "headers": {
               "Cache-Control": {
                 "schema": {
@@ -1140,9 +1140,9 @@
         "tags": [
           "Organization Memberships"
         ],
-        "summary": "Create new Invitation ID; close old live/expired attempt; MV unchanged",
+        "summary": "Resend one email-bound invitation and supersede its prior token",
         "operationId": "resendOrganizationInvitationV2",
-        "description": "USER-APPROVED A1–A6/A8, runtime NOT_IMPLEMENTED. Only current ACTIVE User and ACTIVE actor OrganizationMembership establish trusted Organization context. ADMIN must resolve Organization-level assignment to actual ADMIN Role with the exact Role.permissions code; JWT/client IDs/role-only evidence do not authorize. Recipient uses authenticated current ACTIVE account and bound User ID/current exact invited email without target Organization context. Strict allowlist; no-store. New mutation revalidates authority/CAS; exact committed replay reauthorizes then returns original ack before new-attempt version/state/expiry checks. Dependency gates in the owning decision remain enforced; approval does not prove provider/cutover readiness.",
+        "description": "EMAIL-BOUND V1 contract; runtime NOT_IMPLEMENTED. Current ACTIVE Organization ADMIN with organization.memberships.manage may resend a pending invitation. No pending Membership exists, so the current invitation version is the only lifecycle CAS. Resend creates a new invitation ID and cryptographically random token, marks the old invitation SUPERSEDED, preserves invitedEmail, and emits the existing invitation notification/outbox intent only when A7 readiness is approved. The response never returns the token. Exact committed idempotency replay returns the original acknowledgement. A7/A8 gates remain enforced.",
         "parameters": [
           {
             "name": "organizationId",
@@ -1199,7 +1199,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Create new Invitation ID; close old live/expired attempt; MV unchanged",
+            "description": "Created one replacement invitation and superseded the prior invitation token; no Membership is created.",
             "headers": {
               "Cache-Control": {
                 "schema": {
@@ -1218,7 +1218,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MutationAck"
+                  "$ref": "#/components/schemas/InvitationMutationAck"
                 }
               }
             }
@@ -1296,7 +1296,7 @@
             }
           },
           "422": {
-            "description": "Strict validation failed; unknown/inactive invite target generic INVITATION_TARGET_NOT_ELIGIBLE.",
+            "description": "Strict email/field validation failed; existing members and pending invitations return explicit conflict errors.",
             "headers": {
               "Cache-Control": {
                 "schema": {
@@ -1409,9 +1409,9 @@
         "tags": [
           "Organization Memberships"
         ],
-        "summary": "Remove pending Membership; cancel live or materialize expired Invitation",
+        "summary": "Cancel one pending email-bound invitation without changing Membership",
         "operationId": "cancelOrganizationInvitationV2",
-        "description": "USER-APPROVED A1–A6/A8, runtime NOT_IMPLEMENTED. Only current ACTIVE User and ACTIVE actor OrganizationMembership establish trusted Organization context. ADMIN must resolve Organization-level assignment to actual ADMIN Role with the exact Role.permissions code; JWT/client IDs/role-only evidence do not authorize. Recipient uses authenticated current ACTIVE account and bound User ID/current exact invited email without target Organization context. Strict allowlist; no-store. New mutation revalidates authority/CAS; exact committed replay reauthorizes then returns original ack before new-attempt version/state/expiry checks. Dependency gates in the owning decision remain enforced; approval does not prove provider/cutover readiness.",
+        "description": "EMAIL-BOUND V1 contract; runtime NOT_IMPLEMENTED. Current ACTIVE Organization ADMIN with organization.memberships.manage may cancel one pending invitation. The invitation version is the only lifecycle CAS. Cancellation marks the invitation CANCELLED; it does not create, remove, or change a Membership. Expired invitations are materialized as EXPIRED and cannot be cancelled. Exact committed idempotency replay returns the original acknowledgement. A7/A8 gates remain enforced.",
         "parameters": [
           {
             "name": "organizationId",
@@ -1468,7 +1468,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Remove pending Membership; cancel live or materialize expired Invitation",
+            "description": "Cancelled one pending invitation; no Membership is created or changed.",
             "headers": {
               "Cache-Control": {
                 "schema": {
@@ -1487,7 +1487,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MutationAck"
+                  "$ref": "#/components/schemas/InvitationMutationAck"
                 }
               }
             }
@@ -1565,7 +1565,7 @@
             }
           },
           "422": {
-            "description": "Strict validation failed; unknown/inactive invite target generic INVITATION_TARGET_NOT_ELIGIBLE.",
+            "description": "Strict email/field validation failed; existing members and pending invitations return explicit conflict errors.",
             "headers": {
               "Cache-Control": {
                 "schema": {
@@ -1624,6 +1624,7 @@
         "x-unknown-input-fields": "REJECT",
         "x-permission": "organization.memberships.manage",
         "x-readiness-gates": [
+          "A7_NOTIFICATION_CONTRACT_PROVIDER",
           "A8_COORDINATED_CUTOVER"
         ],
         "x-audit-action": "ORGANIZATION_INVITATION_CANCELLED",
@@ -1653,9 +1654,9 @@
         "tags": [
           "Organization Memberships"
         ],
-        "summary": "Recipient accepts live current Invitation; no role/session mint",
+        "summary": "Accept a pending email-bound invitation and create one ACTIVE Membership",
         "operationId": "acceptOrganizationInvitationV2",
-        "description": "USER-APPROVED A1–A6/A8, runtime NOT_IMPLEMENTED. Only current ACTIVE User and ACTIVE actor OrganizationMembership establish trusted Organization context. ADMIN must resolve Organization-level assignment to actual ADMIN Role with the exact Role.permissions code; JWT/client IDs/role-only evidence do not authorize. Recipient uses authenticated current ACTIVE account and bound User ID/current exact invited email without target Organization context. Strict allowlist; no-store. New mutation revalidates authority/CAS; exact committed replay reauthorizes then returns original ack before new-attempt version/state/expiry checks. Dependency gates in the owning decision remain enforced; approval does not prove provider/cutover readiness.",
+        "description": "EMAIL-BOUND V1 contract; runtime NOT_IMPLEMENTED. Requires current authentication and valid CSRF/idempotency. Server derives current principal email, normalizes it with IAM convention, and compares it to the immutable invitation invitedEmail; request-body email is not accepted. The invitation must be pending and unexpired. One transaction creates exactly one ACTIVE Membership, marks this invitation ACCEPTED, writes required audit and idempotency result, and rolls back all on failure. No role or Organization session is granted. Same committed idempotency key replays its original ack; a distinct key cannot reuse an accepted token. A7/A8 readiness remains required.",
         "parameters": [
           {
             "name": "invitationId",
@@ -1701,7 +1702,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Recipient accepts live current Invitation; no role/session mint",
+            "description": "Invitation accepted atomically with one ACTIVE Membership; no role/session grant.",
             "headers": {
               "Cache-Control": {
                 "schema": {
@@ -1720,7 +1721,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MutationAck"
+                  "$ref": "#/components/schemas/AcceptInvitationMutationAck"
                 }
               }
             }
@@ -1744,7 +1745,7 @@
             }
           },
           "403": {
-            "description": "CSRF or current authority/scope denied.",
+            "description": "The authenticated principal email does not match invitedEmail. Return code INVITATION_EMAIL_MISMATCH with the user-facing message “This invitation was sent to another email address.” Do not echo either email address.",
             "headers": {
               "Cache-Control": {
                 "schema": {
@@ -1779,8 +1780,26 @@
               }
             }
           },
+          "410": {
+            "description": "Invitation expired.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "422": {
-            "description": "Strict validation failed; unknown/inactive invite target generic INVITATION_TARGET_NOT_ELIGIBLE.",
+            "description": "Strict email/field validation failed; existing members and pending invitations return explicit conflict errors.",
             "headers": {
               "Cache-Control": {
                 "schema": {
@@ -1839,10 +1858,10 @@
         "x-unknown-input-fields": "REJECT",
         "x-permission": "BOUND_RECIPIENT_ACCOUNT",
         "x-readiness-gates": [
-          "A7_LEGACY_OR_ORPHAN_RIGHTS_ACTIVATION_PROOF",
+          "A7_NOTIFICATION_CONTRACT_PROVIDER",
           "A8_COORDINATED_CUTOVER"
         ],
-        "x-audit-action": "ORGANIZATION_MEMBERSHIP_ACTIVATED",
+        "x-audit-action": "ORGANIZATION_INVITATION_ACCEPTED",
         "x-idempotency": {
           "replayHours": 24,
           "scope": [
@@ -1857,7 +1876,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/acceptOrganizationInvitationV2Request"
+                "$ref": "#/components/schemas/acceptEmailBoundOrganizationInvitationV1Request"
               }
             }
           }
@@ -1871,7 +1890,7 @@
         ],
         "summary": "Suspend ACTIVE Membership; self/lastADMIN denied",
         "operationId": "suspendOrganizationMembershipV1",
-        "description": "USER-APPROVED A1–A6/A8, runtime NOT_IMPLEMENTED. Only current ACTIVE User and ACTIVE actor OrganizationMembership establish trusted Organization context. ADMIN must resolve Organization-level assignment to actual ADMIN Role with the exact Role.permissions code; JWT/client IDs/role-only evidence do not authorize. Recipient uses authenticated current ACTIVE account and bound User ID/current exact invited email without target Organization context. Strict allowlist; no-store. New mutation revalidates authority/CAS; exact committed replay reauthorizes then returns original ack before new-attempt version/state/expiry checks. Dependency gates in the owning decision remain enforced; approval does not prove provider/cutover readiness.",
+        "description": "USER-APPROVED A1–A6/A8, runtime NOT_IMPLEMENTED. Only current ACTIVE User and ACTIVE actor OrganizationMembership establish trusted Organization context. ADMIN must resolve Organization-level assignment to actual ADMIN Role with the exact Role.permissions code; JWT/client IDs/role-only evidence do not authorize. Recipient acceptance compares authenticated account email, normalized by IAM convention, to immutable invitation.invitedEmail; no target Organization context is required. Strict allowlist; no-store. New mutation revalidates authority/CAS; exact committed replay reauthorizes then returns original ack before new-attempt version/state/expiry checks. Dependency gates in the owning decision remain enforced; approval does not prove provider/cutover readiness.",
         "parameters": [
           {
             "name": "organizationId",
@@ -2025,7 +2044,7 @@
             }
           },
           "422": {
-            "description": "Strict validation failed; unknown/inactive invite target generic INVITATION_TARGET_NOT_ELIGIBLE.",
+            "description": "Strict email/field validation failed; existing members and pending invitations return explicit conflict errors.",
             "headers": {
               "Cache-Control": {
                 "schema": {
@@ -2115,7 +2134,7 @@
         ],
         "summary": "Remove ACTIVE/SUSPENDED Membership after verified handover",
         "operationId": "removeOrganizationMembershipV1",
-        "description": "USER-APPROVED A1–A6/A8, runtime NOT_IMPLEMENTED. Only current ACTIVE User and ACTIVE actor OrganizationMembership establish trusted Organization context. ADMIN must resolve Organization-level assignment to actual ADMIN Role with the exact Role.permissions code; JWT/client IDs/role-only evidence do not authorize. Recipient uses authenticated current ACTIVE account and bound User ID/current exact invited email without target Organization context. Strict allowlist; no-store. New mutation revalidates authority/CAS; exact committed replay reauthorizes then returns original ack before new-attempt version/state/expiry checks. Dependency gates in the owning decision remain enforced; approval does not prove provider/cutover readiness.",
+        "description": "USER-APPROVED A1–A6/A8, runtime NOT_IMPLEMENTED. Only current ACTIVE User and ACTIVE actor OrganizationMembership establish trusted Organization context. ADMIN must resolve Organization-level assignment to actual ADMIN Role with the exact Role.permissions code; JWT/client IDs/role-only evidence do not authorize. Recipient acceptance compares authenticated account email, normalized by IAM convention, to immutable invitation.invitedEmail; no target Organization context is required. Strict allowlist; no-store. New mutation revalidates authority/CAS; exact committed replay reauthorizes then returns original ack before new-attempt version/state/expiry checks. Dependency gates in the owning decision remain enforced; approval does not prove provider/cutover readiness.",
         "parameters": [
           {
             "name": "organizationId",
@@ -2269,7 +2288,7 @@
             }
           },
           "422": {
-            "description": "Strict validation failed; unknown/inactive invite target generic INVITATION_TARGET_NOT_ELIGIBLE.",
+            "description": "Strict email/field validation failed; existing members and pending invitations return explicit conflict errors.",
             "headers": {
               "Cache-Control": {
                 "schema": {
@@ -2359,7 +2378,7 @@
         ],
         "summary": "Resume SUSPENDED Membership after rights review without old-right revival",
         "operationId": "resumeOrganizationMembershipV1",
-        "description": "USER-APPROVED A1–A6/A8, runtime NOT_IMPLEMENTED. Only current ACTIVE User and ACTIVE actor OrganizationMembership establish trusted Organization context. ADMIN must resolve Organization-level assignment to actual ADMIN Role with the exact Role.permissions code; JWT/client IDs/role-only evidence do not authorize. Recipient uses authenticated current ACTIVE account and bound User ID/current exact invited email without target Organization context. Strict allowlist; no-store. New mutation revalidates authority/CAS; exact committed replay reauthorizes then returns original ack before new-attempt version/state/expiry checks. Dependency gates in the owning decision remain enforced; approval does not prove provider/cutover readiness.",
+        "description": "USER-APPROVED A1–A6/A8, runtime NOT_IMPLEMENTED. Only current ACTIVE User and ACTIVE actor OrganizationMembership establish trusted Organization context. ADMIN must resolve Organization-level assignment to actual ADMIN Role with the exact Role.permissions code; JWT/client IDs/role-only evidence do not authorize. Recipient acceptance compares authenticated account email, normalized by IAM convention, to immutable invitation.invitedEmail; no target Organization context is required. Strict allowlist; no-store. New mutation revalidates authority/CAS; exact committed replay reauthorizes then returns original ack before new-attempt version/state/expiry checks. Dependency gates in the owning decision remain enforced; approval does not prove provider/cutover readiness.",
         "parameters": [
           {
             "name": "organizationId",
@@ -2513,7 +2532,7 @@
             }
           },
           "422": {
-            "description": "Strict validation failed; unknown/inactive invite target generic INVITATION_TARGET_NOT_ELIGIBLE.",
+            "description": "Strict email/field validation failed; existing members and pending invitations return explicit conflict errors.",
             "headers": {
               "Cache-Control": {
                 "schema": {
@@ -2604,7 +2623,7 @@
         ],
         "summary": "Reinvite REMOVED pair after rights review; new Invitation",
         "operationId": "reinviteOrganizationMembershipV2",
-        "description": "USER-APPROVED A1–A6/A8, runtime NOT_IMPLEMENTED. Only current ACTIVE User and ACTIVE actor OrganizationMembership establish trusted Organization context. ADMIN must resolve Organization-level assignment to actual ADMIN Role with the exact Role.permissions code; JWT/client IDs/role-only evidence do not authorize. Recipient uses authenticated current ACTIVE account and bound User ID/current exact invited email without target Organization context. Strict allowlist; no-store. New mutation revalidates authority/CAS; exact committed replay reauthorizes then returns original ack before new-attempt version/state/expiry checks. Dependency gates in the owning decision remain enforced; approval does not prove provider/cutover readiness.",
+        "description": "USER-APPROVED A1–A6/A8, runtime NOT_IMPLEMENTED. Only current ACTIVE User and ACTIVE actor OrganizationMembership establish trusted Organization context. ADMIN must resolve Organization-level assignment to actual ADMIN Role with the exact Role.permissions code; JWT/client IDs/role-only evidence do not authorize. Recipient acceptance compares authenticated account email, normalized by IAM convention, to immutable invitation.invitedEmail; no target Organization context is required. Strict allowlist; no-store. New mutation revalidates authority/CAS; exact committed replay reauthorizes then returns original ack before new-attempt version/state/expiry checks. Dependency gates in the owning decision remain enforced; approval does not prove provider/cutover readiness.",
         "parameters": [
           {
             "name": "organizationId",
@@ -2758,7 +2777,7 @@
             }
           },
           "422": {
-            "description": "Strict validation failed; unknown/inactive invite target generic INVITATION_TARGET_NOT_ELIGIBLE.",
+            "description": "Strict email/field validation failed; existing members and pending invitations return explicit conflict errors.",
             "headers": {
               "Cache-Control": {
                 "schema": {
@@ -2875,7 +2894,7 @@
         ],
         "summary": "Review SUSPENDED/REMOVED rights with INVALIDATE_ALL_OLD_RIGHTS disposition",
         "operationId": "reviewOrganizationMembershipRightsV1",
-        "description": "USER-APPROVED A1–A6/A8, runtime NOT_IMPLEMENTED. Only current ACTIVE User and ACTIVE actor OrganizationMembership establish trusted Organization context. ADMIN must resolve Organization-level assignment to actual ADMIN Role with the exact Role.permissions code; JWT/client IDs/role-only evidence do not authorize. Recipient uses authenticated current ACTIVE account and bound User ID/current exact invited email without target Organization context. Strict allowlist; no-store. New mutation revalidates authority/CAS; exact committed replay reauthorizes then returns original ack before new-attempt version/state/expiry checks. Dependency gates in the owning decision remain enforced; approval does not prove provider/cutover readiness.",
+        "description": "USER-APPROVED A1–A6/A8, runtime NOT_IMPLEMENTED. Only current ACTIVE User and ACTIVE actor OrganizationMembership establish trusted Organization context. ADMIN must resolve Organization-level assignment to actual ADMIN Role with the exact Role.permissions code; JWT/client IDs/role-only evidence do not authorize. Recipient acceptance compares authenticated account email, normalized by IAM convention, to immutable invitation.invitedEmail; no target Organization context is required. Strict allowlist; no-store. New mutation revalidates authority/CAS; exact committed replay reauthorizes then returns original ack before new-attempt version/state/expiry checks. Dependency gates in the owning decision remain enforced; approval does not prove provider/cutover readiness.",
         "parameters": [
           {
             "name": "organizationId",
@@ -3029,7 +3048,7 @@
             }
           },
           "422": {
-            "description": "Strict validation failed; unknown/inactive invite target generic INVITATION_TARGET_NOT_ELIGIBLE.",
+            "description": "Strict email/field validation failed; existing members and pending invitations return explicit conflict errors.",
             "headers": {
               "Cache-Control": {
                 "schema": {
@@ -3106,6 +3125,88 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/reviewOrganizationMembershipRightsV1Request"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/invitations/resolve": {
+      "post": {
+        "tags": [
+          "Organization Memberships"
+        ],
+        "summary": "Resolve one emailed invitation token without accepting it",
+        "operationId": "resolveEmailBoundOrganizationInvitationV1",
+        "description": "EMAIL-BOUND V1 contract; runtime NOT_IMPLEMENTED. This read-only resolution is scoped to one cryptographically random token for one invitation. It may be called before login or registration and returns only invitation status, invited email, expiry, and Organization display name. It does not accept, mutate, create a Membership, or authorize joining. The server validates the token against its one-way hash. The client must not log or persist the raw token in localStorage; after reading a URL fragment, remove it from browser history and send it only in this no-store request body. The subsequent accept still requires authentication and an exact normalized principal-email match.",
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "One invitation resolved, including effective EXPIRED status when applicable; no state change and no token returned.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipientInvitationDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or invalid token; no invitation/email details are returned.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Token is malformed.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-contract-status": "USER_APPROVED",
+        "x-runtime-status": "NOT_IMPLEMENTED",
+        "x-unknown-input-fields": "REJECT",
+        "x-readiness-gates": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/resolveEmailBoundOrganizationInvitationV1Request"
               }
             }
           }
@@ -3436,24 +3537,15 @@
         "additionalProperties": false,
         "required": [
           "id",
-          "membershipId",
           "organizationId",
           "status",
           "version",
           "expiresAt",
           "createdAt",
-          "membershipVersion",
-          "targetUserId",
-          "email"
+          "invitedEmail"
         ],
         "properties": {
           "id": {
-            "type": "string",
-            "pattern": "^[a-fA-F0-9]{24}$",
-            "minLength": 24,
-            "maxLength": 24
-          },
-          "membershipId": {
             "type": "string",
             "pattern": "^[a-fA-F0-9]{24}$",
             "minLength": 24,
@@ -3488,20 +3580,13 @@
             "type": "string",
             "format": "date-time"
           },
-          "membershipVersion": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          },
-          "targetUserId": {
-            "type": "string",
-            "pattern": "^[a-fA-F0-9]{24}$",
-            "minLength": 24,
-            "maxLength": 24
-          },
-          "email": {
+          "invitedEmail": {
             "type": "string",
             "format": "email"
+          },
+          "invitedBy": {
+            "type": "string",
+            "description": "Display label only when policy permits; never an internal identifier."
           }
         }
       },
@@ -3510,23 +3595,16 @@
         "additionalProperties": false,
         "required": [
           "id",
-          "membershipId",
           "organizationId",
           "status",
           "version",
           "expiresAt",
           "createdAt",
-          "membershipVersion",
-          "organizationName"
+          "organizationName",
+          "invitedEmail"
         ],
         "properties": {
           "id": {
-            "type": "string",
-            "pattern": "^[a-fA-F0-9]{24}$",
-            "minLength": 24,
-            "maxLength": 24
-          },
-          "membershipId": {
             "type": "string",
             "pattern": "^[a-fA-F0-9]{24}$",
             "minLength": 24,
@@ -3561,13 +3639,12 @@
             "type": "string",
             "format": "date-time"
           },
-          "membershipVersion": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          },
           "organizationName": {
             "type": "string"
+          },
+          "invitedEmail": {
+            "type": "string",
+            "format": "email"
           }
         }
       },
@@ -3575,41 +3652,9 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "membership",
           "invitation"
         ],
         "properties": {
-          "membership": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "id",
-              "status",
-              "version"
-            ],
-            "properties": {
-              "id": {
-                "type": "string",
-                "pattern": "^[a-fA-F0-9]{24}$",
-                "minLength": 24,
-                "maxLength": 24
-              },
-              "status": {
-                "type": "string",
-                "enum": [
-                  "PENDING_INVITE",
-                  "ACTIVE",
-                  "SUSPENDED",
-                  "REMOVED"
-                ]
-              },
-              "version": {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 9007199254740991
-              }
-            }
-          },
           "invitation": {
             "$ref": "#/components/schemas/RecipientInvitation"
           }
@@ -3686,7 +3731,8 @@
           "email": {
             "type": "string",
             "format": "email",
-            "maxLength": 254
+            "maxLength": 254,
+            "description": "Normalized server-side using IAM trim/lowercase convention; may or may not belong to an existing account."
           },
           "reasonCode": {
             "type": "string",
@@ -3701,16 +3747,10 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "expectedMembershipVersion",
           "expectedInvitationVersion",
           "reasonCode"
         ],
         "properties": {
-          "expectedMembershipVersion": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          },
           "expectedInvitationVersion": {
             "type": "integer",
             "minimum": 1,
@@ -3729,16 +3769,10 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "expectedMembershipVersion",
           "expectedInvitationVersion",
           "reasonCode"
         ],
         "properties": {
-          "expectedMembershipVersion": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          },
           "expectedInvitationVersion": {
             "type": "integer",
             "minimum": 1,
@@ -3756,15 +3790,9 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "expectedMembershipVersion",
           "expectedInvitationVersion"
         ],
         "properties": {
-          "expectedMembershipVersion": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          },
           "expectedInvitationVersion": {
             "type": "integer",
             "minimum": 1,
@@ -3899,11 +3927,130 @@
             ]
           }
         }
+      },
+      "InvitationMutationAck": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operationId",
+          "invitation"
+        ],
+        "properties": {
+          "operationId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "minLength": 24,
+            "maxLength": 24
+          },
+          "invitation": {
+            "$ref": "#/components/schemas/InvitationAck"
+          }
+        }
+      },
+      "AcceptInvitationMutationAck": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operationId",
+          "membership",
+          "invitation"
+        ],
+        "properties": {
+          "operationId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "minLength": 24,
+            "maxLength": 24
+          },
+          "membership": {
+            "$ref": "#/components/schemas/MembershipAck"
+          },
+          "invitation": {
+            "$ref": "#/components/schemas/InvitationAck"
+          }
+        }
+      },
+      "inviteOrganizationMemberEmailBoundV1Request": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "email",
+          "reasonCode"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "description": "Normalized server-side using IAM trim/lowercase convention; may or may not belong to an existing account."
+          },
+          "reasonCode": {
+            "type": "string",
+            "enum": [
+              "ACCESS_REQUEST",
+              "ACCESS_REVIEW"
+            ]
+          }
+        }
+      },
+      "resolveEmailBoundOrganizationInvitationV1Request": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "token"
+        ],
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 43,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "description": "Opaque per-invitation token. Never log, return, or use it as authenticated identity."
+          }
+        },
+        "description": "The client must clear the URL fragment from browser history after reading it and send the opaque token only in this no-store request body. The server validates it against the one-way hash."
+      },
+      "acceptEmailBoundOrganizationInvitationV1Request": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "No email or userId is accepted from the client. Recipient identity is derived from the authenticated principal.",
+        "properties": {
+          "expectedInvitationVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "expectedInvitationVersion"
+        ]
       }
     }
   },
   "x-owning-decision": "../09-organization-membership-administration-v1.md",
   "x-legacy-delete": "Adapter to same cancel command including CSRF/key/reason/two versions or disable at coordinated cutover; never old bypass.",
   "x-scope": "BACKEND_DATN_87; FRONTEND_DATN_88_SEPARATE",
-  "x-a7-status": "OPEN_NOT_ENABLED"
+  "x-a7-status": "OPEN_NOT_ENABLED",
+  "x-email-bound-v1": {
+    "status": "USER_APPROVED_CONTRACT_RUNTIME_NOT_IMPLEMENTED",
+    "supported": [
+      "existing account",
+      "unregistered email",
+      "email-bound acceptance",
+      "registration continuation",
+      "expiry",
+      "one-time acceptance",
+      "audit"
+    ],
+    "excluded": [
+      "generic join URL",
+      "shareable manager link",
+      "multi-use bearer link",
+      "public Organization join URL"
+    ],
+    "readinessGates": [
+      "A7_NOTIFICATION_CONTRACT_PROVIDER",
+      "A8_COORDINATED_CUTOVER"
+    ]
+  }
 }
