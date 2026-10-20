@@ -1,5 +1,7 @@
 # [RESEARCH] Workspace - Project Membership
 
+> **Current Project management contract — 2026-10-20:** Follow [Project MVP contract V1](13-project-mvp-contract-v1.md) for creator Leader bootstrap, current member operations and the `NOT MVP` role-change decision. The lifecycle and invitation questions in this file remain evidence/research unless the contract closes them.
+
 > This document records implementation evidence and state-model gaps. Cross-document Organization/Project access decisions are indexed in [Organization and Workspace Access Contract Readiness](00-organization-and-access-contract-readiness.md); proposed membership flows are in [Project, Team and Membership Use Cases](05-project-team-access-use-cases.md).
 
 Status: Research only. No implementation was performed.

@@ -10,6 +10,7 @@ Repository này lưu đặc tả, phạm vi MVP, mô hình actor/role, nghiên c
 - [Organization, workspace và readiness hợp đồng truy cập](research-docs/Workspace/00-organization-and-access-contract-readiness.md)
 - [Quyết định đăng ký tài khoản bằng email/mật khẩu](research-docs/Workspace/12-email-password-registration-decision.md)
 - [Use Case quản lý Project, Team và Membership](research-docs/Workspace/05-project-team-access-use-cases.md)
+- [Project MVP contract V1](research-docs/Workspace/13-project-mvp-contract-v1.md)
 - [DATN-87 — Organization Membership Administration V1 đã duyệt và readiness gates](research-docs/Workspace/09-organization-membership-administration-v1.md)
 - [DATN-89 — Team Foundation evidence và decision gaps](research-docs/Workspace/09-team-management-foundation-decision-gap-report.md)
 - [DATN-89 — mapping sáu checkpoints, acceptance và validation](research-docs/Workspace/10-team-foundation-review-validation.md)
