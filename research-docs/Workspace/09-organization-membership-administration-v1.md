@@ -328,24 +328,27 @@ these prerequisites. Emergency suspend may work independently with safeguards.
 
 IAM outbox/dispatcher→Notification exported delivery/dedup contract, correct owner
 DBs, no cross-owner reads. A7 exact payload/provider/credentials/proof freshness/
-consumer recovery/retention are **not approved or ready**. The current create,
-resend, cancel, and accept readiness gates remain enforced until approved; this amendment
-does not enable email or invitation commands in production. No hardcoded READY,
-fake provider, health stub, or outbox writer alone proves delivery; no SENT without
-provider evidence. The invitation URL may be sent only through the approved provider
-path and must contain a token bound to one invitation and email. Do not promise
-exactly-once provider delivery. Existing suggested 15min/5s/retries are not selected
-policy.
+consumer recovery/retention are **not approved or ready**. A7 is asynchronous delivery
+infrastructure, not a synchronous prerequisite for invitation create, resend, cancel,
+or accept. Those business transactions persist invitation state, required audit and
+idempotency records, and any delivery intent atomically; they return after commit while
+email delivery remains pending/retryable. The API must report the invitation as queued,
+not as email sent. No hardcoded READY, fake provider, health stub, or outbox writer alone
+proves delivery; no SENT without provider evidence. The invitation URL may be sent only
+through the approved provider path and must contain a token bound to one invitation and
+email. Do not promise exactly-once provider delivery. Existing suggested 15min/5s/retries
+are not selected policy.
 
-A8 coordinated cutover: canonical invitation paths retained, email+reason replaces
-email+roleCode, accept no implicit Role/session. Old DELETE adapts into the same
-cancel auth/key/IV/reason/audit command or is disabled during cutover; no guessed
-default reason/version or old bypass. Legacy Invitation metadata/history retained.
-Email invitations never auto-create a User or Membership; acceptance creates the
-Membership only after server identity/email validation. The new persistence shape
-and this product decision do not enable production behavior. FE onboarding/88 remains
-a separate lane; release owner/window must be confirmed before enabling changed
-contract.
+A8 coordinated cutover is an operational/deployment concern, not a runtime
+authorization or business-readiness gate for the email invitation endpoints. Retain
+canonical invitation paths; email+reason replaces email+roleCode, and accept grants no
+implicit Role/session. Old DELETE adapts into the same cancel auth/key/IV/reason/audit
+command or is disabled during cutover; no guessed default reason/version or old bypass.
+Legacy Invitation metadata/history is retained. Email invitations never auto-create a
+User or Membership; acceptance creates the Membership only after server identity/email
+validation. The paired runtime implementation remains a separate proposed change until
+merged and rolled out. FE onboarding/88 remains a separate lane; release owner/window
+must be confirmed before deployment.
 
 ## 8. Acceptance and rollout
 
@@ -360,11 +363,12 @@ contract.
 |[241](https://trankimthang0207.atlassian.net/browse/DATN-241) tests |Disposable Mongo7replica set,index/transaction/CAS races,failure injection,expired cache present,explicit CI suite selection |
 
 Contract approval ≠ completion: no executable command evidence in this document.
-The email-bound amendment records the requester's product decision; it does not
-record A7/A8 operational approval. DB schema and new migration branch must be
-reviewed/merged before dependent BE from updated main. Do not rewrite old migrations
-or apply shared DB here. Implement separate lanes, obtain A7 readiness, complete
-coordinated A8 cutover, and verify all checkpoints before enabling the changed paths.
+The email-bound amendment records the requester's product decision; it does not record
+A7 provider readiness or A8 rollout approval. The V3 schema/contract is the baseline for
+the paired runtime work; that implementation adds no database migration. Verify the
+existing schema is deployed before rollout. Do not rewrite old migrations or apply a
+shared DB here. Verify the business and security checkpoints before enabling the changed
+paths; treat provider delivery and coordinated cutover as operational rollout concerns.
 Jira statuses remain requester-owned; parent/children last observed InProgress, not
 Done merely because this contract is approved.
 
@@ -374,7 +378,7 @@ Done merely because this contract is approved.
 |---|---|---|
 |Manager enters email |Current authenticated ADMIN, Organization scope, `organization.memberships.manage` |Normalize by existing trim/lowercase rule; reject invalid email; no User lookup requirement |
 |Create invite |Invitation command + IAM persistence + audit/outbox transaction |One PENDING record with normalized `invitedEmail`, creator, expiry, one-way token hash; no Membership row |
-|Deliver email |Approved notification provider only (A7) |Organization name, permitted inviter label, expiry, invitation-specific URL; no password, raw DB IDs, authorization data, or token in logs |
+|Queue and deliver email |Transactional outbox, then approved notification provider (A7) |Invitation and encrypted token delivery intent commit with audit/idempotency; provider delivery is asynchronous/retryable. Email contains Organization name, permitted inviter label, expiry, and invitation-specific URL; never log raw token |
 |Open email URL |Invitation-specific opaque token |Resolve one invitation only; no state change on GET/resolve; no token displayed in response |
 |Login/register |Existing authentication flow |Continuation token is validated server-side afterward; user account email must match invitation; client redirect/storage is not authority |
 |Accept |Authenticated principal + invitation record |Server compares normalized principal email; one transaction creates one ACTIVE Membership, marks ACCEPTED, records audit; no role/session grant |
