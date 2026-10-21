@@ -35,7 +35,7 @@ Every tenant operation requires an active authenticated User and `ACTIVE` Organi
 | Edit name/description | Active Project Membership and current Project-scoped `TEAM_LEADER` assignment | `project.update` on that resolved Role | `ADMIN` does not gain this action from the role name or Organization scope. |
 | Change visibility | Active Project Membership and current Project-scoped `TEAM_LEADER`, or Organization-scoped `ADMIN` with active Organization Membership | `project.visibility.manage` on the resolved Role at the corresponding scope | Active Projects only. Both `PRIVATE`↔`PUBLIC` directions are supported. Same-state requests conflict. |
 | List/add/remove Project Members | Active Project Membership and current Project-scoped `TEAM_LEADER` | Exact `project.members.list`, `.add` or `.remove` | Organization `ADMIN` alone does not grant these actions. A Leader must be revoked before that user's Project Membership can be removed. |
-| List/assign/change/revoke Project Leaders | Organization-scoped `ADMIN` with active Organization Membership | `project.leader.manage` | Project Leader role does not grant self-escalation, appointment or revocation authority. |
+| List/assign/change/revoke Project Leaders | Organization-scoped `ADMIN` with active Organization Membership (`project.leader.manage`); active Project `TEAM_LEADER` with `project.members.list` may read `GET /iam/projects/{projectId}/leaders` | `project.leader.manage` for Leader mutations and candidate search; `project.leader.manage` or Project-scoped `project.members.list` for Leader list projection | Project Leader role does not grant self-escalation, appointment or revocation authority. |
 
 The FE may show an action only after its documented access projection succeeds, but every mutation is independently authorized by BE. Missing Role, RoleAssignment, permission, active Membership or tenant evidence denies the request.
 
@@ -55,7 +55,7 @@ Add creates or reactivates an ordinary Project `MEMBER` and requires `project.me
 
 ## 6. Project Leaders
 
-- A Project may have **zero, one or multiple** Project Leaders. Multiple current `TEAM_LEADER` assignments are supported. There is no exactly-one invariant; revoking the last Leader is allowed and may leave the Project without a Leader.
+- An active Project supports **one or multiple** effective Project Leaders (`TEAM_LEADER`), where an effective Leader requires an `ACTIVE` User, `ACTIVE` Organization Membership, `ACTIVE` Project Membership, and a current Project-scoped `TEAM_LEADER` RoleAssignment. Revoking the last effective Project Leader is rejected with `409 LAST_PROJECT_LEADER_REQUIRED` unless a replacement Leader is appointed first or replaced atomically via `PUT /iam/projects/{projectId}/leaders`. Concurrent Leader revocations serialize through a transactional write fence on both the Project document and a surviving effective Leader's membership/assignment chain. If an active Project reaches `0` effective Project Leaders due to emergency User or Organization Membership suspension/removal, an Organization `ADMIN` (`project.leader.manage`) may recover the Project via `POST /iam/projects/{projectId}/leaders` by assigning any eligible active Organization Member, which atomically activates their Project Membership in the same transaction.
 - Assign promotes an eligible existing active Project `MEMBER` to `TEAM_LEADER`; candidates must have an active User, Organization Membership and Project Membership in this exact Project. The same user cannot be assigned twice.
 - Change replaces one Leader with an eligible existing active Project Member in one MongoDB transaction: the prior assignment becomes `MEMBER`, the replacement becomes `TEAM_LEADER`, both Project Memberships stay active, and no intermediate committed state is visible.
 - Revoke changes that user's Project-scoped assignment to `MEMBER`, keeps the active Project Membership, and writes the audit event. Revoking a Project Leader is required before removing their Project Membership.
@@ -77,7 +77,7 @@ The canonical machine-readable API contract is BE's `docs/openapi/iam-v1.openapi
 | `GET /iam/projects/{projectId}/member-candidates?email=...` | Search eligible Organization members by email | Project `TEAM_LEADER` with `project.members.add` |
 | `POST /iam/projects/{projectId}/memberships` | Add selected candidate by `userId` | Project `TEAM_LEADER` with `project.members.add` |
 | `DELETE /iam/projects/{projectId}/memberships/{membershipId}` | Deactivate one membership | Project `TEAM_LEADER` with `project.members.remove` |
-| `GET /iam/projects/{projectId}/leaders` | Safe Leader projection | Organization `ADMIN` with `project.leader.manage` |
+| `GET /iam/projects/{projectId}/leaders` | Safe Leader projection | Organization `ADMIN` with `project.leader.manage` or Project `TEAM_LEADER` with `project.members.list` |
 | `GET /iam/projects/{projectId}/leader-candidates?email=...` | Search eligible active Project Members for Leader appointment | Organization `ADMIN` with `project.leader.manage` |
 | `POST /iam/projects/{projectId}/leaders` | Assign one eligible member | Organization `ADMIN` with `project.leader.manage` |
 | `PUT /iam/projects/{projectId}/leaders` | Atomically replace one Leader | Organization `ADMIN` with `project.leader.manage` |
