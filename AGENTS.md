@@ -90,6 +90,13 @@ technology-specific changes.
   in line with the approved proposal and the actual DATN source.
 - Record significant architecture decisions in the repository's established ADR
   format; do not import architecture decisions from TAMI or another project.
+- **Role Vocabulary vs. Frontend Display Labels (AI Anti-Confusion Rule)**:
+  Always distinguish persisted/API technical identifiers from `DATN_FE` UI display labels (see [`research-docs/02_ACTORS_ROLES_AND_PERMISSIONS.md`](research-docs/02_ACTORS_ROLES_AND_PERMISSIONS.md)):
+  - `PLATFORM_OPERATOR` (Platform authority actor in `platform_authority_assignments`, never in `roles`/`role_assignments`) $\leftrightarrow$ FE Display Label: **Admin**
+  - `ADMIN` (Organization role in `roles` & `role_assignments` with `projectId: null`) $\leftrightarrow$ FE Display Label: **Manager**
+  - `TEAM_LEADER` / DTO alias `LEADER` (Project role in `roles` & `role_assignments` with `projectId != null`) $\leftrightarrow$ FE Display Label: **Leader** (plural: **Leaders**)
+  - `MEMBER` (Organization & Project role) $\leftrightarrow$ FE Display Label: **Member**
+  Never conflate UI labels (`Admin`, `Manager`, `Leader`) with persisted database role codes (`PLATFORM_OPERATOR`, `ADMIN`, `TEAM_LEADER`, `MEMBER`).
 
 ## Mandatory post-implementation review gate
 

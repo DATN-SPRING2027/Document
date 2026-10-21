@@ -10,6 +10,8 @@
 **Target System**: DATN / Continuum AI Baseline  
 
 > **Decision update — 2026-10-02:** This report's code inventory is a dated snapshot. Current policy separates `PLATFORM_OPERATOR` (platform operations; no default Organization-content access) from Organization roles. `ADMIN` manages Organization Users/membership/roles/scopes but has no default confidential-content access. `TEAM_LEADER` manages only explicitly assigned Project/Team scope; `MEMBER` remains bounded by active membership and ACL. BE DEC-016 makes `OrganizationMembership` the authoritative User–Organization relationship and requires `ACTIVE` for Organization Context. Project Foundation allows any authenticated User with active Organization Membership in the trusted Organization to create a `PRIVATE` Project, atomically bootstrap creator Project Membership + scoped `MEMBER` assignment and audit; `project.create` is not required. The grant schema may remain, but this use is superseded. Historical grant-gate text below is not current policy; verify implementation separately.
+>
+> **Display Vocabulary Note (2026-10-21):** In `DATN_FE`, technical identifiers map to standardized business display labels via `RoleLabel.tsx` and `src/messages/*.json`: `PLATFORM_OPERATOR` $\rightarrow$ **Admin**, `ADMIN` $\rightarrow$ **Manager**, `TEAM_LEADER` (and DTO alias `LEADER`) $\rightarrow$ **Leader** (plural: **Leaders**), and `MEMBER` $\rightarrow$ **Member**. Database schemas, JWT claims, and backend API contracts retain the technical identifiers (`PLATFORM_OPERATOR`, `ADMIN`, `TEAM_LEADER`, `MEMBER`). See [Actors, roles and permissions — Section 1.1](../02_ACTORS_ROLES_AND_PERMISSIONS.md).
 
 ---
 
