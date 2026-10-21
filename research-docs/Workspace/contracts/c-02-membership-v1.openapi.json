@@ -2148,7 +2148,10 @@
             "in": "path",
             "required": true,
             "schema": {
-              "$ref": "#/components/schemas/ResourceId"
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "minLength": 24,
+              "maxLength": 24
             }
           },
           {
@@ -2156,7 +2159,10 @@
             "in": "path",
             "required": true,
             "schema": {
-              "$ref": "#/components/schemas/ResourceId"
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "minLength": 24,
+              "maxLength": 24
             }
           },
           {
@@ -2194,7 +2200,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/C02SuspendMembershipRequest"
+                "$ref": "#/components/schemas/removeOrganizationMembershipV1Request"
               }
             }
           }
@@ -2205,25 +2211,60 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/C02MembershipMutationAck"
+                  "$ref": "#/components/schemas/MutationAck"
                 }
               }
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Current authentication/account/context invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "description": "CSRF or current authority/scope denied.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "Scoped read target missing/foreign.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "409": {
-            "$ref": "#/components/responses/Conflict"
+            "description": "Version conflict, last ADMIN protection, or active Project Leader blocker.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "422": {
-            "$ref": "#/components/responses/ValidationFailed"
+            "description": "Strict field validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         },
         "x-contract-status": "USER_APPROVED",
@@ -2253,7 +2294,10 @@
             "in": "path",
             "required": true,
             "schema": {
-              "$ref": "#/components/schemas/ResourceId"
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "minLength": 24,
+              "maxLength": 24
             }
           },
           {
@@ -2261,7 +2305,10 @@
             "in": "path",
             "required": true,
             "schema": {
-              "$ref": "#/components/schemas/ResourceId"
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "minLength": 24,
+              "maxLength": 24
             }
           },
           {
@@ -2299,7 +2346,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/C02SuspendMembershipRequest"
+                "$ref": "#/components/schemas/resumeOrganizationMembershipV1Request"
               }
             }
           }
@@ -2310,25 +2357,60 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/C02MembershipMutationAck"
+                  "$ref": "#/components/schemas/MutationAck"
                 }
               }
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Current authentication/account/context invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "description": "CSRF or current authority/scope denied.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "Scoped read target missing/foreign.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "409": {
-            "$ref": "#/components/responses/Conflict"
+            "description": "Version conflict, invalid membership state, or suspended user account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "422": {
-            "$ref": "#/components/responses/ValidationFailed"
+            "description": "Strict field validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         },
         "x-contract-status": "USER_APPROVED",
@@ -2955,7 +3037,10 @@
             "in": "path",
             "required": true,
             "schema": {
-              "$ref": "#/components/schemas/ResourceId"
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "minLength": 24,
+              "maxLength": 24
             }
           }
         ],
@@ -2979,16 +3064,44 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Current authentication/account/context invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "description": "Current authority/scope denied.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "Organization not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "422": {
-            "$ref": "#/components/responses/ValidationFailed"
+            "description": "Validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         },
         "x-contract-status": "USER_APPROVED",
@@ -3018,7 +3131,10 @@
             "in": "path",
             "required": true,
             "schema": {
-              "$ref": "#/components/schemas/ResourceId"
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "minLength": 24,
+              "maxLength": 24
             }
           }
         ],
@@ -3042,13 +3158,34 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Current authentication/account/context invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "description": "Current authority/scope denied.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "Organization not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         },
         "x-contract-status": "USER_APPROVED",
@@ -3076,7 +3213,10 @@
             "in": "path",
             "required": true,
             "schema": {
-              "$ref": "#/components/schemas/ResourceId"
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "minLength": 24,
+              "maxLength": 24
             }
           },
           {
@@ -3105,18 +3245,20 @@
               "schema": {
                 "type": "object",
                 "additionalProperties": false,
+                "required": ["expectedUpdatedAt"],
+                "minProperties": 2,
                 "properties": {
                   "name": {
                     "type": "string",
-                    "minLength": 1,
-                    "maxLength": 200
+                    "minLength": 2,
+                    "maxLength": 100
                   },
                   "description": {
                     "type": [
                       "string",
                       "null"
                     ],
-                    "maxLength": 1000
+                    "maxLength": 500
                   },
                   "expectedUpdatedAt": {
                     "type": "string",
@@ -3139,19 +3281,54 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "Current authentication/account/context invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "description": "CSRF or current authority/scope denied.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "Organization not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "409": {
-            "$ref": "#/components/responses/Conflict"
+            "description": "Optimistic concurrency conflict (ORGANIZATION_SETTINGS_VERSION_CONFLICT).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "422": {
-            "$ref": "#/components/responses/ValidationFailed"
+            "description": "Validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         },
         "x-contract-status": "USER_APPROVED",
@@ -3787,8 +3964,7 @@
         "additionalProperties": false,
         "required": [
           "expectedMembershipVersion",
-          "reasonCode",
-          "handoverReceiptId"
+          "reasonCode"
         ],
         "properties": {
           "expectedMembershipVersion": {
@@ -3799,14 +3975,10 @@
           "reasonCode": {
             "type": "string",
             "enum": [
-              "OFFBOARDING"
+              "SECURITY_INCIDENT",
+              "ACCESS_REVIEW",
+              "ACCESS_REQUEST"
             ]
-          },
-          "handoverReceiptId": {
-            "type": "string",
-            "pattern": "^[a-fA-F0-9]{24}$",
-            "minLength": 24,
-            "maxLength": 24
           }
         }
       },
@@ -3815,8 +3987,7 @@
         "additionalProperties": false,
         "required": [
           "expectedMembershipVersion",
-          "reasonCode",
-          "rightsReviewReceiptId"
+          "reasonCode"
         ],
         "properties": {
           "expectedMembershipVersion": {
@@ -3827,14 +3998,10 @@
           "reasonCode": {
             "type": "string",
             "enum": [
-              "ACCESS_REVIEW"
+              "SECURITY_INCIDENT",
+              "ACCESS_REVIEW",
+              "ACCESS_REQUEST"
             ]
-          },
-          "rightsReviewReceiptId": {
-            "type": "string",
-            "pattern": "^[a-fA-F0-9]{24}$",
-            "minLength": 24,
-            "maxLength": 24
           }
         }
       },
