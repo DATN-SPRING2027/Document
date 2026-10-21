@@ -5,6 +5,13 @@
 > The UNKNOWN lifecycle/API inventory below is the historical R5 snapshot, not
 > the current status of those selected decisions. A7 owning proof/provider/epoch
 > readiness and executable acceptance remain open as specified by the successor.
+>
+> **C-02 invitation amendments (Finding #1/#2, 2026-10-21; pending PR review):**
+> The R5 existing-vs-new-identity question below remains historical. The proposed
+> recipient rule, navigation-only registration continuation, independent
+> `expectedMembershipVersion`/`expectedInvitationVersion` CAS checks (including the
+> `0` no-Membership sentinel), and fail-closed A7/A8 map are recorded in the successor
+> contract; this note preserves the original wording and does not rewrite the R5 record.
 
 > **Authority successor note — 2026-10-12:** R2/R3/R5 snapshots below predate
 > Leader D1–D6, received 2026-10-06 and confirmed by the requester. Their exact

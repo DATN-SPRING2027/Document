@@ -54,7 +54,9 @@ last-eligible-ADMIN removal/suspension or platform override. Peer ADMIN commands
 are permitted only with all applicable safeguards/proofs. Emergency suspend may
 precede handover, but never bypasses self/last-ADMIN constraints.
 
-**Email-bound invitation amendment (2026-10-20, requester-approved product decision).**
+**Email-bound invitation amendment draft (Finding #1 clarification 2026-10-21; amends the requester-approved 2026-10-20 product decision).**
+This contract wording is pending internal review. It does not change the earlier
+product approval or imply runtime readiness.
 This amendment supersedes earlier statements in this document that require an
 existing ACTIVE User, `targetUserId`, or a PENDING_INVITE Membership at invitation
 creation. A Manager may invite a normalized email whether or not it currently maps
@@ -68,18 +70,36 @@ ACTIVE Membership, changes the invitation to ACCEPTED, and writes the required a
 No ADMIN activation, automatic role grant, automatic Organization session, direct-add,
 bulk invite, or account creation from the invitation endpoint is allowed.
 
+This is an explicit amendment to the earlier existing-account-only C-02 wording; it
+does not describe the earlier contract as having supported this flow. Rationale:
+"Support invitation of users who do not yet have an account, while preserving email
+binding, invitation lifecycle, authorization and fail-closed security controls."
+
 Supported recipients: existing accounts and unregistered email addresses. For an
-unregistered recipient, the invitation token is retained through login/registration
-as an opaque continuation value and revalidated by the server after authentication;
-the client continuation is not authority. Do not persist Organization/email context
-as a trusted value in localStorage. Registration must use the invited email.
-Registering with another email never transfers or changes the invitation; show
-“This invitation was sent to another email address.” without echoing the invited
-address in an error response.
+unregistered recipient, the invitation-specific token is used to resolve that one
+invitation and is removed from browser history. The optional `returnToInvitationId`
+registration field carries only the non-secret invitation ID through email
+verification; it is a navigation reference, not an authorization credential. The raw
+invitation token is not carried as the registration continuation. After normal
+verification and sign-in, the client reloads the invitation and the server revalidates
+its owner, status, expiry and immutable `invitedEmail` against the authenticated
+account email before the same acceptance operation can run. The ID alone never grants
+Organization access or membership. Do not persist Organization/email context as a
+trusted value in localStorage. The new account must use the invited email to continue;
+an account with another email cannot read or accept the invitation. Show "This
+invitation was sent to another email address." without echoing the invited address in
+an error response.
 
 Explicitly out of scope: generic Organization join URLs, public join pages, manager
 copy/share links, multi-use bearer links, or a token that can accept multiple
 invitations. An emailed URL represents exactly one invitation and one email identity.
+This amendment preserves the unregistered-email and registration-continuation flow
+while restoring Finding #2 safeguards. For V3 email invitations, creation adds no
+Membership row, so `expectedMembershipVersion: 0` is the documented sentinel for
+absence; it is required alongside the independent `expectedInvitationVersion` for
+ACCEPT, RESEND, and CANCEL. Both values are checked against current state. A stale
+value returns 409 and must not mutate invitation or Membership state. The optional
+`returnToInvitationId` remains navigation-only and is never used as a credential.
 
 ## 2. Reads and DTOs (A2)
 
@@ -122,9 +142,10 @@ protected at rest and never logged. `PENDING` at `expiresAt<=now` is effectively
 provider supplies evidence; outbox PUBLISHED does not prove email sent/delivered.
 Generate at least 32 random bytes with a cryptographic RNG and encode as base64url.
 The email CTA uses an invitation-specific URL fragment (`/organization/invitations#<token>`);
-the FE removes the fragment from browser history immediately, sends the token only
-in the no-store resolve body, and carries the opaque continuation through
-login/registration for server revalidation.
+the FE removes the fragment from browser history immediately and sends the token only
+in the no-store resolve body. For an unregistered recipient, only the non-secret
+`returnToInvitationId` is carried through registration; after normal sign-in the
+client reloads by ID and the server revalidates the invitation and email binding.
 
 Page/count may share a scoped Membership aggregate/facet; User lookup only after
 page limit with projection. No N+1 or pre-pagination User join. Index both scoped
@@ -136,19 +157,21 @@ requires a separate wire review because current IAM lists use page/pageSize.
 ## 3. Commands and lifecycle (A3, N1/V2/E1)
 
 Every mutation requires a valid CSRF pair and Idempotency-Key. Strict JSON
-allowlist; membership and invitation versions are positive safe integers. The
-ORG-08 `expectedRoleVersion` is a non-negative safe integer (`0` means no current
-Organization role assignment). ADMIN commands require
-manage. Membership lifecycle commands use `expectedMembershipVersion` (MV); email
-invitation commands use `expectedInvitationVersion` (IV) only because there is no
-pending Membership. Client IDs select resources, never confer authority.
+allowlist; persisted Membership and invitation versions are positive safe integers.
+The ORG-08 `expectedRoleVersion` is a non-negative safe integer (`0` means no
+current Organization role assignment). ADMIN commands require manage authority.
+Membership lifecycle commands use `expectedMembershipVersion` (MV). V3 email
+invitation ACCEPT/RESEND/CANCEL require both MV and IV: MV `0` means the invitation
+has no Membership row; IV is the invitation's independent positive CAS version.
+If a Membership exists or either version is stale, the operation conflicts before
+changing state. Client IDs select resources, never confer authority.
 
 | POST route | Body | Success | Allowed state / effect |
 |---|---|---|---|
 |I |email,reasonCode |201 InvitationMutationAck |No active/suspended pair: create email-bound PENDING Invitation only; no Membership or role |
-|I/{invitationId}/resend |IV,reasonCode |200 InvitationMutationAck |Current pending Invitation; new Invitation ID/token; old token superseded |
-|I/{invitationId}/cancel |IV,reasonCode |200 InvitationMutationAck |Current pending Invitation→CANCELLED |
-|A/{invitationId}/accept |IV |200 AcceptMutationAck |Authenticated email matches; pending/unexpired Invitation→ACCEPTED and create one ACTIVE Membership |
+|I/{invitationId}/resend |MV=0,IV,reasonCode |200 InvitationMutationAck |Current pending Invitation and no Membership; new Invitation ID/token; old token superseded |
+|I/{invitationId}/cancel |MV=0,IV,reasonCode |200 InvitationMutationAck |Current pending Invitation and no Membership→CANCELLED |
+|A/{invitationId}/accept |MV=0,IV |200 AcceptMutationAck |Authenticated email matches; pending/unexpired Invitation→ACCEPTED and create one ACTIVE Membership |
 |M/{membershipId}/suspend |MV,reasonCode |200 MutationAck |ACTIVE→SUSPENDED |
 |M/{membershipId}/role |MV,expectedRoleVersion,roleCode,reason |200 OrganizationRoleMutationAck |Change only the Organization role of another ACTIVE Membership in the same Organization; roleCode ADMIN or MEMBER; response `{operationId,membership,role:{roleCode,version}}` |
 |M/{membershipId}/remove |MV,reasonCode,handoverReceiptId |200 MutationAck |ACTIVE/SUSPENDED→REMOVED, domain handover proof |
@@ -269,14 +292,14 @@ JSON/oversize preserves transport semantics rather than forcing422.
 |Email belongs to current ACTIVE member |409 TARGET_ALREADY_MEMBER |
 |Different fingerprint |409 IDEMPOTENCY_KEY_REUSED |
 |Missing/invalid/stale proof |409 HANDOVER_REQUIRED or RIGHTS_REVIEW_REQUIRED |
-|Provider/readiness unavailable |503 IAM_MEMBERSHIP_DEPENDENCY_UNAVAILABLE |
+|Mapped A7/A8 readiness not READY |503 IAM_MEMBERSHIP_DEPENDENCY_UNAVAILABLE; no lifecycle mutation |
 |Quota |429 ORGANIZATION_INVITATION_RATE_LIMITED +Retry-After |
 |Required write failure |500 IAM_MEMBERSHIP_MUTATION_FAILED |
 
 Bounded parsing→authentication/CSRF→current scope/permission or recipient binding→
 strict validation→scoped selector→key replay/conflict→new-attempt preconditions.
-New ADMIN attempt: MV for Membership commands; IV for invitation commands, then
-state/expiry and applicable self/lastADMIN/proof checks. Recipient mismatch is a
+New ADMIN attempt: MV for Membership commands; both MV and IV for V3 invitation
+commands; then state/expiry and applicable self/lastADMIN/proof checks. Recipient mismatch is a
 403 without echoing either email, expired is 410, and other invitation inadmissibility
 is generic409; admissible invitations then version-check.
 
@@ -328,21 +351,32 @@ these prerequisites. Emergency suspend may work independently with safeguards.
 
 IAM outbox/dispatcher→Notification exported delivery/dedup contract, correct owner
 DBs, no cross-owner reads. A7 exact payload/provider/credentials/proof freshness/
-consumer recovery/retention are **not approved or ready**. A7 is asynchronous delivery
-infrastructure, not a synchronous prerequisite for invitation create, resend, cancel,
-or accept. Those business transactions persist invitation state, required audit and
-idempotency records, and any delivery intent atomically; they return after commit while
-email delivery remains pending/retryable. The API must report the invitation as queued,
-not as email sent. No hardcoded READY, fake provider, health stub, or outbox writer alone
-proves delivery; no SENT without provider evidence. The invitation URL may be sent only
+consumer recovery/retention remain **not approved or ready**; therefore the runtime
+adapter must fail closed until a reviewed provider/evidence source supplies readiness.
+The approved C-02 V3 readiness map is:
+
+| Operation | Required readiness gates | NOT READY result |
+|---|---|---|
+| CREATE / INVITE | `A7_NOTIFICATION_CONTRACT_PROVIDER`, `A8_COORDINATED_CUTOVER` | 503, no invitation, operation, audit, or outbox mutation |
+| RESEND | `A7_NOTIFICATION_CONTRACT_PROVIDER`, `A8_COORDINATED_CUTOVER` | 503, no supersession, successor invitation, or outbox mutation |
+| CANCEL | `A8_COORDINATED_CUTOVER` | 503, invitation remains pending |
+| ACCEPT | `A7_LEGACY_OR_ORPHAN_RIGHTS_ACTIVATION_PROOF`, `A8_COORDINATED_CUTOVER` | 503, no Membership activation or invitation acceptance |
+
+These gates are evaluated before a new lifecycle mutation. Exact committed
+idempotency replay preserves the original result. Read/list/resolve operations do not
+use these lifecycle gates. Provider readiness does not claim that an individual email
+was delivered: commands persist delivery intent atomically and return after commit;
+email delivery remains asynchronous/retryable. The API reports queued, not sent. No
+hardcoded READY, fake provider, health stub, or outbox writer alone proves readiness;
+no PUBLISHED/SENT claim without provider evidence. The invitation URL may be sent only
 through the approved provider path and must contain a token bound to one invitation and
 email. Do not promise exactly-once provider delivery. Existing suggested 15min/5s/retries
 are not selected policy.
 
-A8 coordinated cutover is an operational/deployment concern, not a runtime
-authorization or business-readiness gate for the email invitation endpoints. Retain
+A8 coordinated cutover is also a runtime lifecycle gate for the invitation operations
+mapped above, as well as an operational/deployment concern. Retain
 canonical invitation paths; email+reason replaces email+roleCode, and accept grants no
-implicit Role/session. Old DELETE adapts into the same cancel auth/key/IV/reason/audit
+implicit Role/session. Old DELETE adapts into the same cancel auth/key/MV/IV/reason/audit
 command or is disabled during cutover; no guessed default reason/version or old bypass.
 Legacy Invitation metadata/history is retained. Email invitations never auto-create a
 User or Membership; acceptance creates the Membership only after server identity/email
@@ -355,16 +389,17 @@ must be confirmed before deployment.
 | Checkpoint | Proof still required |
 |---|---|
 |[235](https://trankimthang0207.atlassian.net/browse/DATN-235) list |Own ADMIN/read,denied actors,inactive/cross-scope,4states/paging/empty/null/PII/query plan |
-|[236](https://trankimthang0207.atlassian.net/browse/DATN-236) invite |Existing/unregistered normalized email, no membership at invite, invitation/audit/result/outbox atomicity, duplicate/resend/expiry/quota races, no grants/shareable links |
-|[237](https://trankimthang0207.atlassian.net/browse/DATN-237) activate |Authenticated email binding, existing and post-registration recipient, atomic Membership+Invitation+audit, one-time acceptance, mismatch/expired/cancelled/replay denial, no role/session |
+|[236](https://trankimthang0207.atlassian.net/browse/DATN-236) invite |Existing/unregistered normalized email, no membership at invite, required MV=0 and IV CAS on resend/cancel, stale-version/no-mutation cases, invitation/audit/result/outbox atomicity, readiness 503/no-write cases, quota races, no grants/shareable links |
+|[237](https://trankimthang0207.atlassian.net/browse/DATN-237) activate |Authenticated email binding, existing and post-registration recipient, MV=0 plus IV CAS, readiness 503/no-write, atomic Membership+Invitation+audit, one-time acceptance, mismatch/expired/cancelled/replay denial, no role/session |
 |[238](https://trankimthang0207.atlassian.net/browse/DATN-238) lifecycle |Self/lastADMIN/two-target+User-status/Role races,proof/emergency/review/epoch legacy denial |
 |[239](https://trankimthang0207.atlassian.net/browse/DATN-239) auth |Current User/Membership/Role.permissions/actual scope,deny unknown/staleJWT/revoke during write/replay |
 |[240](https://trankimthang0207.atlassian.net/browse/DATN-240) audit |One allowlisted persisted audit,required-write failure rollback,uncertain commit/exact retry dedup |
 |[241](https://trankimthang0207.atlassian.net/browse/DATN-241) tests |Disposable Mongo7replica set,index/transaction/CAS races,failure injection,expired cache present,explicit CI suite selection |
 
 Contract approval ≠ completion: no executable command evidence in this document.
-The email-bound amendment records the requester's product decision; it does not record
-A7 provider readiness or A8 rollout approval. The V3 schema/contract is the baseline for
+The email-bound amendment records the requester's product decision and the
+reviewer-required MV/IV and A7/A8 mapping; it does not record A7 provider readiness or
+A8 rollout approval. The V3 schema/contract is the baseline for
 the paired runtime work; that implementation adds no database migration. Verify the
 existing schema is deployed before rollout. Do not rewrite old migrations or apply a
 shared DB here. Verify the business and security checkpoints before enabling the changed
@@ -381,7 +416,7 @@ Done merely because this contract is approved.
 |Queue and deliver email |Transactional outbox, then approved notification provider (A7) |Invitation and encrypted token delivery intent commit with audit/idempotency; provider delivery is asynchronous/retryable. Email contains Organization name, permitted inviter label, expiry, and invitation-specific URL; never log raw token |
 |Open email URL |Invitation-specific opaque token |Resolve one invitation only; no state change on GET/resolve; no token displayed in response |
 |Login/register |Existing authentication flow |Continuation token is validated server-side afterward; user account email must match invitation; client redirect/storage is not authority |
-|Accept |Authenticated principal + invitation record |Server compares normalized principal email; one transaction creates one ACTIVE Membership, marks ACCEPTED, records audit; no role/session grant |
+|Accept |Authenticated principal + invitation record + both expected versions + mapped readiness evidence |Server compares normalized principal email; requires MV=0 and matching IV; A7/A8 must be ready before one transaction creates one ACTIVE Membership, marks ACCEPTED, and records audit; no role/session grant |
 
 Acceptance scenarios: an existing account with matching email accepts once; an
 unregistered email registers with that same address and then accepts; a different

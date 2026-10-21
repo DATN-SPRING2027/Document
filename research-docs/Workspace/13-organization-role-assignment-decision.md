@@ -8,6 +8,23 @@
 Membership reads. This decision does not approve Project role administration,
 custom roles, role inheritance, or changes to Project access.
 
+## C-02 invitation boundary amendment (2026-10-21)
+
+The C-02 Finding #1/#2 amendment under review permits email-bound invitations to
+existing accounts and unregistered email addresses, with the same authenticated
+email-binding and acceptance rules after normal registration continuation. Invitation
+acceptance creates an ACTIVE Membership only; it does not activate an `ADMIN` role,
+create a RoleAssignment, or bypass this ORG-08 decision. Role changes continue to
+require the positive current Membership version and the independent
+`expectedRoleVersion` described below.
+
+For a pending C-02 V3 invitation, `expectedMembershipVersion: 0` means no Membership
+row exists and is specific to the ACCEPT/RESEND/CANCEL invitation commands. It does
+not change ORG-08 role-command version semantics: role changes require a positive
+`expectedMembershipVersion`, while `expectedRoleVersion: 0` means no Organization
+role assignment currently exists. C-02 invitation lifecycle readiness is documented
+in its owning contract and does not grant role authority.
+
 ## Decision
 
 1. **Role catalog.** The Organization assignment accepts only the existing catalog

@@ -1,0 +1,87 @@
+{
+  "state": "REVIEW_ONLY_NOT_EXECUTED_API_TESTS",
+  "createdAt": "2026-10-21T00:00:00+07:00",
+  "scope": "C-02 Finding #1 and Finding #2: preserve email-bound unregistered-recipient continuation while requiring independent Membership/Invitation CAS versions and mapped fail-closed A7/A8 readiness.",
+  "knownBlockers": [
+    {
+      "id": "A7-A8-RUNTIME-EVIDENCE-PENDING",
+      "affects": "C02-INV-11",
+      "evidence": "The operation map is documented and the runtime default is deny-by-default. No production A7 provider/proof or A8 cutover evidence source is wired into IAM.",
+      "resolutionStatus": "CONTRACT_MAPPING_RESTORED_RUNTIME_EVIDENCE_STILL_REQUIRED"
+    }
+  ],
+  "cases": [
+    {
+      "id": "C02-INV-01",
+      "scenario": "Invite an email that already belongs to an eligible account",
+      "expectedCandidate": "Invitation creation is valid; recipient still signs in and uses normal email-bound acceptance.",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "C02-INV-02",
+      "scenario": "Invite a syntactically valid email that has no account at invitation time",
+      "expectedCandidate": "Invitation creation is valid and creates no User, Membership, RoleAssignment, or Organization session.",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "C02-INV-03",
+      "scenario": "Register and verify an account using the invited email, then resume the invitation",
+      "expectedCandidate": "The optional returnToInvitationId carries a non-secret navigation reference only. After normal sign-in, the server reloads and validates the invitation; acceptance requires expectedMembershipVersion=0 and the current expectedInvitationVersion plus the normal authorization, email-binding, lifecycle and readiness checks.",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "C02-INV-04",
+      "scenario": "The registered/authenticated account email differs from the invitation email",
+      "expectedCandidate": "Reject invitation read/acceptance for the mismatched account; the ID does not transfer the invitation or grant membership.",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "C02-INV-05",
+      "scenario": "Accept an expired invitation",
+      "expectedCandidate": "Reject fail-closed; no Membership is created.",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "C02-INV-06",
+      "scenario": "Accept a cancelled invitation",
+      "expectedCandidate": "Reject; no Membership is created.",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "C02-INV-07",
+      "scenario": "Resolve an invalid invitation credential",
+      "expectedCandidate": "Reject without returning protected Organization data or creating a Membership.",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "C02-INV-08",
+      "scenario": "Attempt to use an invitation owned by Organization A as an invitation for Organization B",
+      "expectedCandidate": "Reject scope substitution; invitation ownership and all authorization remain server-derived.",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "C02-INV-09",
+      "scenario": "Attempt to use a generic copied/shared Organization join link",
+      "expectedCandidate": "Unsupported. Each emailed credential is for one invitation and one recipient email; no multi-user bearer link exists.",
+      "executionStatus": "NOT_RUN_API_CONTRACT_GATE"
+    },
+    {
+      "id": "C02-INV-10",
+      "scenario": "Invitation lifecycle concurrency preconditions include both versions",
+      "expectedCandidate": "ACCEPT, RESEND and CANCEL require expectedMembershipVersion=0 for a V3 pending invitation with no Membership row, alongside the independently checked positive expectedInvitationVersion. Stale MV or IV returns 409 and leaves invitation/Membership state unchanged.",
+      "executionStatus": "CONTRACT_UPDATED_NOT_EXECUTED"
+    },
+    {
+      "id": "C02-INV-11",
+      "scenario": "A7/A8 readiness is NOT READY",
+      "expectedCandidate": "CREATE/RESEND require A7_NOTIFICATION_CONTRACT_PROVIDER+A8_COORDINATED_CUTOVER; CANCEL requires A8_COORDINATED_CUTOVER; ACCEPT requires A7_LEGACY_OR_ORPHAN_RIGHTS_ACTIVATION_PROOF+A8_COORDINATED_CUTOVER. NOT READY returns 503 before lifecycle writes.",
+      "executionStatus": "CONTRACT_MAPPING_UPDATED_RUNTIME_EVIDENCE_PENDING"
+    },
+    {
+      "id": "C02-INV-12",
+      "scenario": "CANCEL races with ACCEPT using the same expected versions",
+      "expectedCandidate": "At most one transaction commits. If CANCEL wins, the invitation remains CANCELLED and no Membership is activated; a concurrent stale ACCEPT returns 409. If ACCEPT wins, the invitation is ACCEPTED with one ACTIVE Membership and stale CANCEL returns 409.",
+      "executionStatus": "NOT_RUN_DISPOSABLE_MONGO7_REQUIRED"
+    }
+  ]
+}
