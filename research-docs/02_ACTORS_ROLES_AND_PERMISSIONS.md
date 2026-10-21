@@ -51,8 +51,9 @@ Role and assignment records need `organizationId`, subject, scope, `validFrom`, 
 
 ### ADMIN
 
-- Manages users and Organization Memberships, assigns roles/scopes, and manages Organization settings and policies within that Organization.
+- Manages users and Organization Memberships, assigns roles/scopes, and manages Organization settings and policies within that Organization (see the [Manager Workspace P0 Specification](Workspace/14-manager-workspace-p0-contract.md)).
 - Does not automatically receive Project Membership, Team Leader scope, or read/verification access to confidential task, note, evidence, knowledge, or handover content.
+- May recover an `ACTIVE` Project that has `0 Effective Leaders` by adding an Organization member and appointing a new Project `TEAM_LEADER` without automatically receiving read access to confidential project content (`F-05`).
 - Does not need a special `project.create` grant for Project creation; any authenticated User with active Organization Membership may create a Project under the accepted Project Foundation decision.
 - May inspect technical status and metadata; **does not automatically read confidential content or verify knowledge**. Exceptional access, if implemented, requires a separately approved, reasoned and audited process.
 
