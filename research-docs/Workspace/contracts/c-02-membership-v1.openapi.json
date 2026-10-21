@@ -3,7 +3,7 @@
   "info": {
     "title": "Continuum C-02 Organization Membership Administration",
     "version": "1.1.0-email-bound",
-    "description": "Email-bound invitation contract amendment approved 2026-10-20. Runtime remains NOT_IMPLEMENTED on main until the paired implementation is merged. A7 provider delivery and A8 coordinated cutover remain operational readiness concerns, not synchronous invitation business-command prerequisites. See the owning decision for security, lifecycle, transactional, and rollout requirements."
+    "description": "Email-bound invitation contract amendment approved 2026-10-20, with Finding #1 unregistered-recipient continuation and Finding #2 MV/IV and A7/A8 safeguards carried into the V3 contract. Runtime remains NOT_IMPLEMENTED on main until the paired implementation is merged. Invitation lifecycle readiness gates are operation-specific and fail closed with 503. See the owning decision for security, lifecycle, transactional, and rollout requirements."
   },
   "tags": [
     {
@@ -561,7 +561,7 @@
         ],
         "summary": "Invite an email address, whether or not it has an account",
         "operationId": "createOrganizationInvitation",
-        "description": "EMAIL-BOUND V3 contract; runtime NOT_IMPLEMENTED on main until the paired implementation is merged. Current ACTIVE Organization ADMIN with organization.memberships.manage may invite a normalized email using email and reasonCode; no User ID is accepted. Creating an invitation creates no User or Membership. Invitation, idempotency result, allowlisted audit, and encrypted email-delivery outbox intent commit atomically. The API returns after commit and does not wait for SMTP; the response means queued for delivery, not sent. A7 provider delivery is asynchronous. A8 remains an operational rollout concern. The persistent invitation record stores only a one-way token hash; the encrypted outbox token is removed after delivery or terminal failure. Acceptance derives normalized email from the authenticated principal and denies mismatch. No generic/shareable join link. Exact committed idempotency replay returns the original result.",
+        "description": "EMAIL-BOUND V3 contract; runtime NOT_IMPLEMENTED on main until the paired implementation is merged. This proposed 2026-10-21 C-02 amendment permits invitations to normalized email addresses that may or may not map to an existing account, pending internal contract review. Rationale: Support invitation of users who do not yet have an account, while preserving email binding, invitation lifecycle, authorization and fail-closed security controls. Current ACTIVE Organization ADMIN with organization.memberships.manage may invite a normalized email using email and reasonCode; no User ID is accepted. Creating an invitation creates no User or Membership. Invitation, idempotency result, allowlisted audit, and encrypted email-delivery outbox intent commit atomically. A7_NOTIFICATION_CONTRACT_PROVIDER and A8_COORDINATED_CUTOVER must be ready or creation fails closed with 503. After readiness passes, the API returns after commit and does not wait for SMTP; the response means queued for delivery, not sent. The persistent invitation record stores only a one-way token hash; the encrypted outbox token is removed after delivery or terminal failure. Acceptance derives normalized email from the authenticated principal and denies mismatch. No generic/shareable join link. Exact committed idempotency replay returns the original result.",
         "parameters": [
           {
             "name": "organizationId",
@@ -786,7 +786,10 @@
         "x-runtime-status": "NOT_IMPLEMENTED",
         "x-unknown-input-fields": "REJECT",
         "x-permission": "organization.memberships.manage",
-        "x-readiness-gates": [],
+        "x-readiness-gates": [
+          "A7_NOTIFICATION_CONTRACT_PROVIDER",
+          "A8_COORDINATED_CUTOVER"
+        ],
         "x-audit-action": "ORGANIZATION_MEMBERSHIP_INVITED",
         "x-idempotency": {
           "replayHours": 24,
@@ -1139,7 +1142,7 @@
         ],
         "summary": "Resend one email-bound invitation and supersede its prior token",
         "operationId": "resendOrganizationMembershipInvitation",
-        "description": "EMAIL-BOUND V3 contract; runtime NOT_IMPLEMENTED on main until the paired implementation is merged. Current ACTIVE Organization ADMIN with organization.memberships.manage may resend a pending invitation using its expected invitation version and reasonCode. Resend creates a new invitation ID and opaque token, marks the old invitation SUPERSEDED, preserves invitedEmail, and atomically records the invitation, idempotency result, allowlisted audit, and encrypted outbox intent. The API returns after commit; asynchronous email delivery may remain pending or retry while A7 is unavailable. The response never returns the token and does not claim delivery. A8 is an operational rollout concern. Exact committed idempotency replay returns the original acknowledgement.",
+        "description": "EMAIL-BOUND V3 contract; runtime NOT_IMPLEMENTED on main until the paired implementation is merged. Current ACTIVE Organization ADMIN with organization.memberships.manage may resend a pending invitation using required expectedMembershipVersion and expectedInvitationVersion plus reasonCode. V3 creation makes no Membership, so expectedMembershipVersion must be the documented 0 sentinel; the invitation CAS remains independently checked. Stale versions conflict without mutation. A7_NOTIFICATION_CONTRACT_PROVIDER and A8_COORDINATED_CUTOVER must be ready or resend fails closed with 503. When ready, resend creates a new invitation ID and opaque token, marks the old invitation SUPERSEDED, preserves invitedEmail, and atomically records the invitation, idempotency result, allowlisted audit, and encrypted outbox intent. The API returns after commit; asynchronous email delivery may remain pending or retry. The response never returns the token and does not claim delivery. Exact committed idempotency replay returns the original acknowledgement.",
         "parameters": [
           {
             "name": "organizationId",
@@ -1375,7 +1378,10 @@
         "x-runtime-status": "NOT_IMPLEMENTED",
         "x-unknown-input-fields": "REJECT",
         "x-permission": "organization.memberships.manage",
-        "x-readiness-gates": [],
+        "x-readiness-gates": [
+          "A7_NOTIFICATION_CONTRACT_PROVIDER",
+          "A8_COORDINATED_CUTOVER"
+        ],
         "x-audit-action": "ORGANIZATION_INVITATION_RESENT",
         "x-idempotency": {
           "replayHours": 24,
@@ -1405,7 +1411,7 @@
         ],
         "summary": "Cancel one pending email-bound invitation without changing Membership",
         "operationId": "cancelOrganizationMembershipInvitation",
-        "description": "EMAIL-BOUND V3 contract; runtime NOT_IMPLEMENTED on main until the paired implementation is merged. Current ACTIVE Organization ADMIN with organization.memberships.manage may cancel one pending invitation using its expected invitation version and documented reasonCode. Cancellation and its idempotency result and allowlisted audit commit atomically; no Membership is created or changed. Expired invitations are materialized as EXPIRED and cannot be cancelled. Exact committed idempotency replay returns the original acknowledgement. Email delivery readiness is not a prerequisite; A8 remains an operational rollout concern.",
+        "description": "EMAIL-BOUND V3 contract; runtime NOT_IMPLEMENTED on main until the paired implementation is merged. Current ACTIVE Organization ADMIN with organization.memberships.manage may cancel one pending invitation using required expectedMembershipVersion and expectedInvitationVersion plus documented reasonCode. V3 creation makes no Membership, so expectedMembershipVersion must be the documented 0 sentinel; the invitation CAS remains independently checked. Stale versions conflict without mutation. A8_COORDINATED_CUTOVER must be ready or cancel fails closed with 503. Cancellation and its idempotency result and allowlisted audit commit atomically; no Membership is created or changed. Expired invitations are materialized as EXPIRED and cannot be cancelled. Exact committed idempotency replay returns the original acknowledgement.",
         "parameters": [
           {
             "name": "organizationId",
@@ -1617,7 +1623,9 @@
         "x-runtime-status": "NOT_IMPLEMENTED",
         "x-unknown-input-fields": "REJECT",
         "x-permission": "organization.memberships.manage",
-        "x-readiness-gates": [],
+        "x-readiness-gates": [
+          "A8_COORDINATED_CUTOVER"
+        ],
         "x-audit-action": "ORGANIZATION_INVITATION_CANCELLED",
         "x-idempotency": {
           "replayHours": 24,
@@ -1647,7 +1655,7 @@
         ],
         "summary": "Accept a pending email-bound invitation and create one ACTIVE Membership",
         "operationId": "acceptOrganizationInvitationV3",
-        "description": "EMAIL-BOUND V3 contract; runtime NOT_IMPLEMENTED on main until the paired implementation is merged. Requires current authentication, valid CSRF, and idempotency. Server derives principal email, normalizes it with the IAM convention, and compares it with immutable invitation.invitedEmail; request-body email is not accepted. The invitation must be pending and unexpired. One transaction creates exactly one ACTIVE Membership, marks the invitation ACCEPTED, and records the required audit and idempotency result; any failure rolls the transaction back. No Role or Organization session is granted. Exact committed idempotency replay returns its original acknowledgement; another key cannot reuse an accepted invitation. Email delivery readiness is not a prerequisite. A8 is an operational rollout concern.",
+        "description": "EMAIL-BOUND V3 contract; runtime NOT_IMPLEMENTED on main until the paired implementation is merged. Existing-account recipients and recipients who register after the invitation is created converge on this same acceptance operation. The optional returnToInvitationId used by the existing registration flow is a non-secret navigation reference only; it does not authorize acceptance. Requires current authentication, valid CSRF, and idempotency. Server derives principal email, normalizes it with the IAM convention, and compares it with immutable invitation.invitedEmail; request-body email is not accepted. V3 invitation creation makes no Membership, so required expectedMembershipVersion is the documented 0 sentinel; expectedInvitationVersion independently compares the invitation CAS version. Both are checked before membership activation. A7_LEGACY_OR_ORPHAN_RIGHTS_ACTIVATION_PROOF and A8_COORDINATED_CUTOVER must be ready or acceptance fails closed with 503. The invitation must be pending and unexpired. One transaction creates exactly one ACTIVE Membership, marks the invitation ACCEPTED, and records the required audit and idempotency result; any failure rolls the transaction back. No Role or Organization session is granted. Exact committed idempotency replay returns its original acknowledgement; another key cannot reuse an accepted invitation.",
         "parameters": [
           {
             "name": "invitationId",
@@ -1848,7 +1856,10 @@
         "x-runtime-status": "NOT_IMPLEMENTED",
         "x-unknown-input-fields": "REJECT",
         "x-permission": "BOUND_RECIPIENT_ACCOUNT",
-        "x-readiness-gates": [],
+        "x-readiness-gates": [
+          "A7_LEGACY_OR_ORPHAN_RIGHTS_ACTIVATION_PROOF",
+          "A8_COORDINATED_CUTOVER"
+        ],
         "x-audit-action": "ORGANIZATION_INVITATION_ACCEPTED",
         "x-idempotency": {
           "replayHours": 24,
@@ -3126,7 +3137,7 @@
         ],
         "summary": "Resolve one emailed invitation token without accepting it",
         "operationId": "resolveOrganizationInvitationTokenV3",
-        "description": "EMAIL-BOUND V1 contract; runtime NOT_IMPLEMENTED. This read-only resolution is scoped to one cryptographically random token for one invitation. It may be called before login or registration and returns only invitation status, invited email, expiry, and Organization display name. It does not accept, mutate, create a Membership, or authorize joining. The server validates the token against its one-way hash. The client must not log or persist the raw token in localStorage; after reading a URL fragment, remove it from browser history and send it only in this no-store request body. The subsequent accept still requires authentication and an exact normalized principal-email match.",
+        "description": "EMAIL-BOUND V1 contract; runtime NOT_IMPLEMENTED. This read-only resolution is scoped to one cryptographically random token for one invitation. It may be called before login or registration and returns only invitation status, invited email, expiry, and Organization display name. It does not accept, mutate, create a Membership, or authorize joining. The server validates the token against its one-way hash. The client must not log or persist the raw token in localStorage; after reading a URL fragment, remove it from browser history and send it only in this no-store request body. For an unregistered recipient, the existing registration flow may carry only the optional non-secret returnToInvitationId through verification; the raw invitation token is not the continuation credential. The subsequent accept still requires authentication and an exact normalized principal-email match.",
         "security": [],
         "parameters": [],
         "responses": {
@@ -3735,10 +3746,17 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "expectedMembershipVersion",
           "expectedInvitationVersion",
           "reasonCode"
         ],
         "properties": {
+          "expectedMembershipVersion": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "0 is the documented sentinel for an email-bound V3 invitation with no Membership row; expectedInvitationVersion independently compares the invitation CAS version."
+          },
           "expectedInvitationVersion": {
             "type": "integer",
             "minimum": 1,
@@ -3757,10 +3775,17 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "expectedMembershipVersion",
           "expectedInvitationVersion",
           "reasonCode"
         ],
         "properties": {
+          "expectedMembershipVersion": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "0 is the documented sentinel for an email-bound V3 invitation with no Membership row; expectedInvitationVersion independently compares the invitation CAS version."
+          },
           "expectedInvitationVersion": {
             "type": "integer",
             "minimum": 1,
@@ -4001,8 +4026,14 @@
       "acceptEmailBoundOrganizationInvitationV1Request": {
         "type": "object",
         "additionalProperties": false,
-        "description": "No email or userId is accepted from the client. Recipient identity is derived from the authenticated principal.",
+        "description": "No email or userId is accepted from the client. Recipient identity is derived from the authenticated principal. V3 invitation creation creates no Membership, so expectedMembershipVersion must be 0; expectedInvitationVersion is an independent positive invitation CAS version.",
         "properties": {
+          "expectedMembershipVersion": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "0 is the documented sentinel for an email-bound V3 invitation with no Membership row."
+          },
           "expectedInvitationVersion": {
             "type": "integer",
             "minimum": 1,
@@ -4010,6 +4041,7 @@
           }
         },
         "required": [
+          "expectedMembershipVersion",
           "expectedInvitationVersion"
         ]
       }
@@ -4039,6 +4071,51 @@
     "readinessGates": [
       "A7_NOTIFICATION_CONTRACT_PROVIDER",
       "A8_COORDINATED_CUTOVER"
-    ]
+    ],
+    "membershipVersionPrecondition": {
+      "field": "expectedMembershipVersion",
+      "sentinel": 0,
+      "meaning": "No Organization Membership row exists while a V3 email invitation is pending.",
+      "independentInvitationVersionField": "expectedInvitationVersion",
+      "appliesTo": [
+        "ACCEPT",
+        "RESEND",
+        "CANCEL"
+      ],
+      "staleResult": "409 with no invitation or Membership mutation"
+    },
+    "readinessByOperation": {
+      "CREATE": [
+        "A7_NOTIFICATION_CONTRACT_PROVIDER",
+        "A8_COORDINATED_CUTOVER"
+      ],
+      "RESEND": [
+        "A7_NOTIFICATION_CONTRACT_PROVIDER",
+        "A8_COORDINATED_CUTOVER"
+      ],
+      "CANCEL": [
+        "A8_COORDINATED_CUTOVER"
+      ],
+      "ACCEPT": [
+        "A7_LEGACY_OR_ORPHAN_RIGHTS_ACTIVATION_PROOF",
+        "A8_COORDINATED_CUTOVER"
+      ]
+    },
+    "readinessFailure": "503 IAM_MEMBERSHIP_DEPENDENCY_UNAVAILABLE before lifecycle mutation",
+    "registrationContinuation": {
+      "endpoint": "POST /api/v1/auth/registrations",
+      "field": {
+        "name": "returnToInvitationId",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "minLength": 24,
+          "maxLength": 24,
+          "pattern": "^[a-fA-F0-9]{24}$"
+        },
+        "semantics": "Non-secret navigation reference only. It may be carried through email verification so the user can resume after normal sign-in; it is not an invitation token or authorization credential, and cannot by itself read or accept an invitation."
+      },
+      "postVerification": "The authenticated client reloads the invitation; the server revalidates invitation ownership, pending/unexpired status and immutable invitedEmail against the authenticated principal before normal acceptance. The raw invitation token is not carried through registration."
+    }
   }
 }

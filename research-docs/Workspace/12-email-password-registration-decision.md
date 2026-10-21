@@ -16,6 +16,37 @@ The verification token is high-entropy, stored as a digest, and carried in the U
 
 Organization invitations remain a distinct access-grant flow. Account registration alone never activates membership or bypasses the current membership, invitation, session and authorization rules. This decision does not approve general self-service Organization administration.
 
+### C-02 invitation continuation amendment (2026-10-21)
+
+The existing `POST /api/v1/auth/registrations` request may include the optional
+`returnToInvitationId` field (a 24-character hexadecimal invitation ID). It is a
+non-secret navigation reference carried through the email-verification link; it is
+not an invitation token or authorization credential. The invitation token is not
+carried through registration. No new registration endpoint is introduced.
+
+After verification, the person signs in normally. The client then reloads the
+invitation by ID, and the server checks the current invitation and requires the
+authenticated account email to match the immutable invited email before acceptance.
+Registration creates no Organization Membership, RoleAssignment, Organization
+session, or automatic acceptance. If the account email differs, that account cannot
+read or accept the invitation. The `returnToInvitationId` field does not change the
+existing account-registration eligibility or password-verification rules.
+
+The companion C-02 Finding #2 amendment requires both `expectedMembershipVersion`
+and `expectedInvitationVersion` for acceptance. For a V3 email invitation with no
+Membership row, the request uses the documented Membership sentinel `0`; the
+Invitation version remains a separate CAS value. Acceptance is also fail-closed on
+`A7_LEGACY_OR_ORPHAN_RIGHTS_ACTIVATION_PROOF` and `A8_COORDINATED_CUTOVER`. This does
+not alter `returnToInvitationId`, token validation, email binding or registration
+eligibility. Provider delivery receipt semantics (Finding #3) remain outside this
+amendment.
+
+These C-02 changes are proposed for the open BE PR #73 and FE PR #46 and a follow-up
+Document change; those PRs remain under review. This text does not claim that the
+continuation is merged to `main`, deployed, or operationally accepted. The production
+A7/A8 evidence sources are not currently wired, so invitation mutation runtime must
+remain fail-closed until the mapped evidence is available.
+
 ## Implementation contract and readiness
 
 The detailed request/response/error contract, token/rate-limit rules, database design and rollout prerequisites are documented in the owning BE and DB proposals. Current implementation review links:
