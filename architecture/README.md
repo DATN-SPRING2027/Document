@@ -35,7 +35,12 @@ Document/architecture/
 ├── 04_STORAGE_MESSAGING_AI.md         # Lưu trữ, BullMQ, Task Service và SAG AI Engine
 ├── 05_SECURITY_AND_GOVERNANCE.md      # Bảo mật, Rate Limiting, Race Conditions, RBAC & Caching
 ├── 06_CONTAINER_ORCHESTRATION_K8S.md  # Điều phối Microservices Kubernetes, HPA, Probes & Helm
-└── 07_RELIABILITY_CAPACITY_OBSERVABILITY.md # Vận hành trên ít server, Capacity, Sizing & Saga
+├── 07_RELIABILITY_CAPACITY_OBSERVABILITY.md # Vận hành trên ít server, Capacity, Sizing & Saga
+├── 08_HUMAN_CHAT_FE_BE_FEATURES.md     # Tính năng Chat người dùng đã nối FE–BE
+├── 09_HUMAN_CHAT_FE_UI_UX.md           # Xử lý UI/UX Chat tại FE
+├── 10_HUMAN_CHAT_RUNTIME_ARCHITECTURE.md # Kiến trúc Chat người dùng đang triển khai
+└── 11_HUMAN_CHAT_REDIS_API_COVERAGE.md # API Chat và phạm vi Redis
+```
 
 ### Hướng dẫn tra cứu nhanh:
 * **Muốn hiểu luồng mạng, ingress, cân bằng tải:** Xem [01_SYSTEM_TOPOLOGY.md](01_SYSTEM_TOPOLOGY.md).
@@ -45,6 +50,10 @@ Document/architecture/
 * **Muốn xem quy tắc bảo mật Platform Operator riêng với 3 Organization/Project roles, Rate Limiting, Redlock chống race conditions:** Xem [05_SECURITY_AND_GOVERNANCE.md](05_SECURITY_AND_GOVERNANCE.md).
 * **Muốn xem kiến trúc điều phối cụm Kubernetes, StatefulSet, HPA, Probes & Helm Charts:** Xem [06_CONTAINER_ORCHESTRATION_K8S.md](06_CONTAINER_ORCHESTRATION_K8S.md).
 * **Muốn xem cách tính toán RAM/CPU, chống sập OOM khi ít server, Saga và Backup 0đ:** Xem [07_RELIABILITY_CAPACITY_OBSERVABILITY.md](07_RELIABILITY_CAPACITY_OBSERVABILITY.md).
+* **Muốn xem tính năng Chat người dùng đã nối FE–BE:** Xem [08_HUMAN_CHAT_FE_BE_FEATURES.md](08_HUMAN_CHAT_FE_BE_FEATURES.md).
+* **Muốn xem các xử lý UI/UX của Chat tại FE:** Xem [09_HUMAN_CHAT_FE_UI_UX.md](09_HUMAN_CHAT_FE_UI_UX.md).
+* **Muốn xem kiến trúc Chat người dùng đang chạy:** Xem [10_HUMAN_CHAT_RUNTIME_ARCHITECTURE.md](10_HUMAN_CHAT_RUNTIME_ARCHITECTURE.md).
+* **Muốn xem từng nhóm API Chat được Redis bao phủ:** Xem [11_HUMAN_CHAT_REDIS_API_COVERAGE.md](11_HUMAN_CHAT_REDIS_API_COVERAGE.md).
 
 ---
 
