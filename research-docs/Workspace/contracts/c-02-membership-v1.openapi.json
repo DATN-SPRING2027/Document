@@ -2131,9 +2131,17 @@
         "tags": [
           "Organization Memberships"
         ],
-        "summary": "Remove ACTIVE/SUSPENDED Membership after verified handover",
-        "operationId": "removeOrganizationMembershipV1",
-        "description": "USER-APPROVED A1–A6/A8, runtime NOT_IMPLEMENTED. Only current ACTIVE User and ACTIVE actor OrganizationMembership establish trusted Organization context. ADMIN must resolve Organization-level assignment to actual ADMIN Role with the exact Role.permissions code; JWT/client IDs/role-only evidence do not authorize. Recipient acceptance compares authenticated account email, normalized by IAM convention, to immutable invitation.invitedEmail; no target Organization context is required. Strict allowlist; no-store. New mutation revalidates authority/CAS; exact committed replay reauthorizes then returns original ack before new-attempt version/state/expiry checks. Dependency gates in the owning decision remain enforced; approval does not prove provider/cutover readiness.",
+        "summary": "Remove an active or suspended Organization Membership",
+        "description": "Requires current Organization membership manage authority and matching CSRF. Rejects self-removal, protects the last eligible ADMIN (LAST_ELIGIBLE_ADMIN), blocks removal if the member holds active Project Leadership (MEMBER_HAS_ACTIVE_PROJECT_LEADERSHIP), deactivates non-leader project memberships, removes organization-scoped role assignments, and transitions the membership to REMOVED atomically with audit.",
+        "operationId": "removeOrganizationMembership",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "organizationId",
@@ -2158,18 +2166,7 @@
             }
           },
           {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 16,
-              "maxLength": 128,
-              "pattern": "^[A-Za-z0-9._:-]+$"
-            }
-          },
-          {
-            "name": "x-csrf-token",
+            "name": "X-CSRF-Token",
             "in": "header",
             "required": true,
             "schema": {
@@ -2184,180 +2181,20 @@
             "schema": {
               "type": "string",
               "minLength": 1
-            },
-            "description": "Readable double-submit CSRF cookie; Secure; SameSite=Lax; Path=/; no Domain. Its value must match the X-CSRF-Token header."
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9._:-]+$"
+            }
           }
         ],
-        "responses": {
-          "200": {
-            "description": "Remove ACTIVE/SUSPENDED Membership after verified handover",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string",
-                  "const": "no-store"
-                }
-              },
-              "Idempotency-Replayed": {
-                "description": "true only for an exact committed replay; original status/body preserved.",
-                "schema": {
-                  "type": "boolean",
-                  "const": true
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MutationAck"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Current authentication/account/context invalid.",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string",
-                  "const": "no-store"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "CSRF or current authority/scope denied.",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string",
-                  "const": "no-store"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Scoped read target missing/foreign (recipient accept uses generic409).",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string",
-                  "const": "no-store"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Replay key conflict or new-attempt version/lifecycle/safety/proof conflict; recipient invitation inadmissibility is generic INVITATION_NOT_ACCEPTABLE.",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string",
-                  "const": "no-store"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Strict email/field validation failed; existing members and pending invitations return explicit conflict errors.",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string",
-                  "const": "no-store"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Required persistence/audit/result/outbox failure; no success ack and transaction rollback.",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string",
-                  "const": "no-store"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Required dependency/readiness unavailable.",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string",
-                  "const": "no-store"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
-        "x-contract-status": "USER_APPROVED",
-        "x-runtime-status": "NOT_IMPLEMENTED",
-        "x-unknown-input-fields": "REJECT",
-        "x-permission": "organization.memberships.manage",
-        "x-readiness-gates": [
-          "A7_HANDOVER_PROOF_COVERAGE_RESERVATION_RECOVERY"
-        ],
-        "x-audit-action": "ORGANIZATION_MEMBERSHIP_REMOVED",
-        "x-idempotency": {
-          "replayHours": 24,
-          "scope": [
-            "actorUserId",
-            "organizationId",
-            "keyHash"
-          ],
-          "replayBeforeNewAttemptPreconditions": true
-        },
         "requestBody": {
           "required": true,
           "content": {
@@ -2367,7 +2204,72 @@
               }
             }
           }
-        }
+        },
+        "responses": {
+          "200": {
+            "description": "Membership removal committed or replayed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MutationAck"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Current authentication/account/context invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF or current authority/scope denied.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Scoped read target missing/foreign.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Version conflict, last ADMIN protection, or active Project Leader blocker.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Strict field validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-contract-status": "USER_APPROVED",
+        "x-runtime-status": "IMPLEMENTED_BACKEND",
+        "x-permission": "organization.memberships.manage"
       }
     },
     "/api/v1/iam/organizations/{organizationId}/memberships/{membershipId}/resume": {
@@ -2375,9 +2277,17 @@
         "tags": [
           "Organization Memberships"
         ],
-        "summary": "Resume SUSPENDED Membership after rights review without old-right revival",
-        "operationId": "resumeOrganizationMembershipV1",
-        "description": "USER-APPROVED A1–A6/A8, runtime NOT_IMPLEMENTED. Only current ACTIVE User and ACTIVE actor OrganizationMembership establish trusted Organization context. ADMIN must resolve Organization-level assignment to actual ADMIN Role with the exact Role.permissions code; JWT/client IDs/role-only evidence do not authorize. Recipient acceptance compares authenticated account email, normalized by IAM convention, to immutable invitation.invitedEmail; no target Organization context is required. Strict allowlist; no-store. New mutation revalidates authority/CAS; exact committed replay reauthorizes then returns original ack before new-attempt version/state/expiry checks. Dependency gates in the owning decision remain enforced; approval does not prove provider/cutover readiness.",
+        "summary": "Resume (reactivate) a suspended Organization Membership",
+        "description": "Requires current Organization membership manage authority and matching CSRF. Rejects self-action, verifies SUSPENDED status and expectedMembershipVersion, ensures the underlying User account is ACTIVE, and commits the ACTIVE transition, operation record, and audit event atomically.",
+        "operationId": "resumeOrganizationMembership",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "organizationId",
@@ -2402,18 +2312,7 @@
             }
           },
           {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 16,
-              "maxLength": 128,
-              "pattern": "^[A-Za-z0-9._:-]+$"
-            }
-          },
-          {
-            "name": "x-csrf-token",
+            "name": "X-CSRF-Token",
             "in": "header",
             "required": true,
             "schema": {
@@ -2428,28 +2327,33 @@
             "schema": {
               "type": "string",
               "minLength": 1
-            },
-            "description": "Readable double-submit CSRF cookie; Secure; SameSite=Lax; Path=/; no Domain. Its value must match the X-CSRF-Token header."
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9._:-]+$"
+            }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/resumeOrganizationMembershipV1Request"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "Resume SUSPENDED Membership after rights review without old-right revival",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string",
-                  "const": "no-store"
-                }
-              },
-              "Idempotency-Replayed": {
-                "description": "true only for an exact committed replay; original status/body preserved.",
-                "schema": {
-                  "type": "boolean",
-                  "const": true
-                }
-              }
-            },
+            "description": "Membership reactivation committed or replayed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2460,14 +2364,6 @@
           },
           "401": {
             "description": "Current authentication/account/context invalid.",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string",
-                  "const": "no-store"
-                }
-              }
-            },
             "content": {
               "application/json": {
                 "schema": {
@@ -2478,14 +2374,6 @@
           },
           "403": {
             "description": "CSRF or current authority/scope denied.",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string",
-                  "const": "no-store"
-                }
-              }
-            },
             "content": {
               "application/json": {
                 "schema": {
@@ -2495,15 +2383,7 @@
             }
           },
           "404": {
-            "description": "Scoped read target missing/foreign (recipient accept uses generic409).",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string",
-                  "const": "no-store"
-                }
-              }
-            },
+            "description": "Scoped read target missing/foreign.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2513,15 +2393,7 @@
             }
           },
           "409": {
-            "description": "Replay key conflict or new-attempt version/lifecycle/safety/proof conflict; recipient invitation inadmissibility is generic INVITATION_NOT_ACCEPTABLE.",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string",
-                  "const": "no-store"
-                }
-              }
-            },
+            "description": "Version conflict, invalid membership state, or suspended user account.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2531,51 +2403,7 @@
             }
           },
           "422": {
-            "description": "Strict email/field validation failed; existing members and pending invitations return explicit conflict errors.",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string",
-                  "const": "no-store"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Required persistence/audit/result/outbox failure; no success ack and transaction rollback.",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string",
-                  "const": "no-store"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Required dependency/readiness unavailable.",
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string",
-                  "const": "no-store"
-                }
-              }
-            },
+            "description": "Strict field validation failed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2586,33 +2414,8 @@
           }
         },
         "x-contract-status": "USER_APPROVED",
-        "x-runtime-status": "NOT_IMPLEMENTED",
-        "x-unknown-input-fields": "REJECT",
-        "x-permission": "organization.memberships.manage",
-        "x-readiness-gates": [
-          "A7_IAM_RIGHTS_REVIEW_AND_EPOCH_CONSUMERS",
-          "A8_COORDINATED_CUTOVER"
-        ],
-        "x-audit-action": "ORGANIZATION_MEMBERSHIP_RESUMED",
-        "x-idempotency": {
-          "replayHours": 24,
-          "scope": [
-            "actorUserId",
-            "organizationId",
-            "keyHash"
-          ],
-          "replayBeforeNewAttemptPreconditions": true
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/resumeOrganizationMembershipV1Request"
-              }
-            }
-          }
-        }
+        "x-runtime-status": "IMPLEMENTED_BACKEND",
+        "x-permission": "organization.memberships.manage"
       }
     },
     "/api/v1/iam/organizations/{organizationId}/memberships/{membershipId}/reinvite": {
@@ -3210,6 +3013,327 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/iam/organizations/{organizationId}/overview": {
+      "get": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Get Organization governance overview metrics and leaderless project alerts",
+        "description": "Requires an authenticated ACTIVE User and OrganizationMembership in the matching Organization context plus organization.memberships.read permission (Manager/ADMIN). Returns real organization metadata, member lifecycle counts, pending invitation count, active manager roster, project counts, and leaderless active projects requiring leader recovery.",
+        "operationId": "getOrganizationOverview",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "minLength": 24,
+              "maxLength": 24
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Organization governance overview.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Current authentication/account/context invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Current authority/scope denied.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-contract-status": "USER_APPROVED",
+        "x-runtime-status": "IMPLEMENTED_BACKEND",
+        "x-permission": "organization.memberships.read"
+      }
+    },
+    "/api/v1/iam/organizations/{organizationId}/settings": {
+      "get": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Get Organization settings and active Manager roster",
+        "description": "Requires an authenticated ACTIVE User and OrganizationMembership in the matching Organization context plus organization.memberships.read permission.",
+        "operationId": "getOrganizationSettings",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "minLength": 24,
+              "maxLength": 24
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Organization settings read model.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Current authentication/account/context invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Current authority/scope denied.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-contract-status": "USER_APPROVED",
+        "x-runtime-status": "IMPLEMENTED_BACKEND",
+        "x-permission": "organization.memberships.read"
+      },
+      "patch": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Update allowlisted Organization settings (name, description)",
+        "description": "Requires an authenticated ACTIVE Organization ADMIN with organization.memberships.manage permission and matching CSRF cookie/header. Enforces strict field allowlist (name, description, expectedUpdatedAt) and writes an atomic audit event.",
+        "operationId": "updateOrganizationSettings",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "minLength": 24,
+              "maxLength": 24
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "__Host-csrf",
+            "in": "cookie",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["expectedUpdatedAt"],
+                "minProperties": 2,
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "description": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 500
+                  },
+                  "expectedUpdatedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated Organization settings.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Current authentication/account/context invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF or current authority/scope denied.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Optimistic concurrency conflict (ORGANIZATION_SETTINGS_VERSION_CONFLICT).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-contract-status": "USER_APPROVED",
+        "x-runtime-status": "IMPLEMENTED_BACKEND",
+        "x-permission": "organization.memberships.manage"
       }
     }
   },
@@ -3840,8 +3964,7 @@
         "additionalProperties": false,
         "required": [
           "expectedMembershipVersion",
-          "reasonCode",
-          "handoverReceiptId"
+          "reasonCode"
         ],
         "properties": {
           "expectedMembershipVersion": {
@@ -3852,14 +3975,10 @@
           "reasonCode": {
             "type": "string",
             "enum": [
-              "OFFBOARDING"
+              "SECURITY_INCIDENT",
+              "ACCESS_REVIEW",
+              "ACCESS_REQUEST"
             ]
-          },
-          "handoverReceiptId": {
-            "type": "string",
-            "pattern": "^[a-fA-F0-9]{24}$",
-            "minLength": 24,
-            "maxLength": 24
           }
         }
       },
@@ -3868,8 +3987,7 @@
         "additionalProperties": false,
         "required": [
           "expectedMembershipVersion",
-          "reasonCode",
-          "rightsReviewReceiptId"
+          "reasonCode"
         ],
         "properties": {
           "expectedMembershipVersion": {
@@ -3880,14 +3998,10 @@
           "reasonCode": {
             "type": "string",
             "enum": [
-              "ACCESS_REVIEW"
+              "SECURITY_INCIDENT",
+              "ACCESS_REVIEW",
+              "ACCESS_REQUEST"
             ]
-          },
-          "rightsReviewReceiptId": {
-            "type": "string",
-            "pattern": "^[a-fA-F0-9]{24}$",
-            "minLength": 24,
-            "maxLength": 24
           }
         }
       },
