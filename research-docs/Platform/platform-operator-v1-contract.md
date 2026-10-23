@@ -1,5 +1,14 @@
 # PLATFORM_OPERATOR V1 — Canonical contract
 
+> **Cập nhật phạm vi quản lý người dùng — 2026-10-21:** Người dùng xác nhận dùng
+> OpenAPI hiện tại của BE làm chuẩn cho task quản lý người dùng và đồng bộ tài liệu
+> cũ. Với riêng tìm/xem tài khoản, sửa hồ sơ, đổi trạng thái, archive/restore,
+> xem tổ chức và phiên đăng nhập, xem [hợp đồng và nghiệm thu hiện tại](platform-user-management-current.md).
+> Các dòng DEFERRED và giới hạn “chỉ ba quyền” bên dưới là baseline lịch sử A-04,
+> không mô tả trạng thái hiện tại của phạm vi này. Các phạm vi khác không được
+> phê duyệt thêm bởi cập nhật này. Tên hiển thị Admin tương ứng PLATFORM_OPERATOR;
+> quyền tổ chức ADMIN hiển thị Manager. Cấp quyền vẫn theo assignment chính xác.
+
 | Field | Value |
 |---|---|
 | Status | Contract complete; only external approvals and deployed DB evidence remain |
