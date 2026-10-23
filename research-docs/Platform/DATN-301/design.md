@@ -1,113 +1,114 @@
-# DATN-301 — Decision record: PLATFORM_OPERATOR V1 gate closure
+# DATN-301 — PLATFORM_OPERATOR V1 decision record
 
 | Field | Value |
 |---|---|
 | Jira | DATN-301 |
-| Canonical contract | [PLATFORM_OPERATOR V1 contract](../platform-operator-v1-contract.md) |
-| DB verification | [Read-only runbook](../platform-operator-v1-db-verification-runbook.md) |
+| Canonical contract | research-docs/Platform/platform-operator-v1-contract.md |
 | Date | 2026-10-16 (Asia/Bangkok) |
-| Jira status | Done; this status is administrative and is not evidence of owner/security sign-off |
-| Decision status | Policy scope closed; Security/IAM, Audit and deployed DB evidence remain external |
-| Decision owner | KeyT/Thang for the explicit gate-closure and conservative V1 scope decision |
+| Current decision | PO-D13 supersedes the earlier empty-console / 3-active scope |
+| Product owner | Thang, from the explicit task instruction |
+| Jira workflow | Existing statuses remain unchanged by this decision |
 
-## 1. Outcome
+## 1. Current scope revision — PO-D13
 
-The V1 permission catalog is exactly the three existing DATN-79/A-04 codes:
+The prior DATN-301 closure recorded three A-04 operations active and all 37 candidates deferred. Thang has now explicitly changed the product goal to a usable Organization, User and Membership administration flow. That prior scope is retained as history but is superseded for current V1 implementation.
 
-- organization.create
-- platform.health.read
-- platform.audit.read
+V1 has seven exact permissions across seven operation IDs:
 
-The 37 remaining DATN-294 candidate operations have each been explicitly dispositioned DEFERRED FROM V1 in the canonical contract §4.3. Their permission names remain only as a traceable candidate inventory. They are not grantable, implemented, shown in FE, or tested as V1 capabilities. The three A-04 operations keep their existing runtime semantics. DATN-79 is unchanged.
+- Existing A-04, unchanged: organization.create, platform.health.read, platform.audit.read.
+- PLAT-ORG-02: platform.organizations.organization.read — bounded Organization list and detail metadata.
+- PLAT-USER-01: platform.users.account.read — exact normalized-email lookup for one eligible ACTIVE User.
+- PLAT-MEM-01: platform.memberships.membership.read — bounded membership list within one server-resolved Organization.
+- PLAT-MEM-03: platform.memberships.lifecycle.manage — SUSPEND only. Resume and remove stay deferred.
 
-The earlier reading of D1 as a live 40-code grant bundle is superseded for implementation by this narrower active catalog. The 40 identifiers remain recorded for traceability, but effective permission count is three. There is no full-40 atomic bundle in V1.
+The other 33 candidates remain DEFERRED FROM V1. PLAT-MEM-02 invitation.create stays deferred because DATN-291 currently returns fail-closed 503 until the A7 notification evidence and A8 coordinated cutover are accepted. Resume/remove also remain gated. No gate is bypassed to meet the new goal.
 
-## 2. Four-gate status
+Configuration remains OUT OF V1. No wildcard, hierarchy, break-glass, self-grant, operator-to-operator grant, account-global status change, secret access, project ACL bypass or tenant-content access is introduced.
 
-| Gate | Requirement | Current state and evidence | Decision | Owner | Status | Affected tasks |
-|---|---|---|---|---|---|---|
-| Security / IAM | Identity, issuer/executor, authorization, bootstrap, re-bootstrap, recovery, grant/revoke, concurrency, idempotency, rollback, last-operator and verification | A-04 confirms active user/current exact permission checks and separate platform auth context; no named issuer, executor or bootstrap approval exists in inspected Jira/source | PO-AUTH-01 is a two-person controlled procedure for exactly three A-04 codes; details in §4 | Security/IAM owner must name approvers/executor | EXTERNAL APPROVAL REQUIRED | 295, 300 |
-| Audit | Event coverage/fields, redaction, retention, read/export/denial, integrity, failure semantics | Organization create audit shares a Mongo transaction; schema supports Mixed metadata; no global retention, storage immutability or universal coverage evidence | Required PO-AUTH-01 event fields and fail-closed policy are specified; propose 365 days, encrypted WORM/archive and dual-control deletion; preserve existing A-04 behavior | Security/IAM, Security/Audit, Privacy/Legal | EXTERNAL APPROVAL REQUIRED | 295, 300 |
-| Operation disposition | Every candidate is ACTIVE or DEFERRED | DATN-79 and runtime contain only three operations; the 37 new rows lack complete runtime source and test oracles | Preserve the three A-04 operations; explicitly defer all 37 candidates | KeyT/Thang, under this closure request | READY | 293–300 |
-| DB reality | Verify actual collection/index/validator/assignment/migration state read-only | Only connectionStatus was called; it returned atlasAdmin and readOnly=false. No collection was queried | Keep DB state UNVERIFIED; run the read-only runbook using approved staging/prod credentials | IAM DB owner / Data Platform | EXTERNAL APPROVAL REQUIRED | 295, 300 |
+## 2. Decision rationale
 
-## 3. Decision register
+This is the smallest currently usable set supported by existing source and safe failure behavior:
 
-| ID | Decision | Status | Rationale | Evidence | Impact | Owner | Affected tasks | Exit / rollback |
-|---|---|---|---|---|---|---|---|---|
-| PO-D01 | Preserve three A-04 permission codes and semantics | APPROVED | DATN-79 is the current authorization boundary; V1 must not widen it implicitly. | DATN-79/A-04 and current IAM guard/controller. | Keeps exactly the three existing permissions and routes unchanged. | KeyT / DATN-79 owner | 294–300 | Revisit only through a new approved contract before changing runtime authority. |
-| PO-D02 | Defer all 37 new candidates; effective V1 permission count is three. | APPROVED | Candidate semantics lack complete owner-approved operation and QA oracles; the task requires a final disposition. | Explicit closure request; DATN-79/A-04 and inspected runtime expose only three platform permissions/operations. | Excludes 37 candidates from grants, BE/FE scope and V1 QA; allows 296–300 to start with narrow scope. | KeyT/Thang under this closure request | 293–300 | Any candidate reopens only with a new approved operation contract and QA oracle. |
-| PO-D03 | No hierarchy, wildcard, Break-glass, self-grant, operator-to-operator grant or public grant/revoke API. | APPROVED | These are explicit V1 scope constraints and preserve the existing A-04 boundary. | User task scope; DATN-79/A-04. | Adds no role expansion, public authority endpoint or bypass path. | KeyT/Thang | 293–300 | Any exception requires a separate approved decision before implementation. |
-| PO-D04 | PO-AUTH-01 two-person bootstrap/recovery/revoke; immutable IdP identity, fresh MFA, legacy-row guard and last-operator protection. | PROPOSED | No named issuer/executor or approved bootstrap workflow exists in inspected sources. | Complete procedure in canonical contract §8; no signers found. | No bootstrap tooling or production use until Security/IAM names and signs the controls. | Security/IAM | 295, 300 | Reject before write on any failed precondition; transaction aborts on failure; recover only through the same signed two-person process. |
-| PO-D05 | Assignment rows, operation ID and required audit commit atomically; stale CAS is 409; audit failure rolls back. | DERIVED | Partial authority writes would leave ambiguous operator state; the existing A-04 transaction supplies a precedent. | A-04 transaction/rollback tests and source assignment unique index. | DATN-295 must use one transaction and stable operation ID; QA tests replay, race and rollback. | Security/IAM + DB | 295, 300 | Abort the transaction on any write/audit failure; no compensating partial grant. |
-| PO-D06 | Audit coverage, fields, redaction, access, denial and failure behavior. | DERIVED | Existing schema and A-04 transaction establish a baseline, not global retention or storage integrity. | Current IAM audit schema, Organization-create transaction and fixed A-04 audit projection. | Required PO-AUTH-01 mutation audit is fail-closed; no recursive business-read event or active export; security telemetry stays sanitized. Existing PLAT-ORG-01 behavior remains unchanged. | Security/Audit; IAM for implementation | 295, 300 | Fail closed on required-event failure; preserve current history and reconcile from a consistent recovery point. |
-| PO-D07 | Propose 365-day retention, encrypted WORM/archive/backups and dual-control expiry deletion. | PROPOSED | No approved retention or archive policy was found. | Reviewed repository/Jira/decision sources; no policy evidence. | No retention/storage implementation is authorized until Security/IAM, Audit and Privacy/Legal approve or replace it. | Security/IAM + Security/Audit + Privacy/Legal | 295, 300 | Replace the proposal only with an approved policy; delete only expired records under approved dual control. |
-| PO-D08 | Active V1 has no concealed target class; 403 default and no new 404. | DERIVED | Active A-04 endpoints have no target selector; first-ADMIN unavailability uses a shared safe conflict. | Current route shapes and A-04 behavior; active-scope matrix in canonical contract §7. | BE/FE/QA share a deterministic 401/403/409 oracle; shared DEC-ACCESS-10 remains open for other resources. | KeyT; global resource owner for other classes | 294, 296–300 | A newly activated target resource requires an explicit concealment decision before use. |
-| PO-D09 | Configuration is OUT OF V1. | APPROVED | The earlier domain mention conflicts with the existing configuration deferral. | DEC-ACCESS-09 and the explicit V1 scope decision. | No configuration permission, route, UI or QA capability is active. | KeyT | 293–300 | Reopen only with a new decision and a full secret/configuration boundary contract. |
-| PO-D10 | Deployed DB state is UNVERIFIED; obtain a read-only report before migration. | EXTERNAL APPROVAL REQUIRED | The available probe used a non-read-only development credential and queried no collection state. | `connectionStatus` role evidence; exact verification runbook. | DATN-295 cannot migrate or claim deployment readiness until staging/prod evidence is attached. | IAM DB owner / Data Platform | 295, 300 | Stop on missing access or mismatch; no repair in this task; proceed only after reviewed evidence and approved rollout/rollback. |
-| PO-D11 | Preserve legacy A-04 rows; alter only rows with controlled-procedure provenance. | PROPOSED | Source data has no approved provenance marker and unique index forbids duplicate subject/code/scope rows. | Assignment schema/index source; no live rows were read. | No silent adoption, rewrite, deletion or unrelated permission change; conflict aborts the controlled operation. | Security/IAM + DB | 295, 300 | Abort without mutation on unproven rows; retain legacy state and resolve via a separately approved migration plan. |
-| PO-D12 | PLATFORM_OPERATOR is one conceptual actor with no tiers; its complete active V1 bundle is the exact three A-04 assignments. | APPROVED | The confirmed constraint requires one full Platform Administration V1 actor; the selected active catalog contains exactly three current A-04 permissions. | Explicit task constraint; current A-04 exact-permission guard and assignment model. | Resolve each request by exact current PLATFORM assignment; no role-label expansion or additional candidate permission. | KeyT / IAM | 294–300 | Any tiering or bundle change requires a new approved contract before implementation. |
+1. The existing Organization create operation provisions the first ACTIVE ADMIN atomically.
+2. Organization read and exact ACTIVE User lookup let an operator find a target and select that first ADMIN safely.
+3. Membership read provides bounded state and last-ADMIN context.
+4. Membership SUSPEND is the lifecycle command already implemented with self-action denial, last-eligible-ADMIN protection, idempotency, version CAS and transactional audit.
+5. Invitation, resume and remove are not activated because their existing source readiness gates are still closed. Implementing them by removing those gates would be unsafe.
 
-## 4. Security/IAM bootstrap decision package
+Platform authority authorizes only the exact operation permission on each request. Organization and Membership IDs are selectors; BE must load and verify the resource and its relationship. The operator does not become a tenant ADMIN and receives no Project or content ACL.
 
-PO-AUTH-01 is an internal change-controlled procedure, not a new permission, public API, UI, seed, hidden account or Break-glass route.
+## 3. Active end-to-end contract
 
-1. Recipient is an existing ACTIVE DATN User resolved through configured IdP issuer+subject (iss+sub), never email alone.
-2. Require fresh MFA. A named Security/IAM human issuer approves the exact action and codes; a separate named IAM maintainer executes. Recipient, issuer and executor are different identities.
-3. The only grant set is the three A-04 permissions at PLATFORM scope, all-or-nothing. Existing A-04 login, refresh and per-request authorization remain unchanged.
-4. Preflight checks identity, current user state, exact assignment rows, provenance, indexes, state hash, and last-operator condition.
-5. Never adopt/rewrite a pre-existing A-04 row. Refuse rows without PO-AUTH-01 provenance. Revoke only exact row IDs recorded by its committed grant event.
-6. Commit assignment change, unique operation ID and audit event in one Mongo transaction. Use pre-state CAS; stale operations return 409. Same operation ID/same payload is idempotent; reuse with another payload returns 409.
-7. Never revoke the last ACTIVE user with all three current, unexpired codes. Commit and verify a replacement first.
-8. After all operators are lost, only the same two-person issuer/executor process may re-bootstrap; no bypass.
-9. On timeout, read by operation ID: matching event/state means committed; unchanged state with no event permits retry using the same ID; conflict or unavailable read returns 503 for manual reconciliation.
-10. Verify exact three rows, scope/status/expiry, audit linkage and operator count after commit. Do not report success before verification.
+The full Actor → Action → Resource → Scope → Permission → API → FE action → Audit → Error → QA mapping is maintained in canonical contract section 4.1A. This table summarizes the selected additions.
 
-No issuer/executor names or approval signatures were found; none is invented here.
+| Operation | API | FE action | Audit | Key QA oracle |
+|---|---|---|---|---|
+| PLAT-ORG-02 | GET /api/v1/iam/platform/organizations; GET /api/v1/iam/platform/organizations/:organizationId | Organization directory/detail | Read-only; no new read audit policy | Exact permission, pagination ≤100, allowlisted fields, unknown ID 404 |
+| PLAT-USER-01 | POST /api/v1/iam/platform/users/lookup with `{email}` body and CSRF | Exact User lookup / first ADMIN picker | Do not persist or audit queried email | Exact-match only, ACTIVE User only, minimal response; 404 when no eligible User; invalid email 422 |
+| PLAT-MEM-01 | GET /api/v1/iam/platform/organizations/:organizationId/memberships | Membership list | Read-only; no new read audit policy | Exact permission, Organization relationship, bounded projection |
+| PLAT-MEM-03 | POST /api/v1/iam/platform/organizations/:organizationId/memberships/:membershipId/suspend | Confirm and suspend | Existing ORGANIZATION_MEMBERSHIP_SUSPENDED event, in same transaction | Cross-Organization ID denied, CAS stale 409, self/last ADMIN guard, replay idempotency, injected audit rollback |
+| Existing PLAT-ORG-01 | POST /api/v1/iam/platform/organizations | Create Organization with selected first ADMIN | Existing organization.create event/transaction | Existing response compatibility and audit rollback |
+| Existing PLAT-HEALTH-01 | GET /api/v1/iam/platform/health | IAM process liveness | None | Existing {status: ok} response and exact denial |
+| Existing PLAT-AUDIT-01 | GET /api/v1/iam/platform/audit | Bounded audit view | None; no recursive audit | Existing response shape, 100-row bound, allowlisted fields/actions |
 
-## 5. Audit decision package
+Platform login remains POST /api/v1/auth/platform/login. Session recovery uses GET /api/v1/auth/platform/me and returns the current identity plus current exact permission codes; it cannot grant permissions. FE display checks are advisory; every BE route independently enforces authorization.
 
-- Active mutation PLAT-ORG-01 must persist Organization, first ADMIN membership/role and required audit in one transaction. Any audit failure rolls back and returns no success.
-- PO-AUTH-01 bootstrap/regrant/revoke events require actor, action, target, PLATFORM scope, timestamp, operation/request/change IDs, fixed reason, result, assignment IDs and safe before/after summary.
-- Active PLAT-HEALTH-01 and PLAT-AUDIT-01 reads do not produce business-read events; no recursive audit event. Auth denials go to sanitized security telemetry; telemetry failure never allows access or changes 401/403.
-- Never log credentials, tokens, MFA values, raw IdP assertions, prompts, job payloads, tenant content or unrestricted exceptions.
-- Current schema proves append insertion but not storage immutability. Proposed retention is 365 days from event time, encrypted WORM/archive and backups, delete only after expiry via restricted dual-control worker. Platform operator cannot delete, export or shorten retention.
-- Raw audit access is limited to designated Security/Audit read-only access. Platform API remains the existing fixed projection; export is deferred.
+## 4. Decision register
 
-Security/IAM, Security/Audit and Privacy/Legal must approve retention period, archive/backup/deletion controls, read audience and denial telemetry before production use.
+| ID | Decision | Status | Evidence / effect |
+|---|---|---|---|
+| PO-D01 | Preserve the three A-04 codes and their existing semantics | APPROVED | DATN-79/A-04 and existing runtime |
+| PO-D02 | Defer all 37 candidates; only three active | SUPERSEDED by PO-D13 | Original explicit closure request, superseded by Thang's later explicit scope revision |
+| PO-D03 | No wildcard, hierarchy, break-glass, public grant endpoint, self-grant or operator-to-operator grant | APPROVED | Current task constraints |
+| PO-D04 | PO-AUTH-01 remains two-person, internal, identity/MFA checked, provenance/CAS/last-operator guarded | EXTERNAL APPROVAL REQUIRED; runtime provider intentionally fails closed with 503 | No signed Security/IAM procedure or named issuer/executor is present |
+| PO-D05 | Permission assignment, operation ledger and required audit are atomic; stale CAS is 409 | IMPLEMENTED LOCALLY; production provisioning gated | Mongo integration tests cover transaction, snapshot CAS and audit rollback |
+| PO-D06 | Preserve audit event shape; add only the membership suspension action to the fixed Platform allowlist | APPROVED product scope; Audit review pending | Existing audit projection and membership audit writer |
+| PO-D07 | Retention/archive/deletion policy remains external | EXTERNAL APPROVAL REQUIRED | No signed retention/enforcement policy found |
+| PO-D08 | Exact resource lookup; 403 for missing permission; 404 for unknown Organization or mismatched Membership selector | DERIVED for this Platform API | No caller-supplied scope or resource relationship is trusted |
+| PO-D09 | Configuration remains OUT OF V1 | APPROVED | Explicit task requirement |
+| PO-D10 | Deployed DB state remains UNVERIFIED | EXTERNAL APPROVAL REQUIRED | No approved read-only staging/production report |
+| PO-D11 | Never silently adopt or mutate standalone legacy assignments | APPROVED | PO-AUTH-01 provenance guard |
+| PO-D12 | One conceptual actor; prior full bundle had only A-04 permissions | PARTIALLY SUPERSEDED | One actor/no hierarchy remains; active bundle is now seven exact permissions |
+| PO-D13 | Activate PLAT-ORG-02, PLAT-USER-01, PLAT-MEM-01 and PLAT-MEM-03 SUSPEND only; retain 33 deferred candidates | APPROVED — product scope | Thang's explicit 2026-10-16 instruction; no external sign-off is implied |
 
-## 6. DB reality
+## 5. Authority and database model
 
-DB REALITY = UNVERIFIED. Only connectionStatus was run with the BE .env credential. It reported Atlas host kimthang.mh3rrz2.mongodb.net and atlasAdmin/readOnly=false. The process config says development, which does not prove staging or production. No collection, validator, index, assignment, audit or migration history was read. No DB mutation was performed.
+New PO-AUTH-01 provisioning uses the seven exact V1 permissions. Existing three-code A-04 assignments are not silently upgraded. An explicit V1 expansion must identify a complete, provenance-matched legacy bundle, use a distinct issuer and executor, compare the full pre-state hash, preserve assignment IDs/history, add only the four selected permissions and atomically write an operation record and audit. Standalone/unprovenanced rows are refused unchanged.
 
-The [read-only DB verification runbook](../platform-operator-v1-db-verification-runbook.md) specifies role proof, actual collection options/indexes, redacted aggregate counts, duplicate/malformed checks, migration evidence and pass/fail criteria. Use a separate read-only credential; do not reuse the atlasAdmin credential.
+The source model change expands local Mongoose permission validation and the operation ledger's accepted exact bundle shapes. Assignment document fields and existing unique indexes do not change. A separate additive, report-first migration adds the non-unique `platform_authority_snapshot_provenance` index for provenance-aware snapshot inspection; it does not backfill or modify assignment records and has not been applied to any environment. Actual database validators/indexes are UNVERIFIED; read-only environment evidence is required before rollout. Do not edit a historical migration or run a DB write to discover state.
 
-The source migration creates the assignment collection/indexes only. It does not seed or mutate assignment documents and does not establish deployed state. Do not edit it. Any later DB change must be additive and include reviewed dry-run, rollout and rollback.
+## 6. Audit and security boundary
 
-## 7. Child-task readiness
+- PLAT-ORG-01 audit and the first ADMIN transaction remain unchanged.
+- PLAT-MEM-03 uses the existing membership suspend audit action and its existing transactional write boundary.
+- DATN-297 preserves audit response fields, sort and 100-row bound while adding only the new suspension action to its fixed allowlist.
+- Reads do not introduce a new read-logging policy in this scope; queried email is never persisted in logs/audit.
+- No secret, tenant content, prompt, Project content, job payload, credential, token, MFA value or raw exception reaches the response.
+- Existing self-action and last eligible Organization ADMIN safeguards are retained.
+- Membership IDs must match the Organization ID loaded from the route; no cross-Organization mutation.
 
-| Task | Readiness | Scope |
-|---|---|---|
-| DATN-295 | EXTERNAL APPROVAL REQUIRED | Runbook evidence and Security/IAM/Audit approvals before implementing the controlled bootstrap/idempotency persistence. |
-| DATN-296 | READY | Preserve PLAT-ORG-01; no new admin route. Bootstrap tooling is owned by DATN-295. |
-| DATN-297 | READY | Preserve PLAT-HEALTH-01; no new platform operations. |
-| DATN-298 | READY | No administration UI in V1; deferred actions stay hidden. |
-| DATN-299 | READY | No operations UI or Configuration controls. |
-| DATN-300 | READY | Exact oracle: A-04 behavior, auth/errors, visibility/secret boundary, audit rollback, plus bootstrap replay/CAS/last-operator cases once tool exists. |
+## 7. Remaining external gates
 
-READY means implementation/test scope is deterministic, not that the issue is Done or code has shipped. Security/IAM, Audit and DB approvals gate DATN-295 bootstrap/ledger work and the conditional DATN-300 bootstrap tests; they do not widen the unchanged A-04 scope of DATN-296–299. Do not transition child Jira statuses in this decision record.
+| Gate | Status | Required evidence | Blocks |
+|---|---|---|---|
+| Security/IAM PO-AUTH-01 | Pending | Named separate issuer/executor, identity/MFA proof, explicit V1 expansion and legacy handling approval | Production permission provisioning |
+| Audit / Privacy / Legal | Pending | Review of User identity allowlist, audit projection extension, retention/access controls | Production rollout |
+| DB environment state | UNVERIFIED | Read-only redacted report for each target environment; verify indexes/validators/migration history | Production rollout |
+| DATN-291 A7/A8 invitation cutover | Pending in existing task | Accepted notification readiness and coordinated migration/cutover | Invite, resume and remove remain deferred |
 
-## 8. Remaining external approvals
+These gates do not block implementation or local regression tests. No approval signature or production state is inferred from a Jira Done status.
 
-| Exact approval | Proposed answer | Evidence | Owner | Affected tasks | Effect |
-|---|---|---|---|---|---|
-| Name issuer and separate executor; approve identity/MFA proof, two-person flow, exact three codes, no self/operator grant, legacy guard, last-operator and all-lost recovery | Approve PO-AUTH-01 in §4 and attach named roles/people and the controlled change workflow | Signed runbook and identity-verification process | Security/IAM | 295, 300 | Enables internal bootstrap tooling only; no public endpoint |
-| Approve legacy assignment conflict/regrant behavior and operation-ID ledger | Reject rows without controlled provenance; reactivate only exact matching rows | Signed lifecycle decision; additive migration/rollback after DB report | Security/IAM + DB | 295, 300 | Enables safe persistence design |
-| Approve 365-day retention, WORM/archive/backup/deletion, raw-read audience and denial telemetry or supply exact replacement | Approve §5 or return exact values/controls | Signed retention/enforcement policy and storage evidence | Security/IAM + Security/Audit + Privacy/Legal | 295, 300 | Enables bootstrap audit hardening/retention implementation; preserves existing A-04 behavior |
-| Provide staging/prod read-only inspection for continuum_iam and continuum_audit | Grant read only, no atlasAdmin/write/DDL | Redacted report with environment, roles, indexes, validators, aggregate counts, migration evidence and hash | IAM DB owner / Data Platform | 295, 300 | Closes DB evidence gate; does not authorize migration |
+## 8. Jira scope synchronization
 
-There is no remaining operation-owner disposition or active-scope DEC-ACCESS-10 decision. The 37 candidates are deferred; future activation needs a new decision.
+Update descriptions and acceptance criteria for DATN-295 through DATN-300 to match PO-D13 and the implementation. Preserve current Jira workflow statuses and issue links; they were Done under the old handoff scope and are not changed by this record. The new description must make the superseding scope visible so Done does not imply that the expanded flow shipped.
 
-## 9. Jira synchronization rules
+## 9. Historical record
 
-Synchronize DATN-293–301 descriptions/comments/acceptance/readiness without changing workflow statuses or issue links. Per KeyT's explicit choice, preserve the existing `DATN-301 blocks` links to DATN-295–300 and the DATN-294 → DATN-301 contract prerequisite as historical traceability. DATN-296–300 are READY because their scope is deterministic; DATN-301 is already Done, so retained links do not represent an unresolved policy decision. DATN-295 remains subject to external Security/IAM, Audit and deployed DB evidence. Jira DATN-301 being Done is not evidence of Security/IAM or Audit approval. The canonical contract and this decision record supersede old 40-code bundle and “37 awaiting disposition” wording.
+The former PO-D02 decision (3 A-04 active, 37 deferred, empty Administration/Operations UI) remains useful as a historical record of the prior closure. It is superseded for current implementation by PO-D13; the old decision must not be applied as a reason to omit the new V1 scope.
+
+## References
+
+- Canonical contract: research-docs/Platform/platform-operator-v1-contract.md
+- Existing membership readiness and lifecycle: DATN_BE/tasks/datn-291-organization-membership-mutations-plan.md
+- DB verification: research-docs/Platform/platform-operator-v1-db-verification-runbook.md
+- Current auth baseline: DATN-79 / A-04 and the inspected DATN_BE source.
