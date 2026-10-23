@@ -296,6 +296,17 @@ JSON/oversize preserves transport semantics rather than forcing422.
 |Quota |429 ORGANIZATION_INVITATION_RATE_LIMITED +Retry-After |
 |Required write failure |500 IAM_MEMBERSHIP_MUTATION_FAILED |
 
+Read-response clarification (2026-10-14): the requester authorized corrections
+following [PR28 review](https://github.com/DATN-SPRING2027/DATN-BE/pull/28#issuecomment-6160371586).
+For the Membership list/detail GETs, 500 describes an unexpected internal read
+failure, without mutation/audit/outbox rollback semantics. Dependency connection,
+server-selection, network or operation/query-deadline failures use the existing
+503 `IAM_MEMBERSHIP_DEPENDENCY_UNAVAILABLE`; unexpected application/query defects
+remain 500. Stored MemberUser.email must satisfy the wire email format before a
+successful DTO is returned; invalid projected metadata fails closed with 503.
+Technical review/merge of this clarification remains pending; A7/cutover gates
+and mutation failure semantics are unchanged.
+
 Bounded parsing→authentication/CSRF→current scope/permission or recipient binding→
 strict validation→scoped selector→key replay/conflict→new-attempt preconditions.
 New ADMIN attempt: MV for Membership commands; both MV and IV for V3 invitation
