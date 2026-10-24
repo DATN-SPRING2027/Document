@@ -12,7 +12,7 @@
 
 The shipped Work Note slice has three separate workflows: Task Notes, Project Documents, and Periodic Work Reports. Task Notes require an existing Task and save immediately without Leader review. Project Documents and Work Reports have draft/review states and become eligible integration sources only after approval. The full implementation contract and current boundaries are in [Work Note workflows](04_WORK_NOTE_WORKFLOWS.md).
 
-The broader unlinked manual Work Note, evidence attachment, reminder center, and task-prefill ideas below describe future product direction; they are not capabilities of this delivered slice.
+The broader unlinked manual Work Note, standalone evidence-attachment flow, and task-prefill ideas below describe future product direction. Periodic Work Report due/overdue events are in this delivered slice; notification delivery remains owned by the separate notification system.
 
 ## 1. Capture while work is happening
 
