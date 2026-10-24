@@ -3,7 +3,7 @@
 - **Status:** Implemented (`DATN_BE` PR #93, `DATN_FE` PR #79)
 - **Domain Scope:** Organization, Project, Work Task, Work Note, Chat Mention
 - **Database:** MongoDB (`continuum_notification.notifications`)
-- **Realtime Transport:** Socket.IO (`/ws/notifications`) + Redis Pub/Sub (`notification.realtime.v1`) + Polling Fallback (`30s`)
+- **Realtime Transport:** Raw WebSocket via Chat (`/internal/chat/ws`, ticketed with `/chat/ws-ticket`) + Redis Pub/Sub (`<BULLMQ_PREFIX>:notification.realtime.v1`) + 30-second polling fallback
 - **OpenAPI Spec:** [`contracts/notification-v1.openapi.json`](./contracts/notification-v1.openapi.json)
 
 ---
@@ -261,12 +261,11 @@ Kiểm tra sự tồn tại của tài nguyên đích và quyền truy cập hi�
 
 ## 6. Realtime WebSocket & Kiến trúc Frontend
 
-### 6.1. Realtime Gateway (`/ws/notifications`)
-- Khi người dùng đăng nhập, FE kết nối Socket.IO tới namespace `/ws/notifications` với JWT token, tự động tham gia room `user:<userId>`.
-- Khi thông báo mới được tạo hoặc trạng thái đọc thay đổi, BE phát sự kiện qua Redis Pub/Sub (`notification.realtime.v1`) và đẩy xuống client qua 2 event:
-  - `notification:new`: `{ notification, unreadCount }`
-  - `notification:unread_count`: `{ unreadCount }`
-- Trong trường hợp WebSocket bị ngắt kết nối, FE tự động duy trì cơ chế polling định kỳ mỗi `30s` để cập nhật `unreadCount`.
+### 6.1. Realtime Gateway (Chat WebSocket)
+- FE yêu cầu vé dùng một lần từ `/api/backend/chat/ws-ticket`, sau đó kết nối raw WebSocket tới `/internal/chat/ws` bằng subprotocol `continuum-chat.v1` và `ticket.<ticket>`. FE không gửi access token dài hạn trong URL và runtime không dùng Socket.IO namespace `/ws/notifications`.
+- Notification Center ghi notification bền vững trước, sau đó IAM phát payload version 1 qua Redis Pub/Sub trên channel `<BULLMQ_PREFIX>:notification.realtime.v1`. Chat process subscribe channel này và chỉ đẩy event tới các socket đang hoạt động của recipient trong organization tương ứng.
+- Payload realtime hiện hỗ trợ `notification.created`, `notification.read`, `notification.read_all`; transport WebSocket gửi `{ event, data }`. Redis Pub/Sub chỉ là đường báo hiệu realtime, có bảo đảm at-most-once và không replay message bị lỡ. Bản ghi Notification trong MongoDB vẫn là nguồn sự thật.
+- FE dùng request unread count khi dropdown đóng; khi dropdown mở, list response cung cấp unread count để tránh gọi song song. Polling 30 giây là fallback/source refresh khi realtime bị ngắt hoặc event bị lỡ.
 
 ### 6.2. Các Thành phần Giao diện (`DATN_FE`)
 - **`NotificationDropdown`** (`src/components/header/NotificationDropdown.tsx`):
