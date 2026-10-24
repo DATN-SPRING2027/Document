@@ -35,17 +35,20 @@ Mỗi dịch vụ tuân thủ nguyên tắc **Đơn trách nhiệm (Single Respo
 ---
 
 ### 2.2. `svc_capture` (Daily Knowledge Capture & Worklogs)
-* **Thư mục:** `backend/src/modules/work-notes/`
+* **Vị trí source hiện tại:** `DATN_BE/src/services/capture/` và gateway `DATN_BE/src/gateway/`.
 * **Trách nhiệm:**
-  - Thu thập ghi chú công việc hàng ngày của dev: What/How/Why, blockers, next steps, evidence.
-  - Gọi Continuum Task API để người dùng chọn tối đa một task trong scope làm ngữ cảnh cho Work Note; Work Note vẫn có thể không liên kết task.
-  - **Quy tắc bất biến:** Ghi chú chỉ trở thành nguồn tri thức hợp lệ khi chính tác giả xác nhận. Theo đề xuất Use Case, draft không được index SAG; ghi chú phải `CONFIRMED` và qua source ACL/eligibility gate.
-  - Lưu trữ lịch sử chỉnh sửa bất biến vào `work_note_versions`.
-* **Collections sở hữu:** `work_notes`, `work_note_versions`, `knowledge_requirements`.
+  - Lưu Task Note có cấu trúc `title`, `accomplishments`, `approach`, `reason` gắn với một Task tồn tại; Task Note được xác nhận khi tạo và không cần Leader duyệt.
+  - Quản lý Project Document với version bất biến và trạng thái `DRAFT`, `PENDING_REVIEW`, `APPROVED`, `CHANGES_REQUESTED`, `REJECTED`, `ARCHIVED`.
+  - Tạo kỳ Periodic Work Report cho Project Member đang active; Leader cấu hình tần suất `DAILY`, `EVERY_3_DAYS`, hoặc `WEEKLY`.
+  - Xác thực quyền từ IAM API và Task API theo phiên người dùng, Organization và Project scope. Không dùng FE permission làm hàng rào bảo mật.
+  - Chỉ phát integration event cho nguồn đã được duyệt; Task Note không tự động trở thành tri thức chính thức.
+* **Collections sở hữu:** `work_notes`, `project_documents`, `project_document_versions`, `work_reports`, `work_report_settings`; integration event dùng Capture outbox hiện có.
 * **API Endpoints chính:**
-  - Hợp đồng prefill phải lấy task qua API nội bộ và không sao chép task thành nguồn độc lập trong capture.
-  - `POST /api/v1/capture/daily`: Tạo bản nháp ghi chú ngày.
-  - `PUT /api/v1/capture/daily/:id/confirm`: Tác giả xác nhận nội dung.
+  - `GET|POST /api/v1/capture/projects/:projectId/tasks/:taskId/notes` và `GET .../notes/:noteId`.
+  - `GET|POST /api/v1/capture/projects/:projectId/documents`, `GET|PATCH .../documents/:documentId`, cùng `submit`, `approve`, `request-changes`, `reject`, `archive`.
+  - `GET|PATCH /api/v1/capture/projects/:projectId/work-report-settings`.
+  - `GET|POST /api/v1/capture/projects/:projectId/work-reports`, `GET|PATCH .../work-reports/:reportId`, cùng `submit`, `approve`, `request-changes`, `reject`.
+  - Hợp đồng OpenAPI: `DATN_BE/docs/openapi/work-note-v1.openapi.yaml`.
 
 ---
 

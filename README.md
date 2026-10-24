@@ -15,6 +15,7 @@ Repository này lưu đặc tả, phạm vi MVP, mô hình actor/role, nghiên c
 - [DATN-89 — Team Foundation evidence và decision gaps](research-docs/Workspace/09-team-management-foundation-decision-gap-report.md)
 - [DATN-89 — mapping sáu checkpoints, acceptance và validation](research-docs/Workspace/10-team-foundation-review-validation.md)
 - [Quy trình quản lý task nội bộ và ghi chú công việc](research-docs/03_DAILY_WORKFLOW_AND_JIRA_SYNC.md)
+- [Work Note: Task Notes, Project Documents và Periodic Work Reports](research-docs/04_WORK_NOTE_WORKFLOWS.md)
 - [Đặc tả dự án](research-docs/Continuum_AI_Graduation_Project_Specification_v1.0.docx.md)
 - [Kiến trúc hệ thống hoàn chỉnh (System Architecture)](architecture/README.md)
 - [Sơ đồ kiến trúc trực quan tương tác](diagram/architecture_diagram.html)

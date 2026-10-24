@@ -8,6 +8,12 @@
 - Authority: [MVP scope](01_MVP_SCOPE.md), [actors and permissions](02_ACTORS_ROLES_AND_PERMISSIONS.md).
 - Filename note: This path is retained so existing references keep working; Jira task-source sync is not part of the current MVP.
 
+### Current Work Note implementation (2026-10-24)
+
+The shipped Work Note slice has three separate workflows: Task Notes, Project Documents, and Periodic Work Reports. Task Notes require an existing Task and save immediately without Leader review. Project Documents and Work Reports have draft/review states and become eligible integration sources only after approval. The full implementation contract and current boundaries are in [Work Note workflows](04_WORK_NOTE_WORKFLOWS.md).
+
+The broader unlinked manual Work Note, evidence attachment, reminder center, and task-prefill ideas below describe future product direction; they are not capabilities of this delivered slice.
+
 ## 1. Capture while work is happening
 
 Every member, including Team Leaders, records lightweight knowledge during normal work. Manual capture remains available. A member may optionally link a Work Note to an internal Continuum task; the task provides work context but is not a substitute for what the person learned.
@@ -21,7 +27,7 @@ Every member, including Team Leaders, records lightweight knowledge during norma
 | Blocker/risk, next step, person to ask | Human | Make unfinished work actionable. |
 | Evidence (PR, commit, file, document) | Link through an authorized source or upload | Support verification and citation. |
 
-Work Notes remain available without a task link. A reminder follows up on missing required notes/knowledge and can be snoozed or explained; it is not a performance or time-tracking score. A handover summary can use confirmed Work Notes and internal task context, but a human reviews it before sharing.
+General unlinked Work Notes and a reminder center remain future product work. The delivered Task Note is scoped to an existing Task. It is not a performance or time-tracking score. A handover summary can use approved knowledge and authorized internal task context, but a human reviews it before sharing.
 
 ## 2. Internal task-management direction
 
@@ -54,9 +60,10 @@ The core successor experience is an evidence-grounded chat over authorized, veri
 ## 5. Acceptance examples
 
 - A member creates or updates an internal task within their permitted project/team scope and later finds it by basic search/filter.
-- A linked internal task can prefill task context in a Work Note; the member supplies and confirms what/how/why and evidence. A Work Note links to zero or one task; a task may have many Work Notes.
-- A task-linked Work Note stores only an optional logical `taskId` reference; it does not copy the task into SAG or replace canonical task data.
-- A member can submit an unlinked manual Work Note when no task exists or linking is not useful.
+- A member creates a Task Note for an existing task in the same Project; the note stores structured accomplishments, approach and reason.
+- A Task Note stores a scoped `taskId` reference, reads task scope through the Task API, and is not automatically indexed as official knowledge.
+- Project Documents and Periodic Work Reports persist per Project; only approved records emit the `KNOWLEDGE_SOURCE_APPROVED` integration event.
+- Work Report frequency is restricted to `DAILY`, `EVERY_3_DAYS`, and `WEEKLY`; prior periods remain unchanged when the schedule changes.
 - A task status transition records work progress but does not by itself create verified Knowledge.
 - A handover shows authorized open tasks for the predecessor; a Team Leader reviews and assigns selected tasks/context to a scoped successor.
 - SAG indexing accepts only author-confirmed Work Notes/evidence authorized for the relevant scope; task title, description, status and assignee are not indexed as independent sources. Current ACL is checked before retrieval/context construction; revoked sources are blocked immediately and de-indexed asynchronously.
