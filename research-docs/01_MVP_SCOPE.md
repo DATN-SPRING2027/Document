@@ -60,7 +60,7 @@ All team members, not only leaders, contribute knowledge during normal project o
 - Current status, unfinished work, risks, and open questions.
 - Knowledge source, evidence, owner, reviewer, version, validity, and review date.
 - Handover notes and successor questions.
-- Task-linked daily notes: what was done, how/why, blockers, next steps, and evidence. Internal Continuum task data can prefill task context, but the person confirms the note.
+- Task Notes: what was done, how/why, blockers, next steps, and evidence for one internal Task. Every Task Note requires `taskId`; the Task can have zero or more Task Notes.
 
 The system may extract candidates from project artifacts, but AI output remains `PROPOSED` until an authorized human verifies it.
 
@@ -115,13 +115,13 @@ Successor asks evidence-grounded questions and reports gaps
 ### 6.2. Continuous knowledge capture
 
 - Continuum's internal Task Service is the canonical source for DATN task lifecycle. It has an independent process/deployment built from the existing DATN_BE source and owns logical MongoDB database `continuum_task`; Jira is not a task source or MVP task-sync connector. See [ADR-009](../research-tech/ADR-009-internal-task-source-and-mongodb.md) and [ADR-010](../research-tech/ADR-010-task-service-in-existing-repositories.md).
-- Task MVP proposal: create/list/detail/edit, assign by Team Leader, fixed status transition, basic search/filter, limited history, optional Work Note link, and open-task handover. A task belongs to one project and at most one team; Kanban is P1. Field/status/permission details remain proposed, pending user review in [Task-management Use Cases](Internal-Work-Management/12-continuum-task-management-use-cases.md).
-- Manual structured knowledge entry and short daily/task notes remain available. A Work Note may optionally reference an internal task by `taskId`; task metadata can prefill context, but the member confirms the note and supplies what/how/why, blockers, next steps and evidence.
+- Task MVP proposal: create/list/detail/edit, assign by Team Leader, fixed status transition, basic search/filter, limited history, Task Note integration (every Task Note has a required `taskId`), and open-task handover. A task belongs to one project and at most one team; Kanban is P1. Field/status/permission details remain proposed, pending user review in [Task-management Use Cases](Internal-Work-Management/12-continuum-task-management-use-cases.md).
+- **Product decision (2026-10-24): Work Note uses exactly three types.** A **Task Note** is bound to one Task and records task-specific notes, approaches, or reasons (`taskId` is required). A **Project Document** holds project-level material such as the MVP, database design, RSR, specifications, and architecture documentation; it does not require a Task and follows Leader review/approval. A **Periodic Work Report** records a member's project work for a configured period; the Leader may choose daily, every 3 days, or weekly cadence (maximum 7 days), and each report follows Leader review/approval. There is no generic or unlinked Project Work Note type.
 - File upload (PDF, DOCX, Markdown, TXT, image) and source management; Cloudflare R2 stores originals, MongoDB stores metadata.
 - Required knowledge templates by team, module, or process.
 - AI extraction of Proposed Knowledge from authorized evidence.
-- Only author-confirmed Work Notes and evidence allowed by source policy/ACL may be submitted to SAG for retrieval/indexing. Task records and fields (including title, description, status and assignee) remain in MongoDB and are not indexed as an independent SAG source.
-- Reminders for missing/overdue work notes and required knowledge; no employee scoring.
+- Only eligible Task Notes and Leader-approved Project Documents and Periodic Work Reports, subject to source policy and ACL, may be submitted to SAG for retrieval/indexing. Task records and fields (including title, description, status and assignee) remain in MongoDB and are not indexed as an independent SAG source.
+- Reminders for due/overdue Periodic Work Reports and required knowledge; no employee scoring. The first eligible obligation is the cadence period containing or following the membership start; periods that ended before the member joined are skipped.
 - Audit trail for contributions and changes.
 
 ### 6.3. Knowledge lifecycle
@@ -195,4 +195,4 @@ The MVP is successful when it demonstrates:
 
 ## 10. Delivery boundary: 10 weeks
 
-The demonstrable vertical slice is: a `PLATFORM_OPERATOR` provisions the Organization and first Admin; the Admin manages Organization users, membership and scoped assignments; any authenticated active Organization member can create a private Project and becomes its initial Project `TEAM_LEADER`; assigned Team Leaders manage their Project/Team scope; members manage internal tasks and add manual or task-linked Work Notes/documents; files are processed/indexed; AI proposes knowledge for human review; and a successor uses a scoped handover package and cited chat assistant with permission checks. Dataset-based evaluation is required. Do not treat every possible dashboard, connector, interview, or enterprise workflow as mandatory in this period. See [Project MVP contract V1](Workspace/13-project-mvp-contract-v1.md) and [Daily work capture and internal task management](03_DAILY_WORKFLOW_AND_JIRA_SYNC.md).
+The demonstrable vertical slice is: a `PLATFORM_OPERATOR` provisions the Organization and first Admin; the Admin manages Organization users, membership and scoped assignments; any authenticated active Organization member can create a private Project and becomes its initial Project `TEAM_LEADER`; assigned Team Leaders manage their Project/Team scope; members manage internal tasks, add Task Notes to Tasks, submit Project Documents, and complete Periodic Work Reports; files are processed/indexed; AI proposes knowledge for human review; and a successor uses a scoped handover package and cited chat assistant with permission checks. Dataset-based evaluation is required. Do not treat every possible dashboard, connector, interview, or enterprise workflow as mandatory in this period. See [Project MVP contract V1](Workspace/13-project-mvp-contract-v1.md) and [Daily work capture and internal task management](03_DAILY_WORKFLOW_AND_JIRA_SYNC.md).

@@ -40,8 +40,11 @@ Mọi thông báo tuân thủ nguyên tắc:
 | 9 | `TASK_ASSIGNED` | `TASK` | `TASK` | Giao việc (`assigneeIds`) khi tạo mới hoặc cập nhật Task | Các Assignee mới được thêm | `/projects/:projectId?taskId=:taskId` |
 | 10 | `TASK_DEADLINE_APPROACHING` | `TASK` | `TASK` | Cron/Scheduler phát hiện Task chưa hoàn thành có `dueDate` trong vòng 24 giờ tới | Các Assignee hiện tại của Task | `/projects/:projectId?taskId=:taskId` |
 | 11 | `TASK_DEADLINE_OVERDUE` | `TASK` | `TASK` | Cron/Scheduler phát hiện Task chưa hoàn thành đã quá hạn (`dueDate < now`) | Các Assignee hiện tại của Task | `/projects/:projectId?taskId=:taskId` |
-| 12 | `WORK_NOTE_MENTION` | `WORK_NOTE` | `WORK_NOTE` | Nhắc tên (`@username` / `@email` / `mentionUserIds`) trong Work Note | Các User được nhắc tên (có quyền truy cập tổ chức/dự án chứa Note) | `/work-notes?noteId=:noteId` |
+| 12 | `WORK_NOTE_MENTION` | `WORK_NOTE` | `WORK_NOTE` | Nhắc tên (`@username` / `@email` / `mentionUserIds`) trong Task Note (Task Note luôn có `taskId`) | Các User được nhắc tên và còn quyền truy cập Project/Task chứa Note | `/projects/:projectId/work-notes?noteId=:noteId` |
+
 | 13 | `CHAT_MENTION` | `CHAT` | `CHAT` | Nhắc tên (`@username` / `@email` / `mentions`) trong tin nhắn hội thoại | Các thành viên `ACTIVE` của cuộc trò chuyện được nhắc tên | `/chat?conversationId=:conversationId` |
+
+`WORK_NOTE` in the notification contract currently identifies a Task Note. It does not introduce a fourth generic Work Note type; Project Documents and Periodic Work Reports have their own review workflows and are not valid `WORK_NOTE` notification targets.
 
 ---
 

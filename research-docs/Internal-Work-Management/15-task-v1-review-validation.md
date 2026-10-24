@@ -44,7 +44,7 @@ như thể policy đã tồn tại. AT-01–09 trong working contract vẫn gi�
 | TV-07 | Creator và assignee là hai User khác nhau | Field edit matrix và current-membership guards cần accepted answer | 107/109, Q3/Q5 |
 | TV-08 | Team Leader có scope ở sibling Team hoặc Project | Chốt đúng assignment representation/ceiling; role name không cấp quyền toàn Project | 109, Q2/Q5 |
 | TV-09 | Suspend/remove/ProjectMembership INACTIVE khi Task đang assign | Deny effective access theo baseline; transfer/unassign/retained data cần Task decision riêng | 107/109, Q2/Q5/Q7 |
-| TV-10 | Work Note không taskId hoặc link Task ngoài scope | Giữ optional link B5; cardinality/reference/null/error details cần chốt | 107/110, Q2/Q6, AT-06 |
+| TV-10 | Task Note thiếu `taskId` hoặc link Task ngoài Project; Project Document/Periodic Work Report bị gắn Task | Task Note bắt buộc gắn đúng một Task trong Project; Project Document và Periodic Work Report là tài nguyên cấp Project, không gắn Task. Không duy trì generic Work Note không task. | Work Note taxonomy decision, 2026-10-24 |
 | TV-11 | DONE/CANCELLED Task được chọn vào Handover | Eligible state/source-projection policy cần Q4; không tự bật proposal | 105/108, Q1/Q4, AT-04 |
 | TV-12 | Tất cả 25 from/to pairs, gồm same-state | Mỗi enabled/denied/no-op cell có decision; không edge ngầm định | 108, Q4/Q5/Q7, AT-07 |
 | TV-13 | Cancel/reopen không reason hoặc actor không eligible | Required reason/actor/edge và error cần accepted answer | 108/109/110, Q4/Q5/Q6 |
