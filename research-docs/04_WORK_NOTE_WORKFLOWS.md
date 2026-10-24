@@ -2,7 +2,7 @@
 
 ## Status and boundaries
 
-Implementation is split across `DATN_BE`, `DATN_FE-main`, and this documentation repository. The BE implementation uses the Capture service and Gateway; the FE calls the project-scoped API through the application API client. MongoDB stores operational content in the Capture service database. This document describes the delivered scope as of 2026-10-24.
+Implementation is split across `DATN_BE`, `DATN_FE`, and this documentation repository. The BE implementation uses the Capture service and Gateway; the FE calls the project-scoped API through the application API client. MongoDB stores operational content in the Capture service database. This document describes the delivered scope as of 2026-10-24.
 
 The three records have separate workflows and authorization rules. Project Documents support PDF and DOCX files. Periodic Work Reports produce due/overdue integration events. The existing Notification Center owns notification delivery; this Work Note package does not add a separate center or a downstream SAG consumer.
 
@@ -16,7 +16,7 @@ The three records have separate workflows and authorization rules. Project Docum
 
 ## Project Document
 
-- Scope: the Project, with optional Task association. Document types include MVP, database design, RSR, architecture, API specification, research, requirement, design, technical specification, and other.
+- Scope: the Project. Project Documents are project-level records and do not reference a Task. Document types include MVP, database design, RSR, architecture, API specification, research, requirement, design, technical specification, and other.
 - Lifecycle: `DRAFT` → `PENDING_REVIEW` → `APPROVED`, `CHANGES_REQUESTED`, or `REJECTED`; approved documents may be archived. Editing an approved or rejected document creates a new version while retaining prior content and review history.
 - Permissions: members create/edit their documents and submit them. A project role with review/configuration authority reviews documents. The BE checks that authority; FE permissions are only presentation hints.
 - Storage: text, version metadata, and file metadata live in MongoDB. PDF/DOCX originals are stored in R2 in production; a private local storage adapter is available in non-production. Uploads are limited to 20 MB and validated by type and file signature. Each version retains its file reference and download metadata.
@@ -35,10 +35,10 @@ The three records have separate workflows and authorization rules. Project Docum
 
 ## Authorization and event integration
 
-- BE resolves the authenticated session, Organization context, Project membership/role, and Task scope from the owning IAM and Task APIs. It does not trust a caller-supplied permission flag or access their databases directly.
+- For user-initiated requests, BE resolves the authenticated session, Organization context, Project membership/role, and Task scope from the owning IAM and Task APIs and does not trust a caller-supplied permission flag. For background report scheduling without a user session, the scheduled job uses IAM's read-only `ProjectReportRosterService` adapter.
 - Project, document, report, and task-note identifiers are always queried with their Organization/Project scope to prevent cross-project IDOR.
 - Document and report state transitions and outbox events are persisted together; the shared audit service records the corresponding actions. Approved documents and reports emit `KNOWLEDGE_SOURCE_APPROVED` with source type, source id, Project id, version, and approval time. Replacing an approved version and archiving a document emit `KNOWLEDGE_SOURCE_REPLACED` and `KNOWLEDGE_SOURCE_REVOKED`. Draft, pending, changes-requested, and rejected content is not emitted as approved knowledge.
-- Review and schedule events include `DOCUMENT_APPROVED`, `DOCUMENT_CHANGES_REQUESTED`, `DOCUMENT_REJECTED`, `WORK_REPORT_APPROVED`, `WORK_REPORT_CHANGES_REQUESTED`, `WORK_REPORT_REJECTED`, `WORK_REPORT_DUE`, `WORK_REPORT_OVERDUE`, and `REPORT_FREQUENCY_CHANGED`.
+- Review and schedule events include `DOCUMENT_APPROVED`, `DOCUMENT_CHANGES_REQUESTED`, `DOCUMENT_REJECTED`, `WORK_REPORT_APPROVED`, `WORK_REPORT_CHANGES_REQUESTED`, `WORK_REPORT_REJECTED`, `WORK_REPORT_DUE`, `WORK_REPORT_OVERDUE`, and `WORK_REPORT_FREQUENCY_CHANGED`.
 - These are integration events; the existing Notification Center owns delivery. A downstream knowledge-index consumer is not present in this deployment, so actual removal of archived/replaced sources is not verified here. No embedding, vector store, or retrieval pipeline is built in this Work Note package.
 
 ## Persistence and operational notes
