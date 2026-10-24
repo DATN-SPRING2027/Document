@@ -16,28 +16,34 @@ The broader unlinked manual Work Note, evidence attachment, reminder center, and
 
 ## 1. Capture while work is happening
 
-Every member, including Team Leaders, records lightweight knowledge during normal work. Manual capture remains available. A member may optionally link a Work Note to an internal Continuum task; the task provides work context but is not a substitute for what the person learned.
+Every member, including Team Leaders, records work through the approved Work Note taxonomy. There are exactly three types:
+
+- **Task Note**: a task-specific note, approach, or reason. `taskId` is required; each Task can have zero or more Task Notes.
+- **Project Document**: project-level material such as an MVP, database design, RSR, specification, architecture note, or documentation. A Task is not required. The Leader reviews and approves it before it becomes approved knowledge.
+- **Periodic Work Report**: a member's report of project work for one reporting period. The Leader configures a cadence of 1 day, 3 days, or 7 days (no more than one week). Reports require Leader review and approval.
+
+There is no generic Project Work Note or unlinked manual Work Note type. Task metadata can provide context for a Task Note, but the member confirms its content and supplies what/how/why, blockers, next steps, and evidence.
 
 | Field | Source | Required intent |
 | --- | --- | --- |
-| Task title/ID, status, assignee, due date, link | Internal Continuum Task when selected | Identify the work and its current owner/state without copying a second task record; Mongo `ObjectId` remains canonical in the MVP. |
+| Task title/ID, status, assignee, due date, link | Internal Continuum Task | Identify the work and its current owner/state without copying a second task record; Mongo `ObjectId` remains canonical in the MVP. A Task Note must reference this Task. |
 | What was done / outcome | Human confirms or edits | Record actual progress, not only task status. |
 | How it was done: technique, commands, approach | Human | Capture tacit technical knowledge. |
 | Why: trade-offs, decision, constraint | Human | Explain reasoning to the successor. |
 | Blocker/risk, next step, person to ask | Human | Make unfinished work actionable. |
 | Evidence (PR, commit, file, document) | Link through an authorized source or upload | Support verification and citation. |
 
-General unlinked Work Notes and a reminder center remain future product work. The delivered Task Note is scoped to an existing Task. It is not a performance or time-tracking score. A handover summary can use approved knowledge and authorized internal task context, but a human reviews it before sharing.
+Generic unlinked Work Notes and a separate evidence-attachment workflow remain future work. Periodic Work Report schedules and due/overdue events are part of this delivered slice; this package does not add a separate notification center or downstream SAG consumer. Reports are not a performance or time-tracking score. A handover summary can use eligible Task Notes, approved Project Documents, and internal task context, but a human reviews it before sharing.
 
 ## 2. Internal task-management direction
 
 1. Continuum Task Service stores and owns the DATN task lifecycle. It runs independently from the other NestJS services but is implemented in the existing DATN_BE repository; the browser UI remains in DATN_FE and calls through its BFF/Gateway. Jira is not the task source, task-sync connector, or actor in the current task-management Use Cases.
 2. Proposed relationship: each task belongs to one project and optionally one team within that project; multi-project and multi-team tasks are outside the MVP. Role/assignment checks are applied on each Task API operation.
-3. The proposed P0 slice includes create/list/detail/edit, Team Leader assignment, fixed status changes, basic search/filter, optional Work Note link, limited history and open-task context for handover. Kanban, task comments/files and dashboard/reporting are P1 or out of MVP. See `Internal-Work-Management/12-continuum-task-management-use-cases.md` for the decision proposals.
-4. Users confirm Work Note content. Task status alone does not prove a procedure, root cause or decision is correct.
+3. The proposed P0 slice includes create/list/detail/edit, Team Leader assignment, fixed status changes, basic search/filter, Task Note integration (with required `taskId`), limited history and open-task context for handover. Kanban, task comments/files and dashboard/reporting are P1 or out of MVP. See `Internal-Work-Management/12-continuum-task-management-use-cases.md` for the decision proposals.
+4. Users confirm Task Note content. Task status alone does not prove a procedure, root cause or decision is correct.
 5. Task text and task status do not become verified Knowledge automatically. Knowledge proposals require evidence and scoped human review.
 6. There is no Jira issue import, webhook sync, reconciliation or two-way task sync in this MVP. Any later Jira link/import is a separate decision and must not create a second writable source for the same task.
-7. Only Work Notes/evidence that pass Continuum authorization and source-eligibility checks may flow to SAG retrieval/indexing. Task records/status/assignment remain in MongoDB and are not standalone SAG sources.
+7. Only eligible Task Notes and Leader-approved Project Documents/Periodic Work Reports that pass Continuum authorization and source-eligibility checks may flow to SAG retrieval/indexing. Task records/status/assignment remain in MongoDB and are not standalone SAG sources.
 
 ## 3. Handover path
 
@@ -60,13 +66,12 @@ The core successor experience is an evidence-grounded chat over authorized, veri
 ## 5. Acceptance examples
 
 - A member creates or updates an internal task within their permitted project/team scope and later finds it by basic search/filter.
-- A member creates a Task Note for an existing task in the same Project; the note stores structured accomplishments, approach and reason.
-- A Task Note stores a scoped `taskId` reference, reads task scope through the Task API, and is not automatically indexed as official knowledge.
-- Project Documents and Periodic Work Reports persist per Project; only approved records emit the `KNOWLEDGE_SOURCE_APPROVED` integration event.
-- Work Report frequency is restricted to `DAILY`, `EVERY_3_DAYS`, and `WEEKLY`; prior periods remain unchanged when the schedule changes.
+- A member creates a Task Note for an existing task in the same Project; it requires a scoped `taskId` and stores structured accomplishments, approach and reason. Task Notes do not copy or replace canonical Task data and are not automatically indexed as official knowledge.
+- A member can create a Project Document without a Task and submit it to the Leader review workflow. Only approved Project Documents and Periodic Work Reports emit `KNOWLEDGE_SOURCE_APPROVED`.
+- Work Report frequency is restricted to 1, 3, or 7 days; prior periods remain unchanged when the schedule changes. Due/overdue obligations are generated independently of report-page visits and periods ending before membership begins are skipped.
 - A task status transition records work progress but does not by itself create verified Knowledge.
 - A handover shows authorized open tasks for the predecessor; a Team Leader reviews and assigns selected tasks/context to a scoped successor.
-- SAG indexing accepts only author-confirmed Work Notes/evidence authorized for the relevant scope; task title, description, status and assignee are not indexed as independent sources. Current ACL is checked before retrieval/context construction; revoked sources are blocked immediately and de-indexed asynchronously.
+- SAG indexing accepts only eligible Task Notes and Leader-approved Project Documents/Periodic Work Reports authorized for the relevant scope; task title, description, status and assignee are not indexed as independent sources. Current ACL is checked before retrieval/context construction; revoked sources are blocked immediately and de-indexed asynchronously.
 - A successor or member outside the project/team/assignment scope cannot view tasks or linked evidence through search, notes, handover or chat.
 - No Jira account, project, webhook, credential or Jira availability is required for task creation, update, capture or handover.
 - An unsupported chat question produces an insufficient-evidence response and can become a gap.
