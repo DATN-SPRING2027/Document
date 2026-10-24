@@ -35,17 +35,20 @@ Mỗi dịch vụ tuân thủ nguyên tắc **Đơn trách nhiệm (Single Respo
 ---
 
 ### 2.2. `svc_capture` (Daily Knowledge Capture & Worklogs)
-* **Thư mục:** `backend/src/modules/work-notes/`
+* **Vị trí source hiện tại:** `DATN_BE/src/services/capture/` và gateway `DATN_BE/src/gateway/`.
 * **Trách nhiệm:**
-  - Thu thập ghi chú công việc hàng ngày của dev: What/How/Why, blockers, next steps, evidence.
-  - Gọi Continuum Task API để người dùng chọn tối đa một task trong scope làm ngữ cảnh cho Work Note; Work Note vẫn có thể không liên kết task.
-  - **Quy tắc bất biến:** Ghi chú chỉ trở thành nguồn tri thức hợp lệ khi chính tác giả xác nhận. Theo đề xuất Use Case, draft không được index SAG; ghi chú phải `CONFIRMED` và qua source ACL/eligibility gate.
-  - Lưu trữ lịch sử chỉnh sửa bất biến vào `work_note_versions`.
-* **Collections sở hữu:** `work_notes`, `work_note_versions`, `knowledge_requirements`.
+  - Lưu Task Note có cấu trúc `title`, `accomplishments`, `approach`, `reason` gắn với một Task tồn tại; Task Note được xác nhận khi tạo và không cần Leader duyệt.
+  - Quản lý Project Document với version bất biến và trạng thái `DRAFT`, `PENDING_REVIEW`, `APPROVED`, `CHANGES_REQUESTED`, `REJECTED`, `ARCHIVED`.
+  - Tạo kỳ Periodic Work Report cho Project Member đang active; Leader cấu hình tần suất `DAILY`, `EVERY_3_DAYS`, hoặc `WEEKLY`.
+  - Xác thực quyền từ IAM API và Task API theo phiên người dùng, Organization và Project scope. Không dùng FE permission làm hàng rào bảo mật.
+  - Chỉ phát integration event cho nguồn đã được duyệt; Task Note không tự động trở thành tri thức chính thức.
+* **Collections sở hữu:** `work_notes`, `project_documents`, `project_document_versions`, `work_reports`, `work_report_settings`; integration event dùng Capture outbox hiện có.
 * **API Endpoints chính:**
-  - Hợp đồng prefill phải lấy task qua API nội bộ và không sao chép task thành nguồn độc lập trong capture.
-  - `POST /api/v1/capture/daily`: Tạo bản nháp ghi chú ngày.
-  - `PUT /api/v1/capture/daily/:id/confirm`: Tác giả xác nhận nội dung.
+  - `GET|POST /api/v1/capture/projects/:projectId/tasks/:taskId/notes`, `GET|PATCH|DELETE .../notes/:noteId`, cùng `GET /api/v1/capture/projects/:projectId/work-notes` và `GET .../work-notes/:noteId`.
+  - `GET|POST /api/v1/capture/projects/:projectId/documents`, `GET|PATCH .../documents/:documentId`, `PUT|GET .../documents/:documentId/file`, cùng `submit`, `approve`, `request-changes`, `reject`, `archive`.
+  - `GET|PATCH /api/v1/capture/projects/:projectId/work-report-settings`.
+  - `GET|POST /api/v1/capture/projects/:projectId/work-reports`, `GET|PATCH .../work-reports/:reportId`, cùng `submit`, `approve`, `request-changes`, `reject`.
+  - Hợp đồng OpenAPI: `DATN_BE/docs/openapi/work-note-v1.openapi.yaml`.
 
 ---
 
@@ -56,7 +59,7 @@ Mỗi dịch vụ tuân thủ nguyên tắc **Đơn trách nhiệm (Single Respo
   - Lưu bản ghi task chuẩn trong MongoDB; API là đường đọc/ghi duy nhất cho task lifecycle.
   - Kiểm tra organization/project/team scope và quyền trên từng thao tác; đề xuất mỗi task thuộc một project và tối đa một team.
   - Ghi `task_events` append-only cùng mutation task bằng MongoDB transaction; task events không thay thế compliance audit.
-  - Cấp danh sách task được phép xem để Work Note chọn liên kết tùy chọn qua `taskId`.
+  - Xác thực Task thuộc đúng Project/Organization khi Task Note gắn với `taskId` bắt buộc.
 * **Database sở hữu:** `continuum_task` trên MongoDB replica set hiện có; chỉ Task service đọc/ghi collections của mình. Không tạo MongoDB cluster vật lý mới.
 * **Giao tiếp:** CRUD, tìm kiếm và assignment là internal HTTP API qua Gateway/service contract; Agent và các service khác không gọi Mongo trực tiếp. Dùng Redis transport/BullMQ đã có cho event hoặc công việc nền cần thiết, không thay HTTP command bằng event bất đồng bộ.
 * **Triển khai:** Dùng chung build/image của DATN_BE, riêng process, port nội bộ, env, health/readiness, logs và resource configuration. Port `3009` cùng `TASK_SERVICE_URL` là đề xuất chờ chốt trong implementation, chưa phải cấu hình hiện tại.

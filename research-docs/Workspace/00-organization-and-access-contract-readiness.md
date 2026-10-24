@@ -31,6 +31,8 @@
 
 > **Project MVP contract update — 2026-10-20:** Current Project creation/bootstrap, settings, visibility, member and Leader decisions are owned by [Project MVP contract V1](13-project-mvp-contract-v1.md). That owner-approved contract supersedes this register's older Project-specific `MEMBER` bootstrap and Project visibility/management gaps for the current MVP. Other Organization, Team and resource-access decisions in this register are unchanged.
 
+> **Work Note taxonomy decision — 2026-10-24:** The requester selected exactly three Work Note types, as recorded in [MVP Scope](../01_MVP_SCOPE.md): Task Note (mandatory `taskId`), Project Document (Project-level), and Periodic Work Report (Project-level, daily/3-day/weekly cadence). This supersedes older references in this register and related Task proposals to optional or unlinked generic Work Notes. Project Documents and Periodic Work Reports require Leader review/approval.
+
 The governance hierarchy is now confirmed: `PLATFORM_OPERATOR` operates the platform and provisions Organizations; `ADMIN` administers one Organization; `TEAM_LEADER` manages only explicitly assigned Project/Team scope; `MEMBER` participates within membership and ACL. The documents are **not yet a complete implementation contract** for Organization lifecycle, membership transitions, scoped delegation, or the detailed permission matrix. The evidence reports correctly show implementation gaps, but proposals must remain distinct from accepted policy.
 
 Use this document to:
@@ -80,7 +82,9 @@ Organization
     ├── Team
     │   └── Team Membership ── Project Member
     ├── Continuum Tasks ── owned by Continuum Task API
-    ├── Work Notes and evidence ── Continuum-owned; taskId is optional
+    ├── Task Notes ── Continuum-owned; taskId is required
+    ├── Project Documents ── Project-level; Leader review/approval
+    ├── Periodic Work Reports ── Project-level; daily/3-day/weekly; Leader review/approval
     ├── Knowledge/evidence eligible for SAG retrieval ── subject to approval and ACL
     └── Handover ── reads authorized Continuum tasks and approved knowledge
 ```
@@ -106,7 +110,7 @@ CONTINUUM AI PLATFORM
 
 `[APPROVED BASELINE: Project Foundation]` Any authenticated User with active Organization Membership can create a Project in the trusted Organization; `ADMIN`, `TEAM_LEADER`, or `project.create` is not required for this operation. The new Project is `PRIVATE`, and creation atomically gives its creator an `ACTIVE` Project Membership and project-scoped `MEMBER` RoleAssignment. It does not make the creator a Team Leader, owner, or Team. The earlier grant-based Project-create rule is superseded only for Project creation; the grant schema is not removed by this decision.
 
-`[APPROVED BASELINE]` Continuum is the task source of truth. Task data is accessed through the Continuum Task API and its service boundary; Work Note, Agent, and Handover consumers use the agreed API/event contract and do not access task collections directly. A Work Note may link to a task using an optional `taskId`. Only eligible, permitted Work Note/evidence enters SAG retrieval/index. Handover reads task state from Continuum and only exposes content permitted to the successor.
+`[APPROVED BASELINE]` Continuum is the task source of truth. Task data is accessed through the Continuum Task API and its service boundary; Task Note, Agent, and Handover consumers use the agreed API/event contract and do not access task collections directly. A Task Note must reference a Task in its Project. Project Documents and Periodic Work Reports are Project-level and do not reference a Task. Only content eligible under its type-specific approval and ACL rules enters SAG retrieval/index. Handover reads task state from Continuum and only exposes content permitted to the successor.
 
 `[FACT / IMPLEMENTATION GAP]` The earlier source inventory describes a global User without direct `organizationId` and reports role/capability records as the available Organization links. That snapshot predates or does not yet implement the accepted DEC-016 `OrganizationMembership` contract. Update IAM schema/API and perform the approved historical backfill; do not continue treating RoleAssignment as the membership source.
 
@@ -173,8 +177,8 @@ Use the referenced local question numbers as pointers to detailed evidence. Once
 | Project lifecycle and membership | Validate Organization parent, role/capability and Project state; enforce Project membership transitions; audit changes | Accessible Project list/detail, member list/actions, conflict and denied states | Task ownership, Work Note linkage, evidence ACL, knowledge ownership, Handover |
 | Team lifecycle and membership | Validate `(organizationId, projectId, teamId)` relationship; require eligible Project membership; enforce scoped Team Leader assignment | Team list/detail/member actions within active Project context | Task team scope, knowledge/domain scope, successor routing |
 | Role/capability management | One evaluator and authoritative assignment/grant model; explicit deny and expiration/revocation checks | Show actions according to returned capabilities for usability; backend still enforces each request | Project creation, membership management, AI retrieval and sensitive actions |
-| Task management | Continuum Task API owns task lifecycle; enforce current user scope/ACL; expose approved API/event contract | FE accesses Task API through approved BFF/gateway path | Work Note optional `taskId`, Agent context, audit, Handover |
-| Work Note and knowledge | Persist Work Notes in Continuum; enforce ACL before any indexing/retrieval; only permitted/approved evidence is indexed | Display provenance and permission-aware links | SAG retrieval/index, cited answers, knowledge review |
+| Task management | Continuum Task API owns task lifecycle; enforce current user scope/ACL; expose approved API/event contract | FE accesses Task API through approved BFF/gateway path | Task Note requires `taskId`; Project Documents and Periodic Work Reports are Project-level; Agent context, audit, Handover |
+| Work Note and knowledge | Persist exactly Task Note, Project Document, and Periodic Work Report in Continuum; enforce ACL and required Leader review before any indexing/retrieval | Display type, provenance, review state, and permission-aware links | SAG retrieval/index, cited answers, knowledge review |
 | Handover | Read current authorized task state and approved knowledge; record successor scope and decisions | Show a scoped handover package and completion state | Task API, knowledge, audit; no direct task database access |
 
 No downstream service should query IAM, Project, Team, or Task collections directly to reconstruct authorization. Use an explicit service/API/event contract owned by the source domain.
@@ -193,7 +197,7 @@ The Organization/Workspace access package is ready to drive implementation only 
 8. An `ADMIN` cannot read confidential content solely because of the persistent role; retrieval checks ACL before content reaches SAG/LLM.
 9. Revoked/expired capability and membership changes affect subsequent API and retrieval requests according to the approved cache/session policy.
 10. Membership, role, capability, Project and Team mutations record actor, Organization/scope, target, time, operation, and approved reason/changed fields without logging secrets or protected content bodies.
-11. Task consumers use Continuum Task API/events; Work Notes may link with optional `taskId`; handover reads authorized tasks; none bypasses the source service boundary.
+11. Task Note consumers use Continuum Task API/events and require `taskId`; Project Documents and Periodic Work Reports are Project-level; handover reads authorized tasks; none bypasses the source service boundary.
 12. FE and BE use the same DTO/error/pagination contract; FE controls improve usability but cannot create an authorization bypass.
 
 ## 9. Recommended resolution and implementation order
