@@ -73,7 +73,7 @@ FE gọi BFF `/api/backend`; BFF gắn `x-request-id` nếu thiếu và Gateway/
 - Đồng bộ `deadline_scan_due_cursor` trong Task Workspace migration catalog và kiểm tra test để runtime/migration cùng khai báo index.
 - Notification bus publish qua Redis; Chat subscribe, validate event envelope, scope recipient theo organization và tạo consumer span; polling vẫn fallback.
 - ACL target checks giới hạn concurrency, dedupe, cache lookup theo resource trong request và redact khi dependency ACL lỗi.
-- Project API nhận `q` 2–80 ký tự, regex metacharacters được escape; OpenAPI cập nhật.
+- Project API nhận `q` 2–80 ký tự, regex metacharacters được escape; OpenAPI cập nhật. Follow-up cho autocomplete: `includeTotal=false` chỉ dùng kèm `q`, BE lấy thêm một row để trả `hasMore` và bỏ exact `countDocuments`; mặc định các màn danh sách vẫn trả `totalItems/totalPages` như cũ.
 - OTel auto-instrumentation bật có điều kiện; BullMQ producers/processors dùng telemetry adapter; service name theo entrypoint; Jaeger `all-in-one` chỉ bật với profile `observability`.
 - Chỉ sửa `.env.example`/Compose; giữ nguyên `.env` đã cập nhật gồm `GATEWAY_PORT=3002`, `IAM_GATEWAY_SECRET`, `SERVICE_DATABASE=continuum_iam` cùng SAG/R2/AWS settings.
 
@@ -107,3 +107,11 @@ FE gọi BFF `/api/backend`; BFF gắn `x-request-id` nếu thiếu và Gateway/
 ## 7. Giới hạn và bước đo tiếp theo
 
 Source-level request findings đã được xử lý và kiểm tra; deadline index và các index notification còn thiếu đã được áp dụng, xác minh trên development Atlas. Audit FE/BE đang chạy trực tiếp từ worktree trên `3000`/`3001`. Gateway `3002` chưa được nối vào FE vì BFF mặc định dùng `3001` và BE đang chạy monolith; topology Gateway cần standalone IAM và service URL phù hợp. Hai kết luận cần production telemetry mới quyết định được: (1) request dấu X thất bại hay bị hủy/refresh/RSC; (2) notification list/count hoặc project search có vượt p95/query-cost budget. Explain xác nhận list/count chuyển từ COLLSCAN sang IXSCAN sau khi đồng bộ index catalog, nhưng dataset development chỉ có 19 notification. Cần HAR có Status/Timing và Mongo `executionStats`/slow-query sample trên dataset an toàn để kết luận production; không suy p95 từ development.
+
+## 8. Follow-up: chi phí project autocomplete
+
+- FE header search gửi `includeTotal=false` và chỉ yêu cầu 8 kết quả hiển thị. BE vẫn giữ nguyên tìm chuỗi con không phân biệt hoa thường; chỉ bỏ truy vấn đếm chính xác ở đường autocomplete, lấy `pageSize + 1` để trả `hasMore`. Project directory không gửi cờ này nên vẫn có phân trang exact count. API thêm metadata `pagination.hasMore` cho chế độ autocomplete; không thay đổi schema, index hay dữ liệu MongoDB.
+- Đo baseline chỉ đọc trên development Atlas `continuum_iam`: collection có 35 project; tenant lớn nhất có 25. Truy vấn ACTIVE với chuỗi 2 ký tự khớp 18 kết quả dùng `IXSCAN` trên index tenant/code nhưng xét 25 keys và 25 documents, đồng thời có stage `SORT`; truy vấn count tương ứng cũng xét 25 keys và 25 documents. Thời gian explain ghi 0 ms / 1 ms trên mẫu nhỏ, không đại diện p95 hay tải production.
+- `q` tiếp tục dùng literal case-insensitive regex để không đổi hành vi người dùng. MongoDB ghi rõ `$regex` với `i` không tận dụng case-insensitive index; prefix regex có thể tối ưu khi được neo đầu chuỗi và phân biệt hoa thường. Xem [MongoDB `$regex` index use](https://www.mongodb.com/docs/manual/reference/operator/query/regex/) và [case-insensitive indexes](https://www.mongodb.com/docs/manual/core/index-case-insensitive/).
+- Bước còn lại trước khi đổi chiến lược tìm kiếm: chạy explain và tải đại diện trên tenant lớn/safe production-like dataset; đo list, exact count, số keys/documents examined, `SORT`, p95 và tần suất query. Nếu semantics prefix được chấp nhận, chuẩn hóa trường và dùng prefix index; nếu phải giữ substring, đánh giá MongoDB Search/ngram hoặc dịch vụ search chuyên dụng. Không thêm index B-tree theo phỏng đoán.
+- Follow-up code đã được cập nhật trên các nhánh PR FE/BE hiện có. Chưa chạy test/build cho follow-up này; số liệu trên chỉ là read-only explain trước tối ưu, không phải xác nhận runtime sau thay đổi.
