@@ -31,7 +31,7 @@ CONTINUUM AI PLATFORM
 │   └── provisions Organization / first ADMIN, operates approved health functions; configuration is not active in V1
 └── ORGANIZATION
     ├── ADMIN (manages Organization Users/membership, roles/scopes and Organization settings)
-│   └── scoped Work Note read/review exception below; no blanket confidential-content access
+    │   └── scoped Work Note read/review exception below; no blanket confidential-content access
     └── PROJECT
         ├── TEAM_LEADER (manages only explicitly assigned Project/Team scope)
         └── MEMBER (acts within active membership, scope and ACL)
