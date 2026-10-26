@@ -31,7 +31,7 @@ CONTINUUM AI PLATFORM
 │   └── provisions Organization / first ADMIN, operates approved health functions; configuration is not active in V1
 └── ORGANIZATION
     ├── ADMIN (manages Organization Users/membership, roles/scopes and Organization settings)
-    │   └── no default confidential-content access
+│   └── scoped Work Note read/review exception below; no blanket confidential-content access
     └── PROJECT
         ├── TEAM_LEADER (manages only explicitly assigned Project/Team scope)
         └── MEMBER (acts within active membership, scope and ACL)
@@ -52,10 +52,11 @@ Role and assignment records need `organizationId`, subject, scope, `validFrom`, 
 ### ADMIN
 
 - Manages users and Organization Memberships, assigns roles/scopes, and manages Organization settings and policies within that Organization (see the [Manager Workspace P0 Specification](Workspace/14-manager-workspace-p0-contract.md)).
-- Does not automatically receive Project Membership, Team Leader scope, or read/verification access to confidential task, note, evidence, knowledge, or handover content.
+- Does not automatically receive Project Membership, Team Leader scope, or unrestricted confidential-content access. The Task Notes / Project Documents / Work Reports exception below is explicitly authorized within the current Organization.
+- **Task Notes / Project Documents / Work Reports exception (2026-10-25):** During the Member/Manager/Leader permission audit, the user explicitly confirmed: “Có; Manager được đọc/review mọi Project trong Organization”. A current Organization `ADMIN` with active Organization membership may read Task Notes and read/review Project Documents and Work Reports in any active Project of that Organization without Project Membership. Task Notes retain their Task scope validation and have no approve/reject transition. This does not appoint the Manager as Project Leader, grant Team management, authorize another Organization, bypass existing self-review/state checks, or grant access to unrelated confidential resources. See [Work Note workflows](04_WORK_NOTE_WORKFLOWS.md#manager-review-authority-decision-2026-10-25) for per-record rules and the current owning Task API authority.
 - May recover an `ACTIVE` Project that has `0 Effective Leaders` by adding an Organization member and appointing a new Project `TEAM_LEADER` without automatically receiving read access to confidential project content (`F-05`).
 - Does not need a special `project.create` grant for Project creation; any authenticated User with active Organization Membership may create a Project under the accepted Project Foundation decision.
-- May inspect technical status and metadata; **does not automatically read confidential content or verify knowledge**. Exceptional access, if implemented, requires a separately approved, reasoned and audited process.
+- May inspect technical status and metadata. Outside the explicit Task Notes / Project Documents / Work Reports exception, confidential-content access and knowledge verification still require their own approved authority and scope.
 
 ### TEAM_LEADER
 
@@ -98,7 +99,8 @@ Human review is required before AI-proposed knowledge becomes verified/active. T
 | Assign/reassign task | No by platform role alone | No by Organization role alone | Assigned Project/Team scope; may assign only eligible members in that scope | May self-assign on create or leave unassigned; cannot assign another user | No; authorized Team Leader acts through Task API |
 | Change task status / reopen DONE | No by platform role alone | No by Organization role alone | Assigned Project/Team scope | Current assignee under approved task policy | Only after explicit assignment and within current task ACL |
 | Cancel task / read task history | No by platform role alone | No by Organization role alone | Assigned Project/Team scope | No cancel by role alone; history within readable task scope | History only for handed-over tasks allowed by ACL |
-| Read confidential content / ask chat | No | No by Organization role alone | ACL and membership required | ACL and membership required | Only matching assignment and ACL |
+| Read confidential content / ask chat | No | Same-Organization active Manager may read Task Notes (after Task scope validation), Project Documents and Work Reports under the 2026-10-25 exception; no blanket access to other confidential sources or assistant retrieval | ACL and membership required | ACL and membership required | Only matching assignment and ACL |
+| Review Project Documents / Work Reports | No | Yes, for active Projects in the current Organization under the 2026-10-25 exception, without Project Membership; lifecycle and no-self-review checks apply | Matching approved review scope; LEADER Work Reports require Manager review | No by role alone | Only matching approved review assignment and ACL |
 | See audit | Platform operational metadata only | Organization security scope | Assigned Project/Team scope | Own activity where policy allows | No extra right |
 
 All Organization/Project operations also require a valid Organization Context and the corresponding active membership. `PLATFORM_OPERATOR` is not a bypass for Organization ACL. Project/Team administration actions beyond this high-level boundary still require the approved detailed permission matrix.
