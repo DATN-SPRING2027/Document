@@ -1,0 +1,2686 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Task-aware WorkNote assessment — concrete contract11",
+    "version": "1.0.0",
+    "x-approval-status": "IMPLEMENTATION_AUTHORIZED_TEAM_REVIEW_PENDING",
+    "description": "User authorized plan v2 implementation on2026-10-29 and local integration before DB merge. Canonical-only policy retained. No merge/production deployment or independent semantic acceptance. New private assessment lifetime at most24h from original draft creation."
+  },
+  "security": [
+    {
+      "sessionCookie": []
+    },
+    {
+      "bearerSession": []
+    }
+  ],
+  "paths": {
+    "/api/v1/capture/projects/{projectId}/work-note-drafts/{draftId}/agent/assessments": {
+      "parameters": [
+        {
+          "name": "projectId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$"
+          }
+        },
+        {
+          "name": "draftId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "x-csrf-token",
+          "in": "header",
+          "required": false,
+          "schema": {
+            "type": "string"
+          },
+          "description": "Required by the existing cookie-authenticated write protection; no new authentication bypass."
+        }
+      ],
+      "post": {
+        "operationId": "createTaskNoteAssessment",
+        "description": "Analyze only the authorized Task/note/answer sources. No Task mutation, Apply, Save, Submit or independent verification. Ordinary Save remains independent.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAssessment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful private operation; metadata usage signals do not establish semantic acceptance.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "private, no-store"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Structured validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or revoked session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation/CSRF denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing, expired or inaccessible scoped resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale source/assessment revision or changed operation payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or unavailable context for this action",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Quota or conversation budget exhausted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Disabled, dependency or quota-store unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Provider deadline",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/capture/projects/{projectId}/work-note-drafts/{draftId}/agent/assessments/{assessmentId}/replies": {
+      "parameters": [
+        {
+          "name": "projectId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$"
+          }
+        },
+        {
+          "name": "draftId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "x-csrf-token",
+          "in": "header",
+          "required": false,
+          "schema": {
+            "type": "string"
+          },
+          "description": "Required by the existing cookie-authenticated write protection; no new authentication bypass."
+        },
+        {
+          "name": "assessmentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "replyTaskNoteAssessment",
+        "description": "Answer the current server-owned gap/question and reassess. Unknown/skipped do not become resolved facts.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplyAssessment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful private operation; metadata usage signals do not establish semantic acceptance.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "private, no-store"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Structured validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or revoked session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation/CSRF denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing, expired or inaccessible scoped resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale source/assessment revision or changed operation payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or unavailable context for this action",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Quota or conversation budget exhausted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Disabled, dependency or quota-store unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Provider deadline",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/capture/projects/{projectId}/work-note-drafts/{draftId}/agent/assessments/{assessmentId}/rewrite": {
+      "parameters": [
+        {
+          "name": "projectId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$"
+          }
+        },
+        {
+          "name": "draftId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "x-csrf-token",
+          "in": "header",
+          "required": false,
+          "schema": {
+            "type": "string"
+          },
+          "description": "Required by the existing cookie-authenticated write protection; no new authentication bypass."
+        },
+        {
+          "name": "assessmentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "rewriteTaskNoteAssessment",
+        "description": "Use a fresh usable assessment to create an existing compatible proposal. Explicit Apply is still required.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssessmentMutation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful private operation; metadata usage signals do not establish semantic acceptance.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "private, no-store"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Structured validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or revoked session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation/CSRF denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing, expired or inaccessible scoped resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale source/assessment revision or changed operation payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or unavailable context for this action",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Quota or conversation budget exhausted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Disabled, dependency or quota-store unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Provider deadline",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/capture/projects/{projectId}/work-note-drafts/{draftId}/agent/assessments/{assessmentId}/corrections": {
+      "parameters": [
+        {
+          "name": "projectId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$"
+          }
+        },
+        {
+          "name": "draftId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "x-csrf-token",
+          "in": "header",
+          "required": false,
+          "schema": {
+            "type": "string"
+          },
+          "description": "Required by the existing cookie-authenticated write protection; no new authentication bypass."
+        },
+        {
+          "name": "assessmentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "correctTaskNoteAssessment",
+        "description": "Reassess the specified claim/gap using author correction without editing official Task requirements.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorrectAssessment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful private operation; metadata usage signals do not establish semantic acceptance.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "private, no-store"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Structured validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or revoked session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation/CSRF denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing, expired or inaccessible scoped resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale source/assessment revision or changed operation payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or unavailable context for this action",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Quota or conversation budget exhausted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Disabled, dependency or quota-store unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Provider deadline",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/capture/projects/{projectId}/work-note-drafts/{draftId}/agent/assessments/{assessmentId}/reset": {
+      "parameters": [
+        {
+          "name": "projectId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$"
+          }
+        },
+        {
+          "name": "draftId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "x-csrf-token",
+          "in": "header",
+          "required": false,
+          "schema": {
+            "type": "string"
+          },
+          "description": "Required by the existing cookie-authenticated write protection; no new authentication bypass."
+        },
+        {
+          "name": "assessmentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "resetTaskNoteAssessment",
+        "description": "Reset purpose/context, explicitly carrying only eligible selected answer IDs.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetAssessment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful private operation; metadata usage signals do not establish semantic acceptance.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "private, no-store"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Structured validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or revoked session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation/CSRF denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing, expired or inaccessible scoped resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale source/assessment revision or changed operation payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or unavailable context for this action",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Quota or conversation budget exhausted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Disabled, dependency or quota-store unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Provider deadline",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/capture/projects/{projectId}/work-note-drafts/{draftId}/agent/assessments/{assessmentId}/validate-author": {
+      "parameters": [
+        {
+          "name": "projectId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$"
+          }
+        },
+        {
+          "name": "draftId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "x-csrf-token",
+          "in": "header",
+          "required": false,
+          "schema": {
+            "type": "string"
+          },
+          "description": "Required by the existing cookie-authenticated write protection; no new authentication bypass."
+        },
+        {
+          "name": "assessmentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "validateTaskNoteAssessmentAsAuthor",
+        "description": "Record author validation as a usage signal, without inference or independent semantic approval.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssessmentMutation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful private operation; metadata usage signals do not establish semantic acceptance.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "private, no-store"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Structured validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or revoked session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation/CSRF denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing, expired or inaccessible scoped resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale source/assessment revision or changed operation payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or unavailable context for this action",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Quota or conversation budget exhausted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Disabled, dependency or quota-store unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Provider deadline",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/capture/projects/{projectId}/work-note-drafts/{draftId}/agent/assessments/{assessmentId}/feedback": {
+      "parameters": [
+        {
+          "name": "projectId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$"
+          }
+        },
+        {
+          "name": "draftId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "x-csrf-token",
+          "in": "header",
+          "required": false,
+          "schema": {
+            "type": "string"
+          },
+          "description": "Required by the existing cookie-authenticated write protection; no new authentication bypass."
+        },
+        {
+          "name": "assessmentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "feedbackTaskNoteAssessment",
+        "description": "Record transient feedback category without inference. Retain last20 events in the private draft.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackAssessment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful private operation; metadata usage signals do not establish semantic acceptance.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "private, no-store"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Structured validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or revoked session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation/CSRF denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing, expired or inaccessible scoped resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale source/assessment revision or changed operation payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input or unavailable context for this action",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Quota or conversation budget exhausted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Invalid provider output",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Disabled, dependency or quota-store unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Provider deadline",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-session",
+        "description": "Existing cookie binding; cookie writes require existing CSRF checks."
+      },
+      "bearerSession": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "SourceRef": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sourceId",
+          "quote"
+        ],
+        "properties": {
+          "sourceId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "\\S"
+          },
+          "quote": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "pattern": "\\S"
+          }
+        }
+      },
+      "AssessmentSource": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "label",
+          "text",
+          "version",
+          "loadStatus",
+          "includedInRequest"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "\\S"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "TASK",
+              "NOTE",
+              "ANSWER"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "pattern": "\\S"
+          },
+          "text": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "\\S"
+          },
+          "loadStatus": {
+            "type": "string",
+            "enum": [
+              "LOADED",
+              "INVALID",
+              "UNAVAILABLE"
+            ]
+          },
+          "includedInRequest": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Requirement": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "text",
+          "sourceRefs"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "\\S"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "pattern": "\\S"
+          },
+          "sourceRefs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceRef"
+            },
+            "maxItems": 8,
+            "minItems": 1
+          }
+        }
+      },
+      "Claim": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "text",
+          "sourceRefs",
+          "originKind",
+          "supportRelation",
+          "verificationStatus"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "\\S"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "pattern": "\\S"
+          },
+          "sourceRefs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceRef"
+            },
+            "maxItems": 8,
+            "minItems": 1
+          },
+          "originKind": {
+            "type": "string",
+            "enum": [
+              "TASK_REQUIREMENT",
+              "AUTHOR_REPORT"
+            ]
+          },
+          "supportRelation": {
+            "type": "string",
+            "enum": [
+              "FULL",
+              "PARTIAL",
+              "CONTRADICTED",
+              "RELATED_ONLY",
+              "INSUFFICIENT"
+            ]
+          },
+          "verificationStatus": {
+            "type": "string",
+            "enum": [
+              "AUTHOR_REPORTED",
+              "NOT_INDEPENDENTLY_VERIFIED"
+            ]
+          }
+        }
+      },
+      "Coverage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "requirementId",
+          "status",
+          "sourceRefs"
+        ],
+        "properties": {
+          "requirementId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "\\S"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SUPPORTED",
+              "PARTIAL",
+              "NOT_REPORTED",
+              "CONTRADICTORY",
+              "UNKNOWN"
+            ]
+          },
+          "sourceRefs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceRef"
+            },
+            "maxItems": 8
+          }
+        }
+      },
+      "Gap": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "target",
+          "impact",
+          "owner",
+          "status",
+          "sourceRefs"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "\\S"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "SCOPE",
+              "IMPLEMENTATION",
+              "RESULT",
+              "EVIDENCE",
+              "CONTRADICTION",
+              "PURPOSE"
+            ]
+          },
+          "target": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "\\S"
+          },
+          "impact": {
+            "type": "string",
+            "enum": [
+              "BLOCKING",
+              "OPTIONAL"
+            ]
+          },
+          "owner": {
+            "type": "string",
+            "enum": [
+              "NOTE_AUTHOR",
+              "TASK_REQUIREMENT_OWNER"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "answered",
+              "unknown",
+              "skipped"
+            ]
+          },
+          "sourceRefs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceRef"
+            },
+            "maxItems": 8,
+            "minItems": 1
+          }
+        }
+      },
+      "Question": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "gapId",
+          "text",
+          "reason",
+          "options"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "gapId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "\\S"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "pattern": "\\S"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "pattern": "\\S"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300,
+              "pattern": "\\S"
+            },
+            "maxItems": 4
+          }
+        }
+      },
+      "Answer": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "gapId",
+          "target",
+          "disposition",
+          "purpose",
+          "taskContextHash"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "gapId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "\\S"
+          },
+          "target": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "\\S"
+          },
+          "disposition": {
+            "type": "string",
+            "enum": [
+              "answered",
+              "unknown",
+              "skipped"
+            ]
+          },
+          "answer": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "pattern": "\\S"
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "AUTO",
+              "PROGRESS",
+              "INCIDENT",
+              "DECISION",
+              "HANDOVER",
+              "COMPLETION",
+              "QA",
+              "OTHER"
+            ]
+          },
+          "taskContextHash": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      },
+      "TraceEvent": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "phase",
+          "reasonCode",
+          "at"
+        ],
+        "properties": {
+          "phase": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "pattern": "\\S"
+          },
+          "reasonCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "pattern": "\\S"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "durationMs": {
+            "type": "number",
+            "minimum": 0
+          },
+          "promptTokens": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true
+          },
+          "completionTokens": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true
+          },
+          "httpAttempts": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "FeedbackEvent": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "category",
+          "at"
+        ],
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "UNNECESSARY_QUESTION",
+              "MISSING_QUESTION",
+              "WRONG_SOURCE",
+              "FALSE_SUFFICIENT"
+            ]
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AssessmentView": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schemaVersion",
+          "id",
+          "revision",
+          "sourceRevision",
+          "taskContextHash",
+          "answerLedgerHash",
+          "purpose",
+          "state",
+          "contextManifest",
+          "taskUnderstanding",
+          "claims",
+          "coverage",
+          "gaps",
+          "nextQuestion",
+          "taskContextStatus",
+          "noteAdequacy",
+          "counters",
+          "allowedActions",
+          "answers",
+          "authorValidated",
+          "reviewerSemanticAssessment",
+          "signals",
+          "createdAt",
+          "expiresAt",
+          "trace",
+          "promptVersion",
+          "model"
+        ],
+        "properties": {
+          "schemaVersion": {
+            "type": "string",
+            "enum": [
+              "task-note-assessment/v1"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sourceRevision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "taskContextHash": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "answerLedgerHash": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "AUTO",
+              "PROGRESS",
+              "INCIDENT",
+              "DECISION",
+              "HANDOVER",
+              "COMPLETION",
+              "QA",
+              "OTHER"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "analyzing",
+              "waiting_for_answer",
+              "missing_context",
+              "contradiction",
+              "ready_to_edit",
+              "stale",
+              "paused",
+              "error"
+            ]
+          },
+          "contextManifest": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "acquisitionStatus",
+              "sources",
+              "sourceCatalogVersion"
+            ],
+            "properties": {
+              "acquisitionStatus": {
+                "type": "string",
+                "enum": [
+                  "LOADED",
+                  "INVALID",
+                  "UNAVAILABLE",
+                  "PARTIAL"
+                ]
+              },
+              "sources": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AssessmentSource"
+                }
+              },
+              "sourceCatalogVersion": {
+                "type": "string",
+                "enum": [
+                  "1"
+                ]
+              }
+            }
+          },
+          "taskUnderstanding": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "objective",
+              "scope",
+              "requirements",
+              "unknowns"
+            ],
+            "properties": {
+              "objective": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "scope": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "requirements": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Requirement"
+                },
+                "maxItems": 50
+              },
+              "unknowns": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000,
+                  "pattern": "\\S"
+                },
+                "maxItems": 12
+              }
+            }
+          },
+          "claims": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Claim"
+            },
+            "maxItems": 40
+          },
+          "coverage": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Coverage"
+            },
+            "maxItems": 50
+          },
+          "gaps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Gap"
+            },
+            "maxItems": 8
+          },
+          "nextQuestion": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "gapId",
+              "text",
+              "reason",
+              "options"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "gapId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160,
+                "pattern": "\\S"
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000,
+                "pattern": "\\S"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000,
+                "pattern": "\\S"
+              },
+              "options": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 300,
+                  "pattern": "\\S"
+                },
+                "maxItems": 4
+              }
+            },
+            "nullable": true
+          },
+          "taskContextStatus": {
+            "type": "string",
+            "enum": [
+              "CLEAR",
+              "PARTIAL",
+              "INSUFFICIENT"
+            ]
+          },
+          "noteAdequacy": {
+            "type": "string",
+            "enum": [
+              "ENOUGH_FOR_PURPOSE",
+              "NEEDS_AUTHOR_INPUT",
+              "UNDETERMINED",
+              "CONTRADICTORY"
+            ]
+          },
+          "counters": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "questionCount",
+              "noProgress"
+            ],
+            "properties": {
+              "questionCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "noProgress": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "allowedActions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "\\S"
+            }
+          },
+          "answers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Answer"
+            },
+            "maxItems": 20
+          },
+          "authorValidated": {
+            "type": "boolean"
+          },
+          "reviewerSemanticAssessment": {
+            "type": "string",
+            "enum": [
+              "NOT_ESTABLISHED"
+            ]
+          },
+          "feedback": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeedbackEvent"
+            },
+            "maxItems": 20
+          },
+          "signals": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "proposalApplied",
+              "authorValidated",
+              "saved",
+              "reviewerSemanticAssessment"
+            ],
+            "properties": {
+              "proposalApplied": {
+                "type": "boolean"
+              },
+              "authorValidated": {
+                "type": "boolean"
+              },
+              "saved": {
+                "type": "boolean"
+              },
+              "reviewerSemanticAssessment": {
+                "type": "string",
+                "enum": [
+                  "NOT_ESTABLISHED"
+                ]
+              }
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "trace": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TraceEvent"
+            },
+            "maxItems": 40
+          },
+          "promptVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "\\S"
+          },
+          "model": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Server model configuration; may be empty on a provisional/error view before a provider is configured. Never a client-selected model."
+          }
+        }
+      },
+      "CreateAssessment": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operationId",
+          "expectedRevision"
+        ],
+        "properties": {
+          "operationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "AUTO",
+              "PROGRESS",
+              "INCIDENT",
+              "DECISION",
+              "HANDOVER",
+              "COMPLETION",
+              "QA",
+              "OTHER",
+              null
+            ],
+            "nullable": true,
+            "default": "AUTO",
+            "description": "Absent or null normalizes toAUTO; server returns a resolvedpurpose when analysis succeeds."
+          }
+        }
+      },
+      "AssessmentMutation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operationId",
+          "expectedRevision",
+          "expectedAssessmentRevision"
+        ],
+        "properties": {
+          "operationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "expectedAssessmentRevision": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "ReplyAssessment": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "operationId",
+              "expectedRevision",
+              "expectedAssessmentRevision",
+              "gapId",
+              "questionId",
+              "disposition",
+              "answer"
+            ],
+            "properties": {
+              "operationId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "expectedRevision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "expectedAssessmentRevision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "gapId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160,
+                "pattern": "\\S"
+              },
+              "questionId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "disposition": {
+                "type": "string",
+                "enum": [
+                  "answered"
+                ]
+              },
+              "answer": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000,
+                "pattern": "\\S"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "operationId",
+              "expectedRevision",
+              "expectedAssessmentRevision",
+              "gapId",
+              "questionId",
+              "disposition"
+            ],
+            "properties": {
+              "operationId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "expectedRevision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "expectedAssessmentRevision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "gapId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160,
+                "pattern": "\\S"
+              },
+              "questionId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "disposition": {
+                "type": "string",
+                "enum": [
+                  "unknown",
+                  "skipped"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "CorrectAssessment": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operationId",
+          "expectedRevision",
+          "expectedAssessmentRevision",
+          "targetClaimOrGapId",
+          "correctionText"
+        ],
+        "properties": {
+          "operationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "expectedAssessmentRevision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "targetClaimOrGapId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "\\S"
+          },
+          "correctionText": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "pattern": "\\S"
+          }
+        }
+      },
+      "ResetAssessment": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operationId",
+          "expectedRevision",
+          "expectedAssessmentRevision",
+          "newPurpose",
+          "carryAnswerIds"
+        ],
+        "properties": {
+          "operationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "expectedAssessmentRevision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "newPurpose": {
+            "type": "string",
+            "enum": [
+              "AUTO",
+              "PROGRESS",
+              "INCIDENT",
+              "DECISION",
+              "HANDOVER",
+              "COMPLETION",
+              "QA",
+              "OTHER"
+            ]
+          },
+          "carryAnswerIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "maxItems": 20,
+            "uniqueItems": true
+          }
+        }
+      },
+      "FeedbackAssessment": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operationId",
+          "expectedRevision",
+          "expectedAssessmentRevision",
+          "category"
+        ],
+        "properties": {
+          "operationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "expectedAssessmentRevision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "UNNECESSARY_QUESTION",
+              "MISSING_QUESTION",
+              "WRONG_SOURCE",
+              "FALSE_SUFFICIENT"
+            ]
+          }
+        }
+      },
+      "DraftAssessmentExtension": {
+        "type": "object",
+        "properties": {
+          "assessment": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "schemaVersion",
+              "id",
+              "revision",
+              "sourceRevision",
+              "taskContextHash",
+              "answerLedgerHash",
+              "purpose",
+              "state",
+              "contextManifest",
+              "taskUnderstanding",
+              "claims",
+              "coverage",
+              "gaps",
+              "nextQuestion",
+              "taskContextStatus",
+              "noteAdequacy",
+              "counters",
+              "allowedActions",
+              "answers",
+              "authorValidated",
+              "reviewerSemanticAssessment",
+              "signals",
+              "createdAt",
+              "expiresAt",
+              "trace",
+              "promptVersion",
+              "model"
+            ],
+            "properties": {
+              "schemaVersion": {
+                "type": "string",
+                "enum": [
+                  "task-note-assessment/v1"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "sourceRevision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "taskContextHash": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "answerLedgerHash": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "purpose": {
+                "type": "string",
+                "enum": [
+                  "AUTO",
+                  "PROGRESS",
+                  "INCIDENT",
+                  "DECISION",
+                  "HANDOVER",
+                  "COMPLETION",
+                  "QA",
+                  "OTHER"
+                ]
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "analyzing",
+                  "waiting_for_answer",
+                  "missing_context",
+                  "contradiction",
+                  "ready_to_edit",
+                  "stale",
+                  "paused",
+                  "error"
+                ]
+              },
+              "contextManifest": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "acquisitionStatus",
+                  "sources",
+                  "sourceCatalogVersion"
+                ],
+                "properties": {
+                  "acquisitionStatus": {
+                    "type": "string",
+                    "enum": [
+                      "LOADED",
+                      "INVALID",
+                      "UNAVAILABLE",
+                      "PARTIAL"
+                    ]
+                  },
+                  "sources": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AssessmentSource"
+                    }
+                  },
+                  "sourceCatalogVersion": {
+                    "type": "string",
+                    "enum": [
+                      "1"
+                    ]
+                  }
+                }
+              },
+              "taskUnderstanding": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "objective",
+                  "scope",
+                  "requirements",
+                  "unknowns"
+                ],
+                "properties": {
+                  "objective": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "scope": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "requirements": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Requirement"
+                    },
+                    "maxItems": 50
+                  },
+                  "unknowns": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000,
+                      "pattern": "\\S"
+                    },
+                    "maxItems": 12
+                  }
+                }
+              },
+              "claims": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Claim"
+                },
+                "maxItems": 40
+              },
+              "coverage": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Coverage"
+                },
+                "maxItems": 50
+              },
+              "gaps": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Gap"
+                },
+                "maxItems": 8
+              },
+              "nextQuestion": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "gapId",
+                  "text",
+                  "reason",
+                  "options"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "gapId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160,
+                    "pattern": "\\S"
+                  },
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000,
+                    "pattern": "\\S"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000,
+                    "pattern": "\\S"
+                  },
+                  "options": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 300,
+                      "pattern": "\\S"
+                    },
+                    "maxItems": 4
+                  }
+                },
+                "nullable": true
+              },
+              "taskContextStatus": {
+                "type": "string",
+                "enum": [
+                  "CLEAR",
+                  "PARTIAL",
+                  "INSUFFICIENT"
+                ]
+              },
+              "noteAdequacy": {
+                "type": "string",
+                "enum": [
+                  "ENOUGH_FOR_PURPOSE",
+                  "NEEDS_AUTHOR_INPUT",
+                  "UNDETERMINED",
+                  "CONTRADICTORY"
+                ]
+              },
+              "counters": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "questionCount",
+                  "noProgress"
+                ],
+                "properties": {
+                  "questionCount": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "noProgress": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "allowedActions": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "pattern": "\\S"
+                }
+              },
+              "answers": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Answer"
+                },
+                "maxItems": 20
+              },
+              "authorValidated": {
+                "type": "boolean"
+              },
+              "reviewerSemanticAssessment": {
+                "type": "string",
+                "enum": [
+                  "NOT_ESTABLISHED"
+                ]
+              },
+              "feedback": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FeedbackEvent"
+                },
+                "maxItems": 20
+              },
+              "signals": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "proposalApplied",
+                  "authorValidated",
+                  "saved",
+                  "reviewerSemanticAssessment"
+                ],
+                "properties": {
+                  "proposalApplied": {
+                    "type": "boolean"
+                  },
+                  "authorValidated": {
+                    "type": "boolean"
+                  },
+                  "saved": {
+                    "type": "boolean"
+                  },
+                  "reviewerSemanticAssessment": {
+                    "type": "string",
+                    "enum": [
+                      "NOT_ESTABLISHED"
+                    ]
+                  }
+                }
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "expiresAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "trace": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/TraceEvent"
+                },
+                "maxItems": 40
+              },
+              "promptVersion": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200,
+                "pattern": "\\S"
+              },
+              "model": {
+                "type": "string",
+                "maxLength": 200,
+                "description": "Server model configuration; may be empty on a provisional/error view before a provider is configured. Never a client-selected model."
+              }
+            },
+            "nullable": true
+          }
+        },
+        "description": "Additive optional field on existing GET draft/resume DTO. This component is an extension, not a replacement for the existing Draft DTO; old drafts without assessment remain valid."
+      },
+      "AgentResponse": {
+        "$ref": "./agent-draft-v1.proposed.openapi.yaml#/components/schemas/AgentResponse"
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "requestId"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "details": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  }
+}
