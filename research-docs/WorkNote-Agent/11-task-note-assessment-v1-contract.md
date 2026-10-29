@@ -214,3 +214,15 @@ without common tokens can be conservatively treated as no progress. All author
 choices, manual editing and Save remain available. Final inference completion
 requires the same assessment ID/revision and a live lease, preventing delayed
 results from overwriting concurrent feedback. Failed/expired inference can be reset.
+
+
+Prompt-quality follow-up: see13-prompt-quality-follow-up-2026-10-29.md. No public
+HTTP or storage contract changed. Internal model requests now carry a server-owned
+purpose policy, validated conversation examples and the original targeted claim/gap
+for corrections. Analysis can explicitly recover only a missing empty question
+options array, behind the existing formatting-recovery flag; strict citation and
+branch validation still runs afterward. Coverage quotes can be shorter excerpts
+inside a fully grounded author statement, while dropping negation remains denied.
+The new assessed Editor prompt/input/parser/guard are shared with evaluation;
+ordinary standalone editing retains its existing behavior. No Apply/Save permission,
+TTL, Organization boundary, external source or SAG behavior changed.
