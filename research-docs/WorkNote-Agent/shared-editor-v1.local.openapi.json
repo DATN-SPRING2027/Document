@@ -1,0 +1,1419 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "WorkNote shared Document / Report editor — local contract 08",
+    "version": "0.1.0-local",
+    "x-approval-status": "USER_APPROVED_LOCAL_TEAM_REVIEW_PENDING",
+    "description": "User approved contract 08 and local integration before DB merge on 2026-10-28. No shared rollout, Atlas operation or independent approval. Save is not Submit; Task context and file text are excluded."
+  },
+  "security": [
+    {
+      "sessionCookie": []
+    },
+    {
+      "bearerSession": []
+    }
+  ],
+  "paths": {
+    "/api/v1/capture/projects/{projectId}/editor-drafts": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        }
+      ],
+      "post": {
+        "operationId": "localSharedCreateTaskNoteDraft",
+        "description": "Create only an owned, private draft. Existing source permission and state are checked. Report must be an existing server-materialized obligation of the author. Document has no Task; new Document requires an existing type.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "operationId",
+                      "workflow",
+                      "documentId"
+                    ],
+                    "properties": {
+                      "operationId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "workflow": {
+                        "type": "string",
+                        "enum": [
+                          "PROJECT_DOCUMENT"
+                        ]
+                      },
+                      "documentId": {
+                        "type": "string",
+                        "pattern": "^[a-fA-F0-9]{24}$"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "operationId",
+                      "workflow",
+                      "documentType"
+                    ],
+                    "properties": {
+                      "operationId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "workflow": {
+                        "type": "string",
+                        "enum": [
+                          "PROJECT_DOCUMENT"
+                        ]
+                      },
+                      "documentType": {
+                        "type": "string",
+                        "enum": [
+                          "MVP",
+                          "DATABASE_DESIGN",
+                          "RSR",
+                          "ARCHITECTURE",
+                          "API_SPECIFICATION",
+                          "RESEARCH",
+                          "REQUIREMENT",
+                          "DESIGN",
+                          "TECHNICAL_SPECIFICATION",
+                          "OTHER"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "operationId",
+                      "workflow",
+                      "reportId"
+                    ],
+                    "properties": {
+                      "operationId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "workflow": {
+                        "type": "string",
+                        "enum": [
+                          "WORK_REPORT"
+                        ]
+                      },
+                      "reportId": {
+                        "type": "string",
+                        "pattern": "^[a-fA-F0-9]{24}$"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Private draft with a server revision; no model call.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Draft"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "get": {
+        "operationId": "localSharedResumeOwnedTaskNoteDraft",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workflow",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PROJECT_DOCUMENT",
+                "WORK_REPORT"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "resourceId",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          },
+          {
+            "in": "query",
+            "name": "documentType",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "MVP",
+                "DATABASE_DESIGN",
+                "RSR",
+                "ARCHITECTURE",
+                "API_SPECIFICATION",
+                "RESEARCH",
+                "REQUIREMENT",
+                "DESIGN",
+                "TECHNICAL_SPECIFICATION",
+                "OTHER"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Latest unexpired owned draft or null; no expiry refresh.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Draft"
+                    }
+                  ],
+                  "nullable": true
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "Latest unexpired owned draft or JSON null. Exactly workflow+resourceId for an existing source; workflow+documentType for a new Document. Unknown/incompatible parameters rejected."
+      }
+    },
+    "/api/v1/capture/projects/{projectId}/editor-drafts/{draftId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        },
+        {
+          "$ref": "#/components/parameters/DraftId"
+        }
+      ],
+      "get": {
+        "operationId": "localSharedGetOwnedWorkNoteDraft",
+        "responses": {
+          "200": {
+            "description": "Only the authorized scoped unexpired draft; expiry enforcement mechanics pending review.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Draft"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "localSharedAutosaveWorkNoteDraft",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "operationId",
+                  "expectedRevision",
+                  "title",
+                  "contentMarkdown"
+                ],
+                "properties": {
+                  "operationId": "[object Object]",
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 300
+                  },
+                  "contentMarkdown": {
+                    "type": "string",
+                    "maxLength": 30000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated draft; no model call or canonical version.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Draft"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "localSharedDiscardOwnedWorkNoteDraft",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "expectedRevision",
+                  "discardConfirmed"
+                ],
+                "properties": {
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "discardConfirmed": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Owned draft discarded; canonical note unchanged."
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/capture/projects/{projectId}/editor-drafts/{draftId}/reset-chat": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        },
+        {
+          "$ref": "#/components/parameters/DraftId"
+        }
+      ],
+      "post": {
+        "operationId": "localSharedResetOwnedWorkNoteAgentChat",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevisionOperation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Chat/questions/suggestions cleared; editor body retained.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Draft"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/capture/projects/{projectId}/editor-drafts/{draftId}/save": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        },
+        {
+          "$ref": "#/components/parameters/DraftId"
+        }
+      ],
+      "post": {
+        "operationId": "localSharedSaveOwnedTaskNoteDraft",
+        "description": "Ordinary Save never requires an AI call. Current authority, base note version and draft revision are rechecked. If an applied rewrite discards its original, explicit confirmation bound to expectedRevision is required. Canonical write/version, content-free replay receipt and transient cleanup are atomic. Replay rechecks current access and never returns raw/chat.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "operationId",
+                  "expectedRevision",
+                  "discardOriginalConfirmed"
+                ],
+                "properties": {
+                  "operationId": "[object Object]",
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "discardOriginalConfirmed": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved canonical workflow editor; temporary draft/chat removed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CanonicalEditorSource"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/capture/projects/{projectId}/editor-drafts/{draftId}/agent/messages": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        },
+        {
+          "$ref": "#/components/parameters/DraftId"
+        }
+      ],
+      "post": {
+        "operationId": "localSharedSendWorkNoteAgentMessage",
+        "description": "Explicit author request. Server rechecks edit authority and draft revision, fetches authorized context and reconstructs conversation. No FE-supplied Task content, role, history, model or system prompt is authoritative.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "operationId",
+                  "expectedRevision",
+                  "operation",
+                  "scope",
+                  "instruction",
+                  "includeWholeNoteContext"
+                ],
+                "properties": {
+                  "operationId": "[object Object]",
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "operation": {
+                    "type": "string",
+                    "enum": [
+                      "grammar",
+                      "clarify",
+                      "shorten",
+                      "restructure",
+                      "tone",
+                      "handover",
+                      "title",
+                      "custom"
+                    ]
+                  },
+                  "scope": {
+                    "type": "string",
+                    "enum": [
+                      "whole_note",
+                      "selection"
+                    ]
+                  },
+                  "instruction": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "includeWholeNoteContext": {
+                    "type": "boolean"
+                  },
+                  "selection": {
+                    "$ref": "#/components/schemas/Selection"
+                  },
+                  "replyToQuestionId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "questionDisposition": {
+                    "type": "string",
+                    "enum": [
+                      "answered",
+                      "skipped"
+                    ]
+                  },
+                  "answer": {
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Validated Agent outcome; no automatic Apply or Save.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "502": {
+            "$ref": "#/components/responses/Error"
+          },
+          "504": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/capture/projects/{projectId}/editor-drafts/{draftId}/agent/suggestions/{suggestionId}/apply": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        },
+        {
+          "$ref": "#/components/parameters/DraftId"
+        },
+        {
+          "name": "suggestionId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "localSharedApplyWorkNoteSuggestionToDraft",
+        "description": "Explicit user action. Verify stored suggestion owner, exact revision, snapshot and anchor. Never accept replacement text or hashes from the model or client as authority. Insert-after is proposed future behavior; the experimental pure helper currently implements replacement only.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "operationId",
+                  "expectedRevision",
+                  "action",
+                  "applyTitle"
+                ],
+                "properties": {
+                  "operationId": "[object Object]",
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "replace_body",
+                      "replace_selection",
+                      "insert_after",
+                      "replace_title"
+                    ]
+                  },
+                  "applyTitle": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated private draft only; canonical Save is a separate workflow operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Draft"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/capture/projects/{projectId}/editor-drafts/sources/{workflow}/{resourceId}/versions": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        },
+        {
+          "$ref": "#/components/parameters/Workflow"
+        },
+        {
+          "$ref": "#/components/parameters/ResourceId"
+        }
+      ],
+      "get": {
+        "operationId": "listCanonicalTaskNoteVersions",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current scoped note read authority; canonical versions only, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "pagination"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "versionNumber",
+                          "title",
+                          "contentMarkdown",
+                          "createdAt"
+                        ],
+                        "properties": {
+                          "versionNumber": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "contentMarkdown": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "required": [
+                        "page",
+                        "pageSize",
+                        "totalItems",
+                        "totalPages"
+                      ],
+                      "properties": {
+                        "page": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "pageSize": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "totalItems": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "totalPages": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/capture/projects/{projectId}/editor-drafts/sources/{workflow}/{resourceId}/restore": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        },
+        {
+          "$ref": "#/components/parameters/Workflow"
+        },
+        {
+          "$ref": "#/components/parameters/ResourceId"
+        }
+      ],
+      "post": {
+        "operationId": "restoreCanonicalTaskNoteVersion",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "operationId",
+                  "expectedVersion",
+                  "versionNumber",
+                  "expectedContentHash"
+                ],
+                "properties": {
+                  "operationId": "[object Object]",
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "versionNumber": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "expectedContentHash": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Existing edit authority required. Creates a new canonical version and audit; historical versions remain. Stable replay receipt prevents duplicate restoration.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CanonicalEditorSource"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "Restore canonical text as a new editor version. Requires current edit authority, expectedVersion and exact baseContentHash. It neither submits nor restores old files/metadata."
+      }
+    },
+    "/api/v1/capture/projects/{projectId}/editor-drafts/sources/WORK_REPORT/{resourceId}/document-links": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        },
+        {
+          "$ref": "#/components/parameters/ResourceId"
+        }
+      ],
+      "put": {
+        "operationId": "localSharedUpdateReportDocumentLinks",
+        "description": "Author/editable-state checked. Linked documents must be currently readable in this Project. Does not mutate canonical title/body/version or Submit.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "documentIds"
+                ],
+                "properties": {
+                  "documentIds": {
+                    "type": "array",
+                    "maxItems": 30,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-fA-F0-9]{24}$"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Current WorkReport DTO"
+          },
+          "401": {
+            "description": "Session unavailable"
+          },
+          "403": {
+            "description": "CSRF/edit denied"
+          },
+          "404": {
+            "description": "Source unavailable"
+          },
+          "409": {
+            "description": "Source conflict"
+          },
+          "422": {
+            "description": "Validation failed"
+          },
+          "503": {
+            "description": "Editor/storage unavailable"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-session",
+        "description": "Existing WorkNote cookie binding; cookie-authenticated writes also require the existing x-csrf-token protection. No new authentication scheme is activated."
+      },
+      "bearerSession": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "parameters": {
+      "ProjectId": {
+        "name": "projectId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{24}$"
+        }
+      },
+      "DraftId": {
+        "name": "draftId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "Workflow": {
+        "in": "path",
+        "name": "workflow",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "enum": [
+            "PROJECT_DOCUMENT",
+            "WORK_REPORT"
+          ]
+        }
+      },
+      "ResourceId": {
+        "in": "path",
+        "name": "resourceId",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{24}$"
+        }
+      }
+    },
+    "responses": {
+      "Error": {
+        "description": "Existing structured error envelope. Include requestId; redact provider body and credentials. 401 unauthenticated; 403 denied operation; 404 absent or inaccessible scoped resource; 409 stale draft/anchor; 422 invalid input; 429 quota; 502 invalid provider output; 503 unavailable; 504 deadline.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "code",
+                "message",
+                "requestId"
+              ],
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "details": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Draft": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "title",
+          "contentMarkdown",
+          "workflow",
+          "expiresAt",
+          "conversation",
+          "pendingQuestion",
+          "suggestion",
+          "hasAppliedRewrite",
+          "resourceId",
+          "baseVersion",
+          "baseContentHash",
+          "context"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "contentMarkdown": {
+            "type": "string"
+          },
+          "workflow": {
+            "type": "string",
+            "enum": [
+              "PROJECT_DOCUMENT",
+              "WORK_REPORT"
+            ]
+          },
+          "hasAppliedRewrite": {
+            "type": "boolean"
+          },
+          "conversation": {
+            "type": "array",
+            "maxItems": 40,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "role",
+                "content"
+              ],
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "assistant"
+                  ]
+                },
+                "content": {
+                  "type": "string",
+                  "maxLength": 4000
+                }
+              }
+            }
+          },
+          "pendingQuestion": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "text",
+              "reason",
+              "options"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "text": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "options": {
+                "type": "array",
+                "maxItems": 4,
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "suggestion": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AgentResponse/properties/suggestion"
+              }
+            ],
+            "nullable": true
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Proposed enforced expiry after 24 hours of author inactivity; background reads must not refresh it. Canonical note history has no draft TTL."
+          },
+          "resourceId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "nullable": true
+          },
+          "baseVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "baseContentHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "context": {
+            "type": "object",
+            "description": "Server-only source metadata: projectId and documentType, or projectId/reportScope/periodStart/periodEnd/dueAt. No Task or attachment content."
+          }
+        }
+      },
+      "Selection": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "start",
+          "end",
+          "quote"
+        ],
+        "properties": {
+          "start": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "UTF-16 code-unit offset in the exact draft body."
+          },
+          "end": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "quote": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30000
+          }
+        }
+      },
+      "RevisionOperation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operationId",
+          "expectedRevision"
+        ],
+        "properties": {
+          "operationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "AgentResponse": {
+        "type": "object",
+        "description": "Proposed response branches. The host additionally checks reply/action and request-scope combinations. sourceRevision is generated by the server; no reasoning or system prompt is returned.",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "message",
+          "sourceRevision",
+          "suggestion",
+          "questions",
+          "uncertainties"
+        ],
+        "oneOf": [
+          {
+            "properties": {
+              "status": {
+                "enum": [
+                  "ANSWER"
+                ]
+              },
+              "suggestion": {
+                "nullable": true,
+                "enum": [
+                  null
+                ]
+              },
+              "questions": {
+                "maxItems": 0
+              }
+            }
+          },
+          {
+            "properties": {
+              "status": {
+                "enum": [
+                  "CLARIFICATION_REQUIRED"
+                ]
+              },
+              "suggestion": {
+                "nullable": true,
+                "enum": [
+                  null
+                ]
+              },
+              "questions": {
+                "minItems": 1,
+                "maxItems": 1
+              }
+            }
+          },
+          {
+            "properties": {
+              "status": {
+                "enum": [
+                  "SUGGESTION_READY"
+                ]
+              },
+              "suggestion": {
+                "type": "object",
+                "nullable": false,
+                "required": [
+                  "id",
+                  "scope",
+                  "operation",
+                  "baseRevision",
+                  "snapshotHash",
+                  "promptVersion",
+                  "replacementText",
+                  "suggestedTitle",
+                  "changeSummary"
+                ],
+                "oneOf": [
+                  {
+                    "properties": {
+                      "replacementText": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "replacementText": {
+                        "nullable": true,
+                        "enum": [
+                          null
+                        ]
+                      },
+                      "suggestedTitle": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                ]
+              },
+              "questions": {
+                "maxItems": 0
+              }
+            }
+          }
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ANSWER",
+              "CLARIFICATION_REQUIRED",
+              "SUGGESTION_READY"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "sourceRevision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "suggestion": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "scope": {
+                "type": "string",
+                "enum": [
+                  "whole_note",
+                  "selection"
+                ]
+              },
+              "replacementText": {
+                "type": "string",
+                "nullable": true
+              },
+              "suggestedTitle": {
+                "type": "string",
+                "nullable": true
+              },
+              "changeSummary": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "operation": {
+                "type": "string",
+                "enum": [
+                  "grammar",
+                  "clarify",
+                  "shorten",
+                  "restructure",
+                  "tone",
+                  "handover",
+                  "title",
+                  "custom"
+                ]
+              },
+              "baseRevision": {
+                "type": "integer",
+                "minimum": 1,
+                "readOnly": true
+              },
+              "snapshotHash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$",
+                "readOnly": true,
+                "description": "Server binding only; browser/model hashes are never Apply authority."
+              },
+              "promptVersion": {
+                "type": "string",
+                "readOnly": true
+              },
+              "selection": {
+                "$ref": "#/components/schemas/Selection"
+              }
+            }
+          },
+          "questions": {
+            "type": "array",
+            "maxItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "text",
+                "reason",
+                "options"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "options": {
+                  "type": "array",
+                  "maxItems": 4,
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "uncertainties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CanonicalEditorSource": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "title",
+              "content",
+              "status",
+              "version",
+              "permissions"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$"
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 240
+              },
+              "content": {
+                "type": "string",
+                "maxLength": 30000
+              },
+              "status": {
+                "type": "string",
+                "description": "Save returns DRAFT; review remains a separate action."
+              },
+              "version": {
+                "type": "integer"
+              },
+              "permissions": {
+                "type": "object"
+              }
+            },
+            "description": "Existing ProjectDocument DTO; retains type, description, files and review versions."
+          },
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "title",
+              "contentMarkdown",
+              "contentSchemaVersion",
+              "currentVersionNumber",
+              "status",
+              "permissions"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$"
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "contentMarkdown": {
+                "type": "string",
+                "maxLength": 30000
+              },
+              "contentSchemaVersion": {
+                "type": "integer",
+                "enum": [
+                  2
+                ]
+              },
+              "currentVersionNumber": {
+                "type": "integer"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "DRAFT",
+                  "OVERDUE",
+                  "CHANGES_REQUESTED"
+                ]
+              },
+              "permissions": {
+                "type": "object"
+              }
+            },
+            "description": "Existing WorkReport DTO plus canonical text/version. Server obligation, cadence, dates, file and document links stay intact."
+          }
+        ]
+      }
+    }
+  }
+}
