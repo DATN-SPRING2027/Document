@@ -223,6 +223,15 @@ for corrections. Analysis can explicitly recover only a missing empty question
 options array, behind the existing formatting-recovery flag; strict citation and
 branch validation still runs afterward. Coverage quotes can be shorter excerpts
 inside a fully grounded author statement, while dropping negation remains denied.
+
+Release-gate repair details are recorded in14-release-gate-root-cause-fixes-2026-10-29.md.
+Internal request extraction passages and the no-repeat ledger do not add HTTP or
+storage fields. A literal no-new-information reply retains an unresolved gap and
+cannot count as progress. Gap classification is not its identity. Source
+contradiction is distinct from an actual result failing a desired Task criterion;
+the latter alone does not block an otherwise adequate incident note from editing.
+Only grounded new author corrections can resolve relevant author-owned gaps;
+they cannot resolve official Task requirement-owner gaps or alter Task authority.
 The new assessed Editor prompt/input/parser/guard are shared with evaluation;
 ordinary standalone editing retains its existing behavior. No Apply/Save permission,
 TTL, Organization boundary, external source or SAG behavior changed.
