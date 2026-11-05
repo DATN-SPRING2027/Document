@@ -89,18 +89,18 @@ Docker test containers đã dọn; không còn Node test DB bị treo. Không d�
 
 Mức98% là tỷ lệ quan sát trên kế hoạch test, không phải lời bảo đảm thống kê rằng98% mọi đầu vào production đều đúng. Kết luận hiện tại vẫn **NOT_READY_FOR_RELEASE** dù engineering có thể vượt ngưỡng.
 
-## Bàn giao Git hiện tại
+## Bàn giao Git (Snapshot lịch sử 2026-11-04)
 
-- BE: `feat/DanhDEV-worknote-release-completion-be-api`, base `2129085d00b71417ce84203e60ad60d651468f4e`; thay đổi local chưa commit/push, gồm harness, guard và fixes Work Note.
-- DB: `feat/DanhDEV-worknote-release-completion-db`, cùng base; [draft PR #131](https://github.com/DATN-SPRING2027/DATN-BE/pull/131). Migration chỉ kiểm trên disposable local, chưa ảnh hưởng dữ liệu dùng chung. TTL 180 ngày cần kiểm dữ liệu cũ; rollback index không phục hồi dữ liệu đã hết hạn.
-- FE: `feat/DanhDEV-worknote-prompt-audit-fe-ui`, base/HEAD `dc381c50fab0438f3632aab86592f2ef0207439f`; thay đổi Work Note local chưa commit/push.
-- Docs: `docs/DanhDEV-worknote-release-completion`, báo cáo 21–25 local. Không có merge nào được thực hiện. PR/Jira/thông báo và target-production receipt còn thiếu được ghi minh bạch.
+- BE: `feat/DanhDEV-worknote-release-completion-be-api`, base `2129085d00b71417ce84203e60ad60d651468f4e`; thay đổi local chưa commit/push tại thời điểm 2026-11-04, gồm harness, guard và fixes Work Note (xem bảng PR đã mở ở mục cập nhật 2026-11-05 bên dưới).
+- DB: `feat/DanhDEV-worknote-release-completion-db`, cùng base; [PR #131](https://github.com/DATN-SPRING2027/DATN-BE/pull/131). Migration chỉ kiểm trên disposable local, chưa ảnh hưởng dữ liệu dùng chung. TTL 180 ngày cần kiểm dữ liệu cũ; rollback index không phục hồi dữ liệu đã hết hạn.
+- FE: `feat/DanhDEV-worknote-prompt-audit-fe-ui`, base/HEAD `dc381c50fab0438f3632aab86592f2ef0207439f` tại thời điểm 2026-11-04 (đã mở [PR #140](https://github.com/DATN-SPRING2027/DATN-FE/pull/140) ngày 2026-11-05).
+- Docs: `docs/DanhDEV-worknote-release-completion`, báo cáo 21–25 (đã mở [PR #68](https://github.com/DATN-SPRING2027/Document/pull/68) ngày 2026-11-05). PR/Jira/thông báo và target-production receipt còn thiếu được ghi minh bạch.
 
 Thông báo DB đã chuẩn bị để người phụ trách gửi: “DB PR131 bổ sung assessment feedback schema/index và migration TTL180 ngày. Đã đạt8/8 CI checks, migration safety/idempotency có suite riêng. Chưa apply dữ liệu dùng chung. Nhờ review dữ liệu cũ/retention và merge DB trước branch ứng dụng phụ thuộc; rollback index không khôi phục dữ liệu đã hết hạn.” Chưa gửi thông báo hoặc cập nhật Jira. Theo AI_WORKFLOW §3, “chờ DB PR được teammate review và merge vào main” trước khi đưa branch ứng dụng phụ thuộc qua bước tích hợp; AI không tự approve/merge.
 
-## Cập nhật ngày 2026-11-05 — Hoàn tất Development v30 & Release Gate v37 (`--corpus=v7`)
+## Cập nhật ngày 2026-11-05 — Hoàn tất Development v30, Release Gate v37 (`--corpus=v7`) & Bàn giao 4 Pull Requests
 
-Sau khi duyệt và thực thi kế hoạch khắc phục 4 lỗi semantic còn lại trên `mistralai/ministral-14b-2512` (`worknote-assessment.v34` + `worknote-editor.v6`, kèm rate-limit pacing tránh `429` và sửa lỗi Unicode word-boundary tiếng Việt cho blocker rationale):
+Sau khi duyệt và thực thi kế hoạch khắc phục 4 lỗi semantic còn lại trên `mistralai/ministral-14b-2512` (`worknote-assessment.v34` + `worknote-editor.v6`, kèm rate-limit pacing tránh `429`, sửa lỗi Unicode word-boundary tiếng Việt cho blocker rationale và thu hẹp phạm vi miễn trừ phủ định `"chưa đăng ký"` chỉ cho `query/truy vấn [tùy ý] chưa đăng ký`):
 
 | Nhóm kiểm định (2026-11-05) | Kết quả | Chi tiết |
 |---|---|---|
@@ -108,6 +108,15 @@ Sau khi duyệt và thực thi kế hoạch khắc phục 4 lỗi semantic còn 
 | **Release-v7 Validation (`plan-v4-release60-v37-20261105`, 20 scenarios)** | **`automatedGatePassed: true` (`100%`)** | `criticalErrors: 0`, `acceptedSourceReferences: 212/212 = 1.0000`, `adequacy.macroF1: 1.0000`, `questions.precision: 1.0000`, `questions.recall: 1.0000`, `answerUse: 8/8 = 1.0000`, `firstPassFormatValidity: 28/28 = 1.0000`, `editorAcceptance: 10/10 = 1.0000`, `workflowCompletion: 28/28 = 1.0000`. |
 | **Release-v7 Holdout (`plan-v4-release60-v37-20261105`, 40 scenarios)** | **`automatedGatePassed: true` (`100%`)** | `criticalErrors: 0`, `acceptedSourceReferences: 435/435 = 1.0000`, `adequacy.macroF1: 1.0000`, `questions.precision: 16/16 = 1.0000`, `questions.recall: 16/16 = 1.0000`, `answerUse: 20/20 = 1.0000`, `firstPassFormatValidity: 60/60 = 1.0000`, `editorAcceptance: 18/18 = 1.0000`, `workflowCompletion: 60/60 = 1.0000`. |
 | **Combined Release-60 (`plan-v4-release60-v37-20261105`, 60 scenarios)** | **`automatedGatePassed: true` (`100%`)** | `criticalErrors: 0`, `acceptedSourceReferences: 647/647 = 1.0000`, `adequacy.macroF1: 1.0000`, `questions.precision: 22/22 = 1.0000`, `questions.recall: 22/22 = 1.0000`, `answerUse: 28/28 = 1.0000`, `firstPassFormatValidity: 88/88 = 1.0000`, `editorAcceptance: 28/28 = 1.0000`, `workflowCompletion: 88/88 = 1.0000`. |
-| **Freeze Manifest & Cross-OS Hash (`71` frozen files)** | **Verified (`LF-normalized SHA-256`)** | `manifestHash = 42d0d6cb818dc3604cb5f62c45540b0f907469e355017e112c11726872e3385a`; `currentArtifactHash = be46b3189e33575e5b2eef2f82ad542f0cb5f41844d47638bb8883921ad1c023`. |
-| **Blinded Human Review & Production Signoff** | **`AWAITING_BLINDED_HUMAN_REVIEW` (`NOT_ESTABLISHED`)** | Blinded worksheet (`plan-v4-release60-v37-20261105.blinded-worksheet.json`) và sealed key đã xuất; `validated-configs.json` giữ `entries: []` cho tới khi reviewer độc lập hoàn tất chấm mù. |
+| **Freeze Manifest & Cross-OS Hash (`71` frozen files)** | **Verified (`LF-normalized SHA-256`)** | `manifestHash = a25df24c9bd6f977e627a40af3b954357bed146e461d801aaa326090e5a3d173`; `currentArtifactHash = 71dfb8c7ba0bedd3bc586c5d575f8475aa1be40add57adaa1a0b51f8c44ec85d`. |
+| **Blinded Human Review & Production Signoff** | **`AWAITING_BLINDED_HUMAN_REVIEW` (`NOT_ESTABLISHED`)** | Blinded worksheet (`plan-v4-release60-v37-20261105.blinded-worksheet.json`) và sealed key đã xuất; `validated-configs.json` giữ `entries: []` (warn-only ở local/development khi chưa bật strict flag; tại `NODE_ENV=production` hoặc `WORKNOTE_AGENT_REQUIRE_VALIDATED_CONFIG=true`, guard chặn lệnh gọi AI trước provider bằng `503 WORKNOTE_AGENT_UNAVAILABLE` trong khi manual Save vẫn hoạt động). |
+
+### Danh sách 4 Pull Requests bàn giao (2026-11-05)
+
+| Hạng mục | Pull Request | Nhánh | Commit mới nhất | Trạng thái |
+|---|---|---|---|---|
+| **1. DB Schema & TTL Migration** | [DATN-BE#131](https://github.com/DATN-SPRING2027/DATN-BE/pull/131) | `feat/DanhDEV-worknote-release-completion-db` | `8037cb0` | Ready for Review (`OPEN`) |
+| **2. BE API, Prompt v34 & Release Gate v37** | [DATN-BE#132](https://github.com/DATN-SPRING2027/DATN-BE/pull/132) | `feat/DanhDEV-worknote-release-completion-be-api` | `2db2b4f` | Ready for Review (`OPEN`) |
+| **3. FE UI (`noChangesSummary` D10b/F17)** | [DATN-FE#140](https://github.com/DATN-SPRING2027/DATN-FE/pull/140) | `feat/DanhDEV-worknote-prompt-audit-fe-ui` | `7345be0` | Ready for Review (`OPEN`) |
+| **4. Research & Audit Docs (20–25)** | [Document#68](https://github.com/DATN-SPRING2027/Document/pull/68) | `docs/DanhDEV-worknote-release-completion` | Cập nhật trong PR này | Ready for Review (`OPEN`) |
 

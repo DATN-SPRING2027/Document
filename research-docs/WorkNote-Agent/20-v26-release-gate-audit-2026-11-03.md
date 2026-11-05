@@ -228,7 +228,7 @@ Following the v26 failure analysis, prompt and deterministic state/protocol guar
 - Split prompt version: `task-note-assessment-split/2026-11-05.v5`
 - Editor instruction version: `task-note-editor/2026-11-05.v6`
 
-An unseen 60-case synthetic release corpus (`scripts/work-note-agent/cases-assessment-v7-release.json`, `--corpus=v7`, 20 validation + 40 holdout scenarios, 88 analysis turns) was authored and frozen under phase `plan-v4-release60-v37-20261105` (`manifestHash = 42d0d6cb818dc3604cb5f62c45540b0f907469e355017e112c11726872e3385a`, LF-normalized SHA-256 across all 71 frozen files).
+An unseen 60-case synthetic release corpus (`scripts/work-note-agent/cases-assessment-v7-release.json`, `--corpus=v7`, 20 validation + 40 holdout scenarios, 88 analysis turns) was authored and frozen under phase `plan-v4-release60-v37-20261105` (`manifestHash = a25df24c9bd6f977e627a40af3b954357bed146e461d801aaa326090e5a3d173`, `currentArtifactHash = 71dfb8c7ba0bedd3bc586c5d575f8475aa1be40add57adaa1a0b51f8c44ec85d`, LF-normalized SHA-256 across all 71 frozen files).
 
 | Runtime Metric (`postGuardRuntime`) | Validation (20 cases / 28 turns) | Holdout (40 cases / 60 turns) | Combined Release-60 (60 cases / 88 turns) | Threshold | Status |
 |---|---:|---:|---:|---:|:---:|
@@ -244,4 +244,4 @@ An unseen 60-case synthetic release corpus (`scripts/work-note-agent/cases-asses
 | **`automatedGatePassed`** | **`true`** | **`true`** | **`true`** | `true` | **PASS** |
 
 - **Report artifact:** `scripts/work-note-agent/assessment-plan-v4-release60-v37-20261105-release-gate.json`
-- **Blinded human review status:** `reviewerSemanticAssessment: "NOT_ESTABLISHED"`, `releaseStatus: "AWAITING_BLINDED_HUMAN_REVIEW"` (`.worknote-agent-evals/plan-v4-release60-v37-20261105.blinded-worksheet.json` and `.sealed-key.json` generated for 60 transcripts). `validated-configs.json` remains in warn-only mode (`entries: []`) until human blinded review is completed.
+- **Blinded human review status:** `reviewerSemanticAssessment: "NOT_ESTABLISHED"`, `releaseStatus: "AWAITING_BLINDED_HUMAN_REVIEW"` (`.worknote-agent-evals/plan-v4-release60-v37-20261105.blinded-worksheet.json` and `.sealed-key.json` generated for 60 transcripts). `validated-configs.json` keeps `entries: []` until human blinded review is completed (`semanticReview.status = "PASS"`): in non-strict local/development (`WORKNOTE_AGENT_REQUIRE_VALIDATED_CONFIG` unset), the runtime guard logs a warning (`[VALIDATED_CONFIG_WARN]`), whereas in `NODE_ENV=production` or when `WORKNOTE_AGENT_REQUIRE_VALIDATED_CONFIG=true`, the guard fails closed before the provider with `503 WORKNOTE_AGENT_UNAVAILABLE` while manual Save remains available.
