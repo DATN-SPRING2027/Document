@@ -1,0 +1,894 @@
+openapi: 3.0.3
+info:
+  title: WorkNote Agent Task Note pilot — LOCAL IMPLEMENTATION, TEAM REVIEW PENDING
+  version: 0.2.0-proposed
+  x-approval-status: PROPOSED_NOT_APPROVED
+  description: >-
+    Formal OpenAPI review draft. Local implementation follows user-approved contract 04; registered routes
+    default off. Canonical-only retention requires original-deletion confirmation; abandoned draft/chat expire
+    after 24 hours. Shared rollout and formal team review are separate from local testing.
+  x-local-implementation-authorization: >-
+    User approved contract 04 on 2026-10-27, including local integration before DB merge. No independent
+    approval or production activation claimed.
+security:
+  - sessionCookie: []
+  - bearerSession: []
+paths:
+  /api/v1/capture/projects/{projectId}/work-note-drafts:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    post:
+      operationId: proposedCreateTaskNoteDraft
+      description: >-
+        Require create/edit authority and server Task lookup in the same Project. This creates only a private
+        author draft, never a canonical WorkNote.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - operationId
+                - taskId
+              properties:
+                operationId:
+                  type: string
+                  format: uuid
+                taskId:
+                  type: string
+                  pattern: ^[a-fA-F0-9]{24}$
+                noteId:
+                  type: string
+                  pattern: ^[a-fA-F0-9]{24}$
+                  description: Existing note to edit
+                  if applicable; server verifies edit permission.: null
+      responses:
+        '201':
+          description: Private draft with a server revision; no model call.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Draft'
+        default:
+          $ref: '#/components/responses/Error'
+    get:
+      operationId: proposedResumeOwnedTaskNoteDraft
+      parameters:
+        - name: taskId
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: ^[a-fA-F0-9]{24}$
+        - name: noteId
+          in: query
+          schema:
+            type: string
+            pattern: ^[a-fA-F0-9]{24}$
+      responses:
+        '200':
+          description: Latest unexpired owned draft or null; no expiry refresh.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Draft'
+                nullable: true
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/capture/projects/{projectId}/work-note-drafts/{draftId}:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/DraftId'
+    get:
+      operationId: proposedGetOwnedWorkNoteDraft
+      responses:
+        '200':
+          description: Only the authorized scoped unexpired draft; expiry enforcement mechanics pending review.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Draft'
+        default:
+          $ref: '#/components/responses/Error'
+    patch:
+      operationId: proposedAutosaveWorkNoteDraft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - operationId
+                - expectedRevision
+                - title
+                - contentMarkdown
+              properties:
+                operationId:
+                  type: string
+                  format: uuid
+                expectedRevision:
+                  type: integer
+                  minimum: 1
+                title:
+                  type: string
+                  maxLength: 300
+                contentMarkdown:
+                  type: string
+                  maxLength: 30000
+      responses:
+        '200':
+          description: Updated draft; no model call or canonical version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Draft'
+        '409':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      operationId: proposedDiscardOwnedWorkNoteDraft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - expectedRevision
+                - discardConfirmed
+              properties:
+                expectedRevision:
+                  type: integer
+                  minimum: 1
+                discardConfirmed:
+                  type: boolean
+                  enum:
+                    - true
+      responses:
+        '204':
+          description: Owned draft discarded; canonical note unchanged.
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/capture/projects/{projectId}/work-note-drafts/{draftId}/reset-chat:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/DraftId'
+    post:
+      operationId: proposedResetOwnedWorkNoteAgentChat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevisionOperation'
+      responses:
+        '200':
+          description: Chat/questions/suggestions cleared; editor body retained.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Draft'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/capture/projects/{projectId}/work-note-drafts/{draftId}/save:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/DraftId'
+    post:
+      operationId: proposedSaveOwnedTaskNoteDraft
+      description: >-
+        Ordinary Save never requires an AI call. Current authority, base note version and draft revision are
+        rechecked. If an applied rewrite discards its original, explicit confirmation bound to
+        expectedRevision is required. Canonical write/version, content-free replay receipt and transient
+        cleanup are atomic. Replay rechecks current access and never returns raw/chat.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - operationId
+                - expectedRevision
+                - discardOriginalConfirmed
+              properties:
+                operationId:
+                  type: string
+                  format: uuid
+                expectedRevision:
+                  type: integer
+                  minimum: 1
+                discardOriginalConfirmed:
+                  type: boolean
+      responses:
+        '200':
+          description: Saved canonical Task Note; temporary draft/chat removed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CanonicalTaskNote'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/capture/projects/{projectId}/work-note-drafts/{draftId}/agent/messages:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/DraftId'
+    post:
+      operationId: proposedSendWorkNoteAgentMessage
+      description: >-
+        Explicit author request. Server rechecks edit authority and draft revision, fetches authorized context
+        and reconstructs conversation. No FE-supplied Task content, role, history, model or system prompt is
+        authoritative.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - operationId
+                - expectedRevision
+                - operation
+                - scope
+                - instruction
+                - includeWholeNoteContext
+              properties:
+                operationId:
+                  type: string
+                  format: uuid
+                  description: Stable logical request identity; server-scoped idempotency semantics require approval.
+                expectedRevision:
+                  type: integer
+                  minimum: 1
+                operation:
+                  type: string
+                  enum:
+                    - grammar
+                    - clarify
+                    - shorten
+                    - restructure
+                    - tone
+                    - handover
+                    - title
+                    - custom
+                scope:
+                  type: string
+                  enum:
+                    - whole_note
+                    - selection
+                instruction:
+                  type: string
+                  minLength: 1
+                  maxLength: 2000
+                includeWholeNoteContext:
+                  type: boolean
+                selection:
+                  $ref: '#/components/schemas/Selection'
+                replyToQuestionId:
+                  type: string
+                  format: uuid
+                questionDisposition:
+                  type: string
+                  enum:
+                    - answered
+                    - skipped
+                answer:
+                  type: string
+                  maxLength: 2000
+      responses:
+        '200':
+          description: Validated Agent outcome; no automatic Apply or Save.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentResponse'
+        '409':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '502':
+          $ref: '#/components/responses/Error'
+        '504':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/capture/projects/{projectId}/work-note-drafts/{draftId}/agent/suggestions/{suggestionId}/apply:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/DraftId'
+      - name: suggestionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: proposedApplyWorkNoteSuggestionToDraft
+      description: >-
+        Explicit user action. Verify stored suggestion owner, exact revision, snapshot and anchor. Never
+        accept replacement text or hashes from the model or client as authority. Insert-after is proposed
+        future behavior; the experimental pure helper currently implements replacement only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - operationId
+                - expectedRevision
+                - action
+                - applyTitle
+              properties:
+                operationId:
+                  type: string
+                  format: uuid
+                expectedRevision:
+                  type: integer
+                  minimum: 1
+                action:
+                  type: string
+                  enum:
+                    - replace_body
+                    - replace_selection
+                    - insert_after
+                    - replace_title
+                applyTitle:
+                  type: boolean
+      responses:
+        '200':
+          description: Updated private draft only; canonical Save is a separate workflow operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Draft'
+        '409':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/capture/projects/{projectId}/tasks/{taskId}/notes/{noteId}/versions:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/TaskId'
+      - $ref: '#/components/parameters/NoteId'
+    get:
+      operationId: listCanonicalTaskNoteVersions
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: Current scoped note read authority; canonical versions only, newest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - pagination
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - versionNumber
+                        - title
+                        - contentMarkdown
+                        - createdAt
+                      properties:
+                        versionNumber:
+                          type: integer
+                          minimum: 1
+                        title:
+                          type: string
+                        contentMarkdown:
+                          type: string
+                        createdAt:
+                          type: string
+                          format: date-time
+                  pagination:
+                    type: object
+                    required:
+                      - page
+                      - pageSize
+                      - totalItems
+                      - totalPages
+                    properties:
+                      page:
+                        type: integer
+                        minimum: 1
+                      pageSize:
+                        type: integer
+                        minimum: 1
+                      totalItems:
+                        type: integer
+                        minimum: 0
+                      totalPages:
+                        type: integer
+                        minimum: 0
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/capture/projects/{projectId}/tasks/{taskId}/notes/{noteId}/restore:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/TaskId'
+      - $ref: '#/components/parameters/NoteId'
+    post:
+      operationId: restoreCanonicalTaskNoteVersion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - operationId
+                - expectedVersion
+                - versionNumber
+              properties:
+                operationId:
+                  type: string
+                  format: uuid
+                expectedVersion:
+                  type: integer
+                  minimum: 1
+                versionNumber:
+                  type: integer
+                  minimum: 1
+      responses:
+        '200':
+          description: >-
+            Existing edit authority required. Creates a new canonical version and audit; historical versions
+            remain. Stable replay receipt prevents duplicate restoration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CanonicalTaskNote'
+        default:
+          $ref: '#/components/responses/Error'
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: __Host-session
+      description: >-
+        Existing WorkNote cookie binding; cookie-authenticated writes also require the existing x-csrf-token
+        protection. No new authentication scheme is activated.
+    bearerSession:
+      type: http
+      scheme: bearer
+  parameters:
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^[a-fA-F0-9]{24}$
+    DraftId:
+      name: draftId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    TaskId:
+      name: taskId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^[a-fA-F0-9]{24}$
+    NoteId:
+      name: noteId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^[a-fA-F0-9]{24}$
+  responses:
+    Error:
+      description: >-
+        Existing structured error envelope. Include requestId; redact provider body and credentials. 401
+        unauthenticated; 403 denied operation; 404 absent or inaccessible scoped resource; 409 stale
+        draft/anchor; 422 invalid input; 429 quota; 502 invalid provider output; 503 unavailable; 504
+        deadline.
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - code
+              - message
+              - requestId
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+              requestId:
+                type: string
+              details:
+                type: object
+  schemas:
+    Draft:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - revision
+        - title
+        - contentMarkdown
+        - workflow
+        - taskId
+        - expiresAt
+        - baseNoteVersion
+        - conversation
+        - pendingQuestion
+        - suggestion
+        - hasAppliedRewrite
+      properties:
+        id:
+          type: string
+          format: uuid
+        revision:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+        contentMarkdown:
+          type: string
+        workflow:
+          type: string
+          enum:
+            - TASK_NOTE
+        taskId:
+          type: string
+        noteId:
+          type: string
+          nullable: true
+        baseNoteVersion:
+          type: integer
+          minimum: 0
+        hasAppliedRewrite:
+          type: boolean
+        conversation:
+          type: array
+          maxItems: 40
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - role
+              - content
+            properties:
+              role:
+                type: string
+                enum:
+                  - user
+                  - assistant
+              content:
+                type: string
+                maxLength: 4000
+        pendingQuestion:
+          type: object
+          nullable: true
+          additionalProperties: false
+          required:
+            - id
+            - text
+            - reason
+            - options
+          properties:
+            id:
+              type: string
+              format: uuid
+            text:
+              type: string
+            reason:
+              type: string
+            options:
+              type: array
+              maxItems: 4
+              items:
+                type: string
+        suggestion:
+          allOf:
+            - $ref: '#/components/schemas/AgentResponse/properties/suggestion'
+          nullable: true
+        expiresAt:
+          type: string
+          format: date-time
+          description: >-
+            Proposed enforced expiry after 24 hours of author inactivity; background reads must not refresh
+            it. Canonical note history has no draft TTL.
+    Selection:
+      type: object
+      additionalProperties: false
+      required:
+        - start
+        - end
+        - quote
+      properties:
+        start:
+          type: integer
+          minimum: 0
+          description: UTF-16 code-unit offset in the exact draft body.
+        end:
+          type: integer
+          minimum: 1
+        quote:
+          type: string
+          minLength: 1
+          maxLength: 30000
+    RevisionOperation:
+      type: object
+      additionalProperties: false
+      required:
+        - operationId
+        - expectedRevision
+      properties:
+        operationId:
+          type: string
+          format: uuid
+        expectedRevision:
+          type: integer
+          minimum: 1
+    CanonicalTaskNote:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - projectId
+        - taskId
+        - authorId
+        - authorName
+        - type
+        - status
+        - title
+        - contentMarkdown
+        - contentSchemaVersion
+        - currentVersionNumber
+        - createdAt
+        - updatedAt
+        - permissions
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        taskId:
+          type: string
+        authorId:
+          type: string
+        authorName:
+          type: string
+        type:
+          type: string
+          enum:
+            - TASK_NOTE
+        status:
+          type: string
+          enum:
+            - CONFIRMED
+        title:
+          type: string
+          maxLength: 300
+        contentMarkdown:
+          type: string
+          maxLength: 30000
+        contentSchemaVersion:
+          type: integer
+          enum:
+            - 2
+        currentVersionNumber:
+          type: integer
+          minimum: 1
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        permissions:
+          type: object
+          additionalProperties: false
+          required:
+            - canCreate
+            - canEdit
+            - canDelete
+            - canSubmit
+            - canReview
+            - canConfigure
+          properties:
+            canCreate:
+              type: boolean
+            canEdit:
+              type: boolean
+            canDelete:
+              type: boolean
+            canSubmit:
+              type: boolean
+            canReview:
+              type: boolean
+            canConfigure:
+              type: boolean
+    AgentResponse:
+      type: object
+      description: >-
+        Proposed response branches. The host additionally checks reply/action and request-scope combinations.
+        sourceRevision is generated by the server; no reasoning or system prompt is returned.
+      additionalProperties: false
+      required:
+        - status
+        - message
+        - sourceRevision
+        - suggestion
+        - questions
+        - uncertainties
+      oneOf:
+        - properties:
+            status:
+              enum:
+                - ANSWER
+            suggestion:
+              nullable: true
+              enum:
+                - null
+            questions:
+              maxItems: 0
+        - properties:
+            status:
+              enum:
+                - CLARIFICATION_REQUIRED
+            suggestion:
+              nullable: true
+              enum:
+                - null
+            questions:
+              minItems: 1
+              maxItems: 1
+        - properties:
+            status:
+              enum:
+                - SUGGESTION_READY
+            suggestion:
+              type: object
+              nullable: false
+              required:
+                - id
+                - scope
+                - operation
+                - baseRevision
+                - snapshotHash
+                - promptVersion
+                - replacementText
+                - suggestedTitle
+                - changeSummary
+              oneOf:
+                - properties:
+                    replacementText:
+                      type: string
+                      minLength: 1
+                - properties:
+                    replacementText:
+                      nullable: true
+                      enum:
+                        - null
+                    suggestedTitle:
+                      type: string
+                      minLength: 1
+            questions:
+              maxItems: 0
+      properties:
+        status:
+          type: string
+          enum:
+            - ANSWER
+            - CLARIFICATION_REQUIRED
+            - SUGGESTION_READY
+        message:
+          type: string
+        sourceRevision:
+          type: integer
+          minimum: 1
+        suggestion:
+          type: object
+          nullable: true
+          additionalProperties: false
+          properties:
+            id:
+              type: string
+              format: uuid
+            scope:
+              type: string
+              enum:
+                - whole_note
+                - selection
+            replacementText:
+              type: string
+              nullable: true
+            suggestedTitle:
+              type: string
+              nullable: true
+            changeSummary:
+              type: array
+              items:
+                type: string
+            operation:
+              type: string
+              enum:
+                - grammar
+                - clarify
+                - shorten
+                - restructure
+                - tone
+                - handover
+                - title
+                - custom
+            baseRevision:
+              type: integer
+              minimum: 1
+              readOnly: true
+            snapshotHash:
+              type: string
+              pattern: ^[a-f0-9]{64}$
+              readOnly: true
+              description: Server binding only; browser/model hashes are never Apply authority.
+            promptVersion:
+              type: string
+              readOnly: true
+            selection:
+              $ref: '#/components/schemas/Selection'
+        questions:
+          type: array
+          maxItems: 1
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - id
+              - text
+              - reason
+              - options
+            properties:
+              id:
+                type: string
+                format: uuid
+              text:
+                type: string
+              reason:
+                type: string
+              options:
+                type: array
+                maxItems: 4
+                items:
+                  type: string
+        uncertainties:
+          type: array
+          items:
+            type: string
