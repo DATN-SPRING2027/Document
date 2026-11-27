@@ -1,5 +1,8 @@
 # ==============================================================================
-# Continuum AI — StatefulSets (MongoDB 7.0 3-Node Replica Set & Redis Cluster)
+# Continuum AI — Reference K8s StatefulSets (MongoDB 7.0, Redis 7.2, PG16)
+# NOTE: Production deployments should use `DATN_BE/charts/continuum-ai` Helm chart
+# and `sag-laya-integration/SAG/compose.yaml`. These raw K8s manifests are
+# reference blueprints synchronized on 2026-11-27 (`INFRA-009`).
 # ==============================================================================
 apiVersion: v1
 kind: Service
@@ -99,7 +102,7 @@ spec:
             - "--maxmemory"
             - "400mb"
             - "--maxmemory-policy"
-            - "allkeys-lru"
+            - "noeviction"
           ports:
             - containerPort: 6379
           resources:

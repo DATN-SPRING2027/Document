@@ -222,3 +222,13 @@ export interface IFollowUpTask {
   - `handover.campaign.started`: Thông báo cho Leader và người kế nhiệm bắt đầu chiến dịch.
   - `handover.item.verified`: Người kế nhiệm ký nhận một mục bàn giao.
   - `handover.interview.transcribed`: Khi hoàn tất bóc băng âm thanh, kích hoạt AI trích xuất đề xuất tri thức.
+
+---
+
+## 4. Đồng bộ Bảo mật & Handover V2 (`2026-11-27` — `SEC-AUTH-009`, `SEC-AUTH-010`, H-15/P-04)
+
+Đối chiếu với hợp đồng Handover V2 (`Document/research-docs/Workspace/17..19-*.md` & `contracts/handover-v1.*`) và kết quả Full-System Security Audit (`2026-11-27`):
+
+1. **Ràng buộc `previewDepartingMember` (`SEC-AUTH-009`):** Endpoint xem trước nhân sự rời dự án bắt buộc xác thực `assertHistoricalDepartingMember` (chỉ chấp nhận thành viên thực sự từng thuộc phạm vi bàn giao) và lọc `relatedProjects` nghiêm ngặt theo `scope.isProjectMember === true`, ngăn chặn việc rò rỉ danh sách dự án/nhiệm vụ ngoài phạm vi của caller.
+2. **Đồng bộ H-15 / P-04 trên `/quick-transfer` (`SEC-AUTH-009` / `DOC-002`):** Endpoint `/quick-transfer` bắt buộc kiểm tra trạng thái gói bàn giao đã được Successor B chấp nhận — nếu gói chưa được chấp nhận sẽ từ chối đồng nhất bằng mã lỗi `PACKAGE_NOT_ACCEPTED`, bảo đảm không thể chuyển giao hàng loạt task trước khi người kế nhiệm xác nhận tiếp nhận gói bàn giao đã phát hành.
+3. **Cô lập quyền đọc Follow-up Owner (`SEC-AUTH-010`):** Quyền đọc nội dung/tài liệu của follow-up owner được giới hạn chặt theo từng `item.itemId` được gán cụ thể trong gói bàn giao, không mở rộng thành quyền đọc toàn bộ dự án hoặc toàn bộ mục khác của gói.

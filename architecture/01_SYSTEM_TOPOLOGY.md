@@ -47,17 +47,17 @@ Dữ liệu đi một chiều từ ngoài Internet vào Client ➔ Biên mạng 
                                     │
            ┌────────────────────────┴────────────────────────┐
            ▼                                                 ▼
-┌──────────────────────────────────────┐  ┌──────────────────────────────┐
-│ 4. IN-MEMORY & MESSAGE BROKER TIER   │  │ 5. PERSISTENCE STORAGE TIER  │
-│   ├── Redis 7.2 Cluster              │  │   ├── MongoDB 7.0 (rs0)      │
-│   │   • L2 Cache & SingleFlight Lock │  │   │   (3-Node Replica Set)   │
-│   │   • Realtime Pub/Sub Channels    │  │   │   (Primary Data Truth)   │
-│   └── BullMQ Distributed Queue       │  │   ├── LanceDB retrieval target│
-│       • ingestion-queue              │  │   │   (Runtime verify)        │
-│       • handover-queue               │  │   └── Cloudflare R2          │
-│       • mail-queue                   │  │       (Private Object Store) │
-│       • dlq-failed-jobs (DLQ)        │  └──────────────────────────────┘
-└──────────────────────────────────────┘
+┌──────────────────────────────────────┐  ┌───────────────────────────────────┐
+│ 4. IN-MEMORY & MESSAGE BROKER TIER   │  │ 5. PERSISTENCE STORAGE TIER       │
+│   ├── Redis 7.2 (`noeviction`)       │  │   ├── MongoDB 7.0 (rs0)           │
+│   │   • L2 Cache & Distributed Lock  │  │   │   (Primary Domain Truth)      │
+│   │   • Realtime Pub/Sub Channels    │  │   ├── PostgreSQL 16 (`sag` schema)│
+│   └── BullMQ Distributed Queue (BE)  │  │   │   (SAG Metadata/ACL/Graph)    │
+│       • knowledge outbox consumer    │  │   ├── Qdrant Vector Engine        │
+│       • handover-queue / mail-queue  │  │   │   (1024-d Dense + BM25 Sparse)│
+│       • dlq-failed-jobs (DLQ)        │  │   └── Object Storage (R2/S3/Local)│
+│   (SAG runs internal InProcJobQueue) │  │       (Owned by DATN_BE)          │
+└──────────────────────────────────────┘  └───────────────────────────────────┘
 ```
 
 ---
@@ -67,8 +67,8 @@ Dữ liệu đi một chiều từ ngoài Internet vào Client ➔ Biên mạng 
 ### 2.1. Biên mạng Nginx (Edge & Ingress)
 * **TLS Termination & SSL Offloading:** Nginx giải mã SSL/TLS tại biên, truyền tải gói tin HTTP không mã hóa vào mạng Docker nội bộ (`continuum-vpc`), giúp giảm hơn **30% tải CPU** cho các backend container.
 * **Gzip & Brotli Compression:** Nén tự động các tệp JavaScript, CSS và JSON phản hồi từ Next.js.
-* **WebSocket Reverse Proxy:** Nâng cấp HTTP sang `Upgrade: websocket` để phục vụ phiên ghi âm phỏng vấn bàn giao trực tiếp tại `/ws/handover` và chuông thông báo realtime `/ws/notifications`.
-* **Task service boundary:** Task là NestJS service chạy process/container riêng, với mã nguồn nằm trong repository DATN_BE hiện tại. Task đọc/ghi task canonical qua API nội bộ; chỉ Task sở hữu `tasks`/`task_events` trong logical database `continuum_task`. Không có Jira import/sync trong MVP. Work Note và Handover chỉ giữ logical `taskId` và gọi contract của Task service.
+* **WebSocket Reverse Proxy:** Nâng cấp HTTP sang `Upgrade: websocket` cho kết nối **raw WebSocket** (xác thực qua `ws-ticket` một lần của Chat/Notification realtime) và các luồng SSE (`proxy_buffering off` cho AI Chat streaming).
+* **Task workspace boundary (`2026-10-22` / `2026-11-27`):** `continuum_task` đã được kích hoạt trên MongoDB replica set hiện có. Ở topology capstone hiện tại, Task Workspace chạy trong `IamModule` (`useDb('continuum_task')`) nhưng cô lập hoàn toàn qua `TaskWorkspaceRepository` (Capture, Handover và Notification Center không truy cập raw collection trực tiếp); tách process độc lập (`dist/services/task/main.js`) vẫn là đích kiến trúc microservices khi bật Gateway. Không có Jira import/sync trong MVP.
 
 ### 2.2. API Gateway & Kiểm soát truy hồi
 * Nằm giữa Nginx và các Domain Services.

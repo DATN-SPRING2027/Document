@@ -1,6 +1,7 @@
 # Continuum AI — Hạ Tầng Dữ Liệu, Hàng Đợi & AI (Storage, Messaging & AI)
 
 > Nằm trong tài liệu kiến trúc tổng thể Continuum AI. Xem [Mục lục](README.md).
+> **Cập nhật đồng bộ runtime (`2026-11-27` — `SAG-DB-003`, `SAG-RET-004`, `E2E-INT-001`, `DOC-003`):** Tài liệu phản ánh chính xác kiến trúc triển khai hiện hành của `DATN_BE` và `sag-laya-integration` (**MongoDB 7.0 + PostgreSQL 16 (`sag`) + Qdrant + Backend Object Storage `STORAGE_MODE=r2|s3|local`**). Các thiết kế thử nghiệm cũ (LanceDB, `pgvector`, R2 trực tiếp từ SAG, UMAP/Neural Cross-Encoder/Laya) đã bị thay thế bởi các ADR chính thức.
 
 ---
 
@@ -9,125 +10,114 @@
 Hệ thống phân định ranh giới lưu trữ dữ liệu rõ ràng giữa các tầng công nghệ:
 
 ```
-┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                       HẠ TẦNG LƯU TRỮ DỮ LIỆU                                          │
-│                                                                                                        │
-│   ┌────────────────────────┐  ┌───────────────────────────────────┐  ┌─────────────────────────────┐   │
-│   │ MongoDB 7.0 Replica Set│  │ PostgreSQL 16 + pgvector (SAG)    │  │ Cloudflare R2               │   │
-│   │ (rs0 - 3 Nodes)        │  │ (hoặc Qdrant Vector Engine)       │  │ (Object Store)              │   │
-│   ├────────────────────────┤  ├───────────────────────────────────┤  ├─────────────────────────────┤   │
-│   │ • Source of Truth      │  │ • Tri thức sau bóc tách           │  │ • File gốc PDF, DOCX, MD    │   │
-│   │ • Nghiệp vụ, users     │  │ • Hypergraph (Chunk, Event, Entity)│ • File ghi âm phỏng vấn Handover│
-│   │ • Lịch sử phiên bản    │  │ • Chỉ mục Vector HNSW (pgvector)  │  │ • Zero Egress Fees          │   │
-│   │ • Audit Logs           │  │ • [3D UNIVERSE] Partitions & Nodes│  │ • S3 API Compatible         │   │
-│   │ • ACID Transactions    │  │ • Dynamic Hyperedge SQL Retrieval │  │                             │   │
-│   └────────────────────────┘  └───────────────────────────────────┘  └─────────────────────────────┘   │
-└────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                       HẠ TẦNG LƯU TRỮ DỮ LIỆU (ACTIVE RUNTIME)                                │
+│                                                                                                               │
+│   ┌─────────────────────────┐  ┌──────────────────────────────────┐  ┌─────────────────────────────────────┐ │
+│   │ MongoDB 7.0 Replica Set │  │ PostgreSQL 16 (`sag` schema)     │  │ Qdrant Vector Engine (Bắt buộc Prod)│ │
+│   │ (rs0 — Source of Truth) │  │ + SAG Local Upload Volume        │  │ (Per-Project Hybrid Collections)    │ │
+│   ├─────────────────────────┤  ├──────────────────────────────────┤  ├─────────────────────────────────────┤ │
+│   │ • Source of Truth       │  │ • Documents, Versions, ACL Maps  │  │ • `search_units_{project_id}`       │ │
+│   │ • IAM, Capture, Task,   │  │ • SearchUnits, DenseGraph E0/E1  │  │ • `routing_tree_{project_id}`       │ │
+│   │   Chat, Handover, Audit │  │ • Leiden Routing Tree & Universe │  │ • `session_units_{project_id}`      │ │
+│   │ • ACID Transactions     │  │ • InProcJobQueue job records     │  │ • 1024-d Dense + BM25 Sparse (IDF)  │ │
+│   └─────────────────────────┘  └──────────────────────────────────┘  └─────────────────────────────────────┘ │
+│                                                                                                               │
+│   ┌───────────────────────────────────────────────────────────────────────────────────────────────────────┐   │
+│   │ Backend Object Storage (`STORAGE_MODE=r2|s3|local`; Cloudflare R2 cho Production)                     │   │
+│   │ • Owned strictly by `DATN_BE` (Capture Project Documents, Chat Attachments, Handover Audio)           │   │
+│   │ • BE streams approved bytes via HTTP multipart to SAG `/api/v1/projects/{project_id}/documents/upload`│   │
+│   └───────────────────────────────────────────────────────────────────────────────────────────────────────┘   │
+└───────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 1.1. MongoDB 7.0 (3-Node Replica Set `rs0`) — Nguồn Chân Lý (Source of Truth)
-**Topology hiện hành theo workspace ADR-003/DEC-011 (2026-10-02):** MongoDB remains the operational source of truth on the existing cluster/replica set, with one logical database per active bounded service. Current DATN-BE deployment owns `continuum_iam`, `continuum_capture`, `continuum_jira`, `continuum_lifecycle`, `continuum_chat`, `continuum_handover`, `continuum_ingestion`, and `continuum_notification`; cross-cutting audit is in `continuum_audit`. Do not use the former shared `continuum_db` for runtime domain writes. Product targets `continuum_task` and `continuum_ai_adapter` are not in the current BE runtime inventory; reconcile their service deployment before provisioning or migrating into them. See the workspace authority record `docs/adr/ADR-003-database-per-service-persistence.md` and the local [topology catalog](../database-design/README.md).
+**Topology hiện hành theo workspace ADR-003/DEC-011 & cập nhật `2026-11-27`:** MongoDB remains the operational source of truth on the existing cluster/replica set, with logical databases per bounded domain: `continuum_iam`, `continuum_capture`, `continuum_task` (activated `2026-10-22`, pragmatically mounted inside `IamModule` via `useDb('continuum_task')` and accessed exclusively through `TaskWorkspaceRepository`), `continuum_lifecycle`, `continuum_chat`, `continuum_handover`, `continuum_ingestion`, `continuum_notification`, `continuum_jira` (legacy module pending retirement), and cross-cutting `continuum_audit`. `continuum_ai_adapter` remains a target schema without an active standalone runtime owner. Do not use the former shared `continuum_db` for runtime domain writes. See the local [topology catalog](../database-design/README.md).
 
-* **Tại sao dùng MongoDB?** Mô hình tri thức phần mềm (Knowledge Objects) có cấu trúc linh hoạt theo từng loại hình: Kiến trúc hệ thống, SOP quy trình triển khai, Báo cáo sự cố (Postmortem), Quyết định kỹ thuật (ADR). Cấu trúc Document-oriented của MongoDB cho phép lưu trữ snapshot nội dung bất biến (`knowledge_versions`) kèm siêu dữ liệu phong phú mà không cần migration bảng phức tạp.
-* **Giao dịch ACID Đa tài liệu (Multi-Document ACID Transactions):** Khi một tri thức được phê duyệt trong Verification Inbox, hệ thống bắt buộc mở một Mongoose Session để:
-  1. Tạo bản ghi `knowledge_versions` mới.
-  2. Cập nhật `currentVersionId` và trạng thái `ACTIVE` trên `knowledge_objects`.
-  3. Cập nhật trạng thái `SUPERSEDED` cho version cũ.
-  4. Ghi nhận `knowledge_evidence` liên kết và nhật ký `audit_logs`.
-  *Nếu bất kỳ bước nào lỗi, toàn bộ giao dịch bị `abortTransaction()`, đảm bảo tính toàn vẹn 100%.*
-* **Đặc tả Schema chi tiết từng Service:** Xem toàn bộ thiết kế cơ sở dữ liệu vi dịch vụ tại [Document/database-design/](../database-design/README.md).
+* **Tại sao dùng MongoDB?** Mô hình tri thức phần mềm (Knowledge Objects), Capture records (`work_notes`, `project_documents`, `work_reports`), và Task/Handover có cấu trúc linh hoạt và hỗ trợ **Multi-Document ACID Transactions** trên Replica Set `rs0`.
+* **Đặc tả Schema chi tiết từng Service:** Xem toàn bộ thiết kế cơ sở dữ liệu tại [Document/database-design/](../database-design/README.md).
 
-#### Task Service storage boundary
+#### Task Workspace storage boundary (`2026-10-22` / `2026-11-27`)
 
-Task Service target dùng database logic riêng `continuum_task` trên replica set hiện có, cấu hình bằng `MONGODB_URI` + `SERVICE_DATABASE` theo mẫu các service hiện tại trong DATN-BE. Service sở hữu `tasks`, append-only `task_events` và `outbox_events` khi cần phát sự kiện bền vững. Ghi task mutation cùng history/outbox bằng transaction trong cùng database. Capture, Handover, Gateway và Agent không truy cập trực tiếp database này; chúng dùng Task API hoặc event contract. Đây là target service/database, chưa thuộc active BE runtime inventory. Không cần tạo MongoDB cluster vật lý hoặc repo mới.
+`continuum_task` đã được kích hoạt trên replica set hiện có và chứa `tasks`, `task_events`, sprints/boards và các index vận hành (bao gồm `deadline_scan_due_cursor`). Trong topology capstone hiện hành, Task Workspace chạy trong `IamModule` nhưng mọi truy cập từ Capture, Handover và Notification Center đều đi qua `TaskWorkspaceRepository` / Task API contract (không đọc/ghi raw collection chéo domain). Tách process độc lập (`dist/services/task/main.js`) vẫn là đích kiến trúc khi bật microservices Gateway. Xem [Task storage design](../database-design/12_TASK_MANAGEMENT_SCHEMA.md) và [ADR-010](../research-tech/ADR-010-task-service-in-existing-repositories.md).
 
-Task Agent chỉ nhận task context mà API cho phép theo user/scope hiện hành. Bản rewrite/gợi ý được giữ ở dạng proposal; người có quyền xác nhận trước khi mutation cập nhật task canonical. Lịch sử ghi actor, nguồn Agent/proposal, field thay đổi, task version và correlation/operation ID; không lưu full prompt hoặc toàn bộ raw context mặc định. Xem [Task storage design](../database-design/12_TASK_MANAGEMENT_SCHEMA.md) và [ADR-010](../research-tech/ADR-010-task-service-in-existing-repositories.md).
+### 1.2. PostgreSQL 16 (`sag` schema) + Qdrant (Bộ Lưu Trữ SAG & Vũ Trụ Tri Thức 3D)
+* **PostgreSQL 16 (`sag` schema — Metadata, ACL, Graph & Routing Tree):**
+  - Lưu trữ `documents`, `document_versions`, `source_project_mappings` (`state='CONFIRMED'`), `search_units`, `dense_graph` (E0/E1 deterministic entities & relations), cây điều hướng Leiden (`routing_tree`), và bản chụp 3D Knowledge Universe (`universe_*`). SQLite chỉ dùng cho dev/test đơn tiến trình, tuyệt đối không dùng cho production.
+  - Áp dụng SQLAlchemy async connection pooling tường minh (`pool_size`, `max_overflow`, `pool_pre_ping=True`, `pool_recycle`).
+* **Qdrant (Kho Vector Bắt Buộc Cho Production — thay thế LanceDB & `pgvector`):**
+  - Tổ chức theo từng project để cô lập tenant vật lý và tăng tốc lọc ACL: `search_units_{project_id}`, `routing_tree_{project_id}`, `session_units_{project_id}`.
+  - Mỗi collection hỗ trợ **Hybrid Dense (1024-d Cosine) + Native Sparse BM25 (`Modifier.IDF`)**, với payload index trên `document_id`, `version_id`, `partition_id`, `is_active`, `status`.
+  - Khi tài liệu bị thay thế hoặc thu hồi (`KNOWLEDGE_SOURCE_REVOKED` / `KNOWLEDGE_SOURCE_REPLACED`), SAG cập nhật trạng thái trong PostgreSQL, kích hoạt `UnitSupersessionOverlay` để lọc ngay ở truy vấn và xóa các vector points tương ứng khỏi Qdrant theo batch.
+  - Chi tiết schema và đối chiếu lịch sử xem tại [11_SAG_STORAGE_SCHEMA.md](../database-design/11_SAG_STORAGE_SCHEMA.md).
 
-### 1.2. PostgreSQL 16 + pgvector (Bộ Lưu Trữ SAG & Vũ Trụ Tri Thức 3D)
-* **Tại sao dùng PostgreSQL 16 + pgvector (hoặc Qdrant)?**
-  - **Hợp nhất ACID & Không lệch pha:** Thực thể quan hệ (Chunk, Event, Entity, Hyperedge) và Vector Embeddings nằm trong cùng một cơ sở dữ liệu. Khi xóa một tài liệu, toàn bộ vector và liên kết bị xóa theo `ON DELETE CASCADE`, loại bỏ triệt để rủi ro dữ liệu rác/lệch pha giữa relational DB và vector DB rời rạc.
-  - **Single-Query Dynamic Retrieval:** Tìm kiếm vector kết hợp Dynamic SQL Hyperedges và lọc pre-retrieval theo tập source đã được backend authorization resolve. `allowed_roles` chỉ là nhãn lọc phụ, không phải ACL đầy đủ hay quyền truy cập; truy vấn phải giới hạn source được phép trước khi đọc nội dung chunk.
-  - **Hỗ trợ Vũ trụ Tri thức 3D (3D Knowledge Galaxy):** Lưu trữ trực tiếp tọa độ $x, y, z$, bán kính cụm module, và lịch sử góc quay camera thám hiểm (`universe_overviews`, `universe_partitions`, `exploration_steps`). Chi tiết xem tại [11_SAG_STORAGE_SCHEMA.md](../database-design/11_SAG_STORAGE_SCHEMA.md).
-  - **Lựa chọn phân tán mở rộng:** Hỗ trợ kết nối **Qdrant** khi quy mô vector vượt ngưỡng chục triệu bản ghi.
-
-### 1.3. Cloudflare R2 — Lưu trữ đối tượng đám mây (Object Storage)
-* **Ưu điểm cốt lõi:** Tương thích 100% với S3 API nhưng **hoàn toàn miễn phí chi phí truyền tải ra ngoài (Zero Egress Fees)**.
-* **Cơ chế Direct Presigned PUT:** Client tải file PDF/DOCX trực tiếp lên bucket private của R2 qua URL có chữ ký tạm thời. Backend không phải nhận file nhị phân qua RAM, giúp server không bao giờ bị nghẽn CPU/RAM khi người dùng upload file nặng hàng chục MB.
+### 1.3. Backend Object Storage (`STORAGE_MODE=r2|s3|local`) & Cơ chế Upload sang SAG
+* **Phân tách quyền sở hữu Storage (`adr-remove-laya-and-r2.md`):**
+  - **`DATN_BE`** sở hữu Cloudflare R2 (Production) / S3-compatible / Local adapter (`STORAGE_MODE=r2|s3|local`) cho file gốc Project Documents, Chat Attachments và Handover Audio.
+  - Capture hỗ trợ `upload-intent` (presigned PUT URL gắn chặt `(organizationId, projectId)` — `SEC-AUTH-002`) và `confirm-upload` (kiểm tra magic bytes + full-file SHA-256).
+  - **`sag-laya-integration` không truy cập trực tiếp R2** và không hỗ trợ endpoint `/ingest-object`. Khi tài liệu/báo cáo được phê duyệt (`APPROVED`), `KnowledgeOutboxConsumer` ở `DATN_BE` đọc bytes từ Object Storage và stream qua HTTP multipart tới `POST /api/v1/projects/{project_id}/documents/upload` của SAG (lưu trên local upload volume của SAG rồi đưa vào `InProcJobQueue`).
 
 ---
 
-## 2. Hạ tầng Hàng đợi & Xử lý bất đồng bộ (BullMQ + Redis)
+## 2. Hạ tầng Hàng đợi & Xử lý bất đồng bộ (NestJS BullMQ + Redis & SAG `InProcJobQueue`)
 
-Để không chặn request người dùng khi thực hiện OCR, bóc tách AI, tính toán tọa độ 3D, phát event downstream hoặc gửi mail, các tác vụ nền phù hợp được đẩy qua **BullMQ** trên nền **Redis 7.2**.
+Phân định ranh giới hàng đợi giữa hai runtime Node.js và Python:
 
 ```
-[ Domain Services ] ──(Produce Job)──► [ Redis 7.2 BullMQ ]
-                                              │
-         ┌──────────────────┬─────────────────┼──────────────────┬──────────────────────┐
-         ▼                  ▼                 ▼                  ▼                      ▼
-  [ingestion-queue]  [task-event-relay]* [mail-queue]    [handover-queue]    [universe-projection]
-         │                  │                 │                  │                      │
-   (MarkItDown/OCR) (Optional Outbox)  (SMTP/Resend)     (Whisper Audio)     (UMAP/3D Force Layout)
-         │                  │                 │                  │                      │
-         └──────────────────┴────────┬────────┴──────────────────┴──────────────────────┘
-                                     │ (Failed 3 Retries)
-                                     ▼
-                          [ dlq-failed-jobs ] ──► Ghi Audit Log & Alert Admin
+[ DATN_BE Domain Services ] ──► [ Redis 7.2 (noeviction) + BullMQ / Outbox Consumers ]
+                                    ├── KnowledgeOutboxConsumer ──(HTTP multipart /upload)──► [ SAG FastAPI ]
+                                    ├── notification.realtime.v1 (Redis Pub/Sub) ──► [ Chat WS Gateway ]
+                                    ├── mail-queue / handover-queue / report schedulers
+                                    └── Failed jobs / DLQ ──► Audit Log & Alert
+
+[ SAG FastAPI (`sag-laya-integration`) ] ──► [ InProcJobQueue (asyncio in-process worker) ]
+                                                 ├── Parse (MarkItDown / PDF / DOCX / OCR)
+                                                 ├── C99 DP Segmentation + SearchUnit Chunking
+                                                 ├── Embedding + Qdrant Batched Upsert
+                                                 └── Deterministic E0/E1 DenseGraph + Leiden Routing Tree
 ```
 
-### 2.1. Danh mục các hàng đợi chuyên biệt
-* `task-event-relay` chỉ bật khi có consumer bất đồng bộ thực sự; outbox lưu trong database `continuum_task`, còn relay gửi event tới consumer. Nó không thay thế API đồng bộ cho task command.
-1. **`ingestion-queue`:** Tiếp nhận file mới, tải byte từ R2, chuyển tiếp cho Worker bóc tách text và sinh vector vào PostgreSQL/Qdrant.
-2. **`universe-projection`:** Khi có tài liệu mới hoặc cờ `universe_dirty_sources`, Worker tính toán lại phép chiếu không gian 3D (UMAP/Force-directed graph layout), cập nhật tọa độ $(x, y, z)$ và bán kính cụm module trên nền bất đồng bộ.
-3. **`task-event-relay` (optional):** Chuyển tiếp event đã ghi vào outbox của Task Service tới notification/Agent consumers khi cần. Task CRUD và giao owner vẫn là lệnh HTTP đồng bộ; không thêm queue nếu không có consumer MVP.
-4. **`mail-queue`:** Tiếp nhận các tác vụ gửi email giao dịch, email nhắc nhở cuối ngày và thông báo Verification Inbox.
-5. **`handover-queue`:** Xử lý file ghi âm phỏng vấn, gọi model Whisper để chuyển speech-to-text và trích xuất câu hỏi mở.
-
-### 2.2. Đường ống xử lý lỗi với Dead Letter Queue (DLQ Pipeline)
-* **Cơ chế Exponential Backoff:** Khi một job gặp sự cố (ví dụ SAG downstream hoặc SMTP bị nghẽn), BullMQ tự động thử lại tối đa **3 lần** với độ trễ tăng theo lũy thừa thời gian:
-  $$\Delta t = 2^n \times 1000\text{ms} \quad (2\text{s} \longrightarrow 4\text{s} \longrightarrow 8\text{s})$$
-* **Dead Letter Queue (`dlq-failed-jobs`):** Nếu sau 3 lần vẫn thất bại, job sẽ bị đẩy vào DLQ. Hệ thống tự động ghi nhật ký vào `audit_logs` với cờ `SEVERITY: HIGH` và gửi thông báo cho Admin để can thiệp thủ công, tuyệt đối không làm thất thoát dữ liệu.
+### 2.1. Quy tắc vận hành Redis & Hàng đợi
+* **Redis `maxmemory-policy noeviction`:** Bắt buộc cấu hình `noeviction` cho Redis lưu BullMQ queues, distributed leases và JWT blacklist (tuyệt đối không dùng `allkeys-lru` để tránh mất job/lock ngầm).
+* **SAG không tiêu thụ BullMQ trực tiếp:** `sag-laya-integration` vận hành `InProcJobQueue` nội bộ (single-worker asyncio queue) kết hợp khóa/trạng thái bền vững trong PostgreSQL; vì vậy trong MVP hiện tại, SAG triển khai với `replicas: 1` cho đến khi chuyển sang worker queue phân tán riêng.
+* **Dead Letter & Retry (`DATN_BE`):** Các job BullMQ và outbox consumer dùng exponential backoff có giới hạn số lần thử và ghi nhật ký lỗi rõ ràng; job thất bại **không bao giờ** xóa tệp nguồn gốc trên Object Storage.
 
 ---
 
-## 3. Kiến trúc SAG AI Engine & Phân luồng OCR
+## 3. Kiến trúc SAG AI Engine & Đường Ống Truy Xuất Thực Tế (Synced with `05_SAG_AI_RAG_AUDIT.md`)
+
+Đường ống RAG đang vận hành thực tế trong `sag-laya-integration` (`main`):
 
 ```
-                     [ File Bytes từ Cloudflare R2 ]
-                                   │
-                    ┌──────────────┴──────────────┐
-                    ▼                             ▼
-        [ File văn bản chuẩn ]          [ File Scan / Ảnh chụp ]
-        (PDF có text, DOCX, MD)         (PDF dạng ảnh, PNG, JPG)
-                    │                             │
-                    ▼                             ▼
-          ┌───────────────────┐         ┌───────────────────┐
-          │    MarkItDown     │         │    MinerU OCR     │
-          │ (Bóc tách văn bản │         │ (Bóc tách công    │
-          │  giữ cấu trúc MD) │         │  thức & bảng ảnh) │
-          └─────────┬─────────┘         └─────────┬─────────┘
-                    │                             │
-                    └──────────────┬──────────────┘
-                                   │
-                                   ▼
-                    [ Markdown Cấu Trúc Thống Nhất ]
-                                   │
-                                   ▼
-                    [ Header-Aware Chunking (512 tokens) ]
-                                   │
-                                   ▼
-                    [ Vector Embedding (bge-m3 / text-emb-004) ]
-                                   │
-                                   ▼
-                    [ Lưu trữ LanceDB + Hybrid Index BM25 ]
+[ Approved File Bytes (BE HTTP /upload) ]
+                 │
+                 ▼
+[ Document Parser (MarkItDown / PDF / DOCX / Office / OCR) ]
+                 │
+                 ▼
+[ Canonical C99 Dynamic Programming Topic Segmentation ]
+                 │
+                 ▼
+[ Dense DP SearchUnit Chunking (heading-aware, locator/span preserved) ]
+                 │
+         ┌───────┴────────────────────────────────────────┐
+         ▼                                                ▼
+[ Qdrant Per-Project Collections ]             [ PostgreSQL 16 (`sag` schema) ]
+  • 1024-d Dense Vector (Cosine)                 • Document / Version / Active ACL Maps
+  • Native Sparse BM25 (`Modifier.IDF`)          • Deterministic E0/E1 `DenseGraph`
+                                                 • Leiden Community Routing Tree
+                                                 • 3D Universe Projections (Deterministic Layout)
 ```
 
-### 3.1. Phân luồng OCR thông minh (Dual OCR Routing)
-* **Luồng 1 (MarkItDown):** Tối ưu hóa cho các tài liệu phần mềm văn bản (tài liệu thiết kế DOCX, README Markdown, PDF xuất từ Notion/Confluence). MarkItDown bóc tách cực nhanh, giữ nguyên các bảng biểu và khối code mà không tốn tài nguyên GPU.
-* **Luồng 2 (MinerU OCR):** Kích hoạt khi phát hiện file scan, ảnh chụp màn hình kiến trúc hoặc PDF scan không có text layer. MinerU sử dụng mô hình thị giác máy tính để nhận diện cấu trúc bố cục đa cột, công thức toán học và bảng phức tạp.
-
-### 3.2. Tìm kiếm lai (Hybrid Retrieval) & Provider-Agnostic LLM Gateway
-* Khi có câu hỏi từ `svc_chat`, SAG AI Engine thực hiện **Hybrid Retrieval**:
-  $$\text{Score} = \alpha \times \text{Score}_{\text{BM25}} + (1 - \alpha) \times \text{Score}_{\text{Vector}}$$
-* Sau đó, các đoạn trích điểm cao nhất được đưa qua bộ **Reranker** để chọn ra Top-K bằng chứng chính xác nhất.
-* **LLM Gateway:** Đóng gói giao tiếp qua adapter trừu tượng (`generate()`, `embed()`), hỗ trợ chuyển đổi linh hoạt giữa Google Gemini 2.5, OpenAI và các mô hình cục bộ mà không phải sửa code nghiệp vụ.
+### 3.1. Truy xuất lai (Hybrid Retrieval), Xếp hạng & Kiểm chứng trích dẫn
+1. **Pre-Retrieval Tenant & ACL Scoping:** Backend NestJS xác thực `ACTIVE` Organization + `ACTIVE` Project Membership (`scope.isProjectMember === true`, Trap 5 fail-closed) và truyền `project_id` / `partition_id` hợp lệ. SAG lọc cứng theo `SourceProjectMapping(state='CONFIRMED')`, `Document.is_active=True` và `DocumentVersion.status != 'REVOKED'`.
+2. **Hybrid Search + RRF (`k=60`):** Truy vấn đồng thời Dense Vector + Native BM25 Sparse trên Qdrant, hợp nhất thứ hạng bằng Reciprocal Rank Fusion (`k=60`), tùy chọn bổ sung truy hồi theo nhánh Leiden Routing Tree.
+3. **Deterministic Reranking & Diversity:** Áp dụng bộ chấm điểm **heuristic deterministic** (lexical overlap, proximity, IDF, structural signals) kết hợp **MMR (Maximal Marginal Relevance)** và **`UnitSupersessionOverlay`** để loại bỏ đoạn trích từ phiên bản tài liệu đã bị thay thế/thu hồi.
+4. **LLM Generation, Streaming SSE & Citation Verification:**
+   - Prompt cách ly hoàn toàn ngữ cảnh tài liệu như untrusted data; `decision_provider` mặc định là `"disabled"` (không gọi thêm router LLM thừa trước mỗi truy vấn trừ khi bật tường minh).
+   - Hỗ trợ streaming SSE (`MESSAGE_DELTA`) kết hợp kiểm chứng trích dẫn/grounding và trả `INSUFFICIENT_EVIDENCE` khi thiếu bằng chứng hợp lệ.
+5. **Các thành phần đã loại bỏ / không có trong runtime (tránh nhầm lẫn tài liệu cũ):**
+   - **Không** dùng LanceDB hay `pgvector` trong production.
+   - **Không** dùng E2 LLM graph enrichment hoặc Laya (đã loại bỏ chính thức theo ADR để giảm chi phí/latency và đảm bảo tính tất định).
+   - **Không** dùng neural cross-encoder reranker, METIS/Spectral clustering, UMAP, hoặc semantic response cache.
+   - **ECCE (Query Expansion):** mặc định **TẮT** (opt-in qua cờ cấu hình).

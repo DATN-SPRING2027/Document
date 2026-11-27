@@ -2,26 +2,26 @@
 
 ## Status and boundaries
 
-Implementation is split across `DATN_BE`, `DATN_FE`, and this documentation repository. The BE implementation uses the Capture service and Gateway; the FE calls the project-scoped API through the application API client. MongoDB stores operational content in the Capture service database. This document describes the delivered scope as of 2026-10-24.
+Implementation is split across `DATN_BE`, `DATN_FE`, and this documentation repository. The BE implementation uses the Capture service and Gateway; the FE calls the project-scoped API through the application API client. MongoDB stores operational content in the Capture service database (`continuum_capture`). This document describes the delivered scope originally shipped on `2026-10-24` and synchronized with the active Capture -> Outbox -> SAG integration and Full-System Audit remediations on `2026-11-27`.
 
-The three records have separate workflows and authorization rules. Project Documents support PDF and DOCX files. Periodic Work Reports produce due/overdue integration events. The existing Notification Center owns notification delivery; this Work Note package does not add a separate center or a downstream SAG consumer.
+The three records (`Task Note`, `Project Document`, `Periodic Work Report`) have separate workflows and authorization rules. Project Documents support expanded file allowlists (PDF, DOCX, Office/Markdown/text/image types validated by magic bytes and SHA-256). Periodic Work Reports support both `MEMBER` and `LEADER` reporting scopes and produce due/overdue integration events. The existing Notification Center owns notification delivery, while `KnowledgeOutboxConsumer` in `DATN_BE` asynchronously streams approved sources to SAG (`POST /api/v1/projects/{projectId}/documents/upload`) and propagates `KNOWLEDGE_SOURCE_REVOKED` / `KNOWLEDGE_SOURCE_REPLACED` tombstones.
 
 ## Task Note
 
 - Scope: an existing Task in the same Project. The Task Note API verifies the task through the Task API and stores only its task reference and structured note content.
-- Content: title, accomplishments, approach, and reason. A Task Note is confirmed when created; no Leader review is required.
-- Access: active Project members with access to the Task can read it; the same-Organization Manager exception below also permits reading after the Task scope check succeeds. The author and Project review authority may edit or archive a Task Note under the existing Project/Task scope checks; changes are audited. Task Notes have no approve/reject review transition.
-- Knowledge: Task Notes do not automatically enter official AI knowledge.
-- API: `GET|POST /api/v1/capture/projects/{projectId}/tasks/{taskId}/notes`; `PATCH|DELETE .../notes/{noteId}`. Project-wide list/detail routes are `GET .../work-notes` and `GET .../work-notes/{noteId}`.
+- Content: title, accomplishments, approach, and reason. A Task Note is immediately visible for daily task collaboration upon creation (no approval gate is required simply to record or read a Task Note).
+- Access: active Project members with access to the Task can read it; the same-Organization Manager exception below also permits reading after the Task scope check succeeds. The author and Project review authority may edit or archive a Task Note under the existing Project/Task scope checks; changes are audited.
+- Knowledge & optional review promotion: Task Notes do **not** automatically enter official SAG AI knowledge. When promoted for official AI knowledge indexing, the Capture API provides explicit dual-control review transitions (`POST .../work-notes/{noteId}/approve`, `request-changes`, `reject`) enforcing distinct reviewer authority (`assertReviewerCanReview`) and automatic `KNOWLEDGE_SOURCE_REVOKED` emission if edited or deleted after sync.
+- API: `GET|POST /api/v1/capture/projects/{projectId}/tasks/{taskId}/notes`; `PATCH|DELETE .../notes/{noteId}`; project-wide list/detail `GET .../work-notes`, `GET .../work-notes/{noteId}`; and governed knowledge review routes `POST .../work-notes/{noteId}/approve|request-changes|reject|knowledge-sync`.
 
 ## Project Document
 
 - Scope: the Project. Project Documents are project-level records and do not reference a Task. Document types include MVP, database design, RSR, architecture, API specification, research, requirement, design, technical specification, and other.
 - Lifecycle: `DRAFT` → `PENDING_REVIEW` → `APPROVED`, `CHANGES_REQUESTED`, or `REJECTED`; approved documents may be archived. Editing an approved or rejected document creates a new version while retaining prior content and review history.
 - Permissions: members create/edit their documents and submit them. A Project role with review/configuration authority reviews documents. A current Organization Manager also has the explicitly approved same-Organization read/review exception below. The BE checks authority; FE permissions are only presentation hints.
-- Storage: text, version metadata, and file metadata live in MongoDB. PDF/DOCX originals are stored in R2 in production; a private local storage adapter is available in non-production. Uploads are limited to 20 MB and validated by type and file signature. Each version retains its file reference and download metadata.
-- API: project-scoped list/create/detail/update and `submit`, `approve`, `request-changes`, `reject`, `archive` actions under `/api/v1/capture/projects/{projectId}/documents`.
-- File API: `PUT|GET /api/v1/capture/projects/{projectId}/documents/{documentId}/file`; download responses preserve the attachment filename and content type.
+- Storage: text, version metadata, and file metadata live in MongoDB. Originals are stored via the backend storage adapter (`STORAGE_MODE=r2|s3|local`, Cloudflare R2 in production; private local storage only in non-production/fallback). Presigned `upload-intent` and `confirm-upload` routes are strictly scoped to `(organizationId, projectId)` (`SEC-AUTH-002`) with full-file SHA-256 verification and magic-byte inspection. Optimistic concurrency uses `ETag` / `If-Match` CAS (`E2E-INT-012`).
+- API: project-scoped list/create/detail/update and `submit`, `approve`, `request-changes`, `reject`, `archive`, `upload-intent`, `confirm-upload`, and `knowledge-sync` actions under `/api/v1/capture/projects/{projectId}/documents`.
+- File API: `PUT|GET /api/v1/capture/projects/{projectId}/documents/{documentId}/file`; download responses preserve safe attachment headers (`Content-Disposition: attachment`, `X-Content-Type-Options: nosniff`).
 
 ## Manager review authority (decision 2026-10-25)
 
@@ -40,7 +40,7 @@ The covered record types are:
 
 | Record | Manager read/review exception | Existing constraints retained |
 | --- | --- | --- |
-| Task Note (`work_notes`) | Read across the current Organization's active Projects after the owning Task API validates the Task scope; no Project Membership prerequisite is added by Capture for a Manager. | No approve/reject workflow exists. Existing author/review-authority edit/archive rules remain unchanged; this decision creates no new mutation operation. |
+| Task Note (`work_notes`) | Read across the current Organization's active Projects after the owning Task API validates the Task scope; no Project Membership prerequisite is added by Capture for a Manager. | Creation requires no approval gate; optional knowledge-indexing promotion (`approve`/`request-changes`/`reject`) still enforces server scope, author/reviewer separation (`assertReviewerCanReview`), and audit logging. |
 | Project Document | Read document content, versions and authorized files; approve, request changes or reject submitted documents. | Server scope, author/reviewer separation, lifecycle and audit checks still apply. |
 | Periodic Work Report | Read and review MEMBER and LEADER reports in the current Organization's active Projects. | Review requires a pending report and a different author; LEADER report review requires Manager authority. Member/Leader reporting obligations and schedule/configuration rules are unchanged. |
 
@@ -80,7 +80,11 @@ records the existing accepted path, not a new bypass or activation.
 - Project, document, report, and task-note identifiers are always queried with their Organization/Project scope to prevent cross-project IDOR.
 - Document and report state transitions and outbox events are persisted together; the shared audit service records the corresponding actions. Approved documents and reports emit `KNOWLEDGE_SOURCE_APPROVED` with source type, source id, Project id, version, and approval time. Replacing an approved version and archiving a document emit `KNOWLEDGE_SOURCE_REPLACED` and `KNOWLEDGE_SOURCE_REVOKED`. Draft, pending, changes-requested, and rejected content is not emitted as approved knowledge.
 - Review and schedule events include `DOCUMENT_APPROVED`, `DOCUMENT_CHANGES_REQUESTED`, `DOCUMENT_REJECTED`, `WORK_REPORT_APPROVED`, `WORK_REPORT_CHANGES_REQUESTED`, `WORK_REPORT_REJECTED`, `WORK_REPORT_DUE`, `WORK_REPORT_OVERDUE`, and `WORK_REPORT_FREQUENCY_CHANGED`.
-- These are integration events; the existing Notification Center owns delivery. A downstream knowledge-index consumer is not present in this deployment, so actual removal of archived/replaced sources is not verified here. No embedding, vector store, or retrieval pipeline is built in this Work Note package.
+- **Active SAG Knowledge Sync & Governance Rules (`2026-11-27` — `BE-LOGIC-001`, `BE-LOGIC-002`, `E2E-INT-001`, `E2E-INT-014`):**
+  - `KnowledgeOutboxConsumer` consumes Capture outbox events (`KNOWLEDGE_SOURCE_APPROVED`, `KNOWLEDGE_SOURCE_REPLACED`, `KNOWLEDGE_SOURCE_REVOKED`) and streams approved content/file bytes to SAG `POST /api/v1/projects/{projectId}/documents/upload` (never `/ingest-object`; SAG has no direct R2 access per `adr-remove-laya-and-r2.md`).
+  - **No self-approval bypass (`BE-LOGIC-001`):** `POST .../knowledge-sync` endpoints on Project Documents, Work Reports, and Task Notes are strictly restricted to re-enqueuing/retrying items that are **already `APPROVED`** (`assertReviewerCanReview` is enforced on every approval transition; an author can never use `/knowledge-sync` to auto-approve a `DRAFT` or `PENDING_REVIEW` record into SAG).
+  - **Task Note schema & review governance (`BE-LOGIC-002`):** `work_notes` includes typed `provenance.review` and `knowledgeSync` fields/indexes; if a Task Note is enabled for governed SAG indexing, it enforces `assertReviewerCanReview` (distinct reviewer) and emits a durable `KNOWLEDGE_SOURCE_REVOKED` outbox event whenever edited or deleted after sync so stale/revoked content is removed from SAG.
+  - **OpenAPI synchronization (`E2E-INT-014`):** All active Capture routes (including `upload-intent`, `confirm-upload`, `knowledge-sync`, `LEADER` report scope, expanded schedules/document types, and `ETag`/`If-Match` CAS headers) are synchronized with `DATN_BE/docs/openapi/work-note-v1.openapi.yaml`.
 
 ## Persistence and operational notes
 

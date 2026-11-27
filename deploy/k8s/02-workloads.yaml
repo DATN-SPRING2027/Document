@@ -1,5 +1,11 @@
 # ==============================================================================
-# Continuum AI — Kubernetes Deployments (Frontend, Backend Core, AI Engine)
+# Continuum AI — Reference Kubernetes Deployments (Frontend, Backend Core, SAG AI)
+# NOTE: Canonical Helm deployment lives in `DATN_BE/charts/continuum-ai`.
+# Synchronized 2026-11-27 (`INFRA-009`, `DOC-003`):
+# - Backend probes use `/api/v1/health` & `/api/v1/health/ready`, full-instance
+#   MongoDB URI (no `/continuum` DB suffix), and SAG port `8000`.
+# - SAG AI Engine uses PostgreSQL 16 + Qdrant Cloud/Server (no LanceDB, no
+#   multi-attached RWO PVC deadlock; single-replica MVP until durable PG queue).
 # ==============================================================================
 apiVersion: apps/v1
 kind: Deployment
@@ -23,7 +29,7 @@ spec:
     spec:
       containers:
         - name: nextjs
-          image: continuum/frontend-nextjs:latest
+          image: continuum/frontend-nextjs:v1
           ports:
             - containerPort: 3000
           resources:
@@ -36,14 +42,22 @@ spec:
           env:
             - name: NODE_ENV
               value: "production"
-            - name: NEXT_PUBLIC_API_URL
-              value: "/api/v1"
+            - name: CONTINUUM_API_BASE_URL
+              value: "http://backend-service.continuum-core.svc.cluster.local:3001"
+            - name: CONTINUUM_TRUSTED_EDGE_HOPS
+              value: "1"
           livenessProbe:
             httpGet:
               path: /api/health
               port: 3000
             initialDelaySeconds: 10
             periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
 ---
 apiVersion: v1
 kind: Service
@@ -79,9 +93,9 @@ spec:
     spec:
       containers:
         - name: nestjs-core
-          image: continuum/backend-core:latest
+          image: continuum/backend-core:v1
           ports:
-            - containerPort: 3000
+            - containerPort: 3001
           resources:
             requests:
               cpu: "500m"
@@ -92,25 +106,34 @@ spec:
           env:
             - name: NODE_ENV
               value: "production"
+            - name: PORT
+              value: "3001"
             - name: MONGODB_URI
-              value: "mongodb://mongodb-0.mongo-headless.continuum-data.svc.cluster.local:27017,mongodb-1.mongo-headless.continuum-data.svc.cluster.local:27017,mongodb-2.mongo-headless.continuum-data.svc.cluster.local:27017/continuum?replicaSet=rs0"
+              value: "mongodb://mongodb-0.mongo-headless.continuum-data.svc.cluster.local:27017,mongodb-1.mongo-headless.continuum-data.svc.cluster.local:27017,mongodb-2.mongo-headless.continuum-data.svc.cluster.local:27017/?replicaSet=rs0"
             - name: REDIS_HOST
               value: "redis-service.continuum-data.svc.cluster.local"
-            - name: SAG_AI_URL
-              value: "http://ai-engine-service.continuum-ai.svc.cluster.local:8001"
-            - name: MONGO_MAX_POOL_SIZE
+            - name: SAG_API_BASE_URL
+              value: "http://ai-engine-service.continuum-ai.svc.cluster.local:8000"
+            - name: SAG_BFF_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: continuum-core-secrets
+                  key: sag-bff-service-token
+            - name: MONGODB_MAX_POOL_SIZE
               value: "15"
+            - name: STORAGE_MODE
+              value: "r2"
           livenessProbe:
             httpGet:
-              path: /healthz
-              port: 3000
+              path: /api/v1/health
+              port: 3001
             initialDelaySeconds: 15
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /ready
-              port: 3000
-            initialDelaySeconds: 5
+              path: /api/v1/health/ready
+              port: 3001
+            initialDelaySeconds: 10
             periodSeconds: 5
 ---
 apiVersion: v1
@@ -122,8 +145,8 @@ spec:
   selector:
     app: backend-core
   ports:
-    - port: 3000
-      targetPort: 3000
+    - port: 3001
+      targetPort: 3001
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -131,7 +154,11 @@ metadata:
   name: ai-engine
   namespace: continuum-ai
 spec:
-  replicas: 2
+  # Single-replica MVP constraint (`SAG-ING-005`): InProcJobQueue + RWO upload volume.
+  # Scale >1 only after migrating to durable PostgreSQL job leases + RWX/shared volume.
+  replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: ai-engine
@@ -142,9 +169,9 @@ spec:
     spec:
       containers:
         - name: fastapi-sag
-          image: continuum/ai-engine:latest
+          image: continuum/sag-api:v1
           ports:
-            - containerPort: 8001
+            - containerPort: 8000
           resources:
             requests:
               cpu: "500m"
@@ -154,18 +181,50 @@ spec:
               memory: "3072Mi"
           env:
             - name: PORT
-              value: "8001"
-            - name: LANCEDB_PATH
-              value: "/app/data/lancedb"
-            - name: TORCH_NUM_THREADS
-              value: "2"
+              value: "8000"
+            - name: SAG_VECTOR_BACKEND
+              value: "qdrant"
+            - name: SAG_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: sag-secrets
+                  key: database-url
+            - name: SAG_QDRANT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: sag-secrets
+                  key: qdrant-url
+            - name: SAG_QDRANT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sag-secrets
+                  key: qdrant-api-key
+            - name: SAG_BFF_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: sag-secrets
+                  key: sag-bff-service-token
+            - name: SAG_UPLOAD_DIR
+              value: "/app/uploads"
+          livenessProbe:
+            httpGet:
+              path: /api/v1/system/health
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /api/v1/system/health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
           volumeMounts:
-            - name: lancedb-storage
-              mountPath: /app/data/lancedb
+            - name: sag-uploads
+              mountPath: /app/uploads
       volumes:
-        - name: lancedb-storage
+        - name: sag-uploads
           persistentVolumeClaim:
-            claimName: lancedb-pvc
+            claimName: sag-uploads-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -176,16 +235,16 @@ spec:
   selector:
     app: ai-engine
   ports:
-    - port: 8001
-      targetPort: 8001
+    - port: 8000
+      targetPort: 8000
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: lancedb-pvc
+  name: sag-uploads-pvc
   namespace: continuum-ai
 spec:
   accessModes: ["ReadWriteOnce"]
   resources:
     requests:
-      storage: 10Gi
+      storage: 20Gi

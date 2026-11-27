@@ -1,106 +1,89 @@
 # Continuum AI — Kiến Trúc Frontend Next.js (App Router)
 
 > Nằm trong tài liệu kiến trúc tổng thể Continuum AI. Xem [Mục lục](README.md).
+> **Cập nhật đồng bộ runtime (`2026-11-27` — `FE-UX-007`):** Tài liệu đã được đối soát khớp với kiến trúc thực tế của `DATN_FE` (Next.js 16 App Router, React 19, Tailwind CSS v4 + TailAdmin v2.4, `next-intl`, BFF `/api/backend/[...path]`, raw `three` + `three/examples/jsm/*`, raw WebSocket + SSE).
 
 ---
 
-## 1. Lý do lựa chọn Next.js (App Router) thay thế Pure React
+## 1. Lý do lựa chọn Next.js 16 (App Router) & Kiến trúc thực tế
 
-Trước đây, dự án từng cân nhắc sử dụng React SPA thuần (Vite). Tuy nhiên, việc chuyển đổi sang **Next.js (App Router, TypeScript, Tailwind CSS, TailAdmin)** mang lại những ưu thế kỹ thuật vượt trội cho đồ án tốt nghiệp:
+Dự án sử dụng **Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4 (`@theme` tokens) và TailAdmin v2.4** cùng `next-intl` cho định tuyến đa ngôn ngữ (`[locale]`):
 
-1. **Kiến trúc Server Components (RSC):** Các trang Dashboard layout, Sidebar điều hướng, danh mục tĩnh không cần tải JavaScript xuống client, giúp giảm **45% dung lượng Bundle JS ban đầu (Initial Bundle Size)**.
-2. **Streaming Server-Sent Events (SSE) mượt mà:** Trợ lý hỏi đáp AI (Cited Chat) yêu cầu stream câu trả lời kèm thẻ trích dẫn theo thời gian thực mà không bị chặn render giao diện.
-3. **Bảo mật Token với HttpOnly Cookies:** Next.js Route Handlers đóng vai trò **BFF (Backend-for-Frontend)**, cho phép lưu Access/Refresh Token trong `HttpOnly Secure Cookies`, loại bỏ hoàn toàn nguy cơ tấn công XSS đánh cắp token từ `localStorage`.
-4. **Không cần Micro Frontend:** Với cấu trúc thư mục dạng **Feature-Driven Modular Architecture**, Next.js tự động thực hiện **Route-based Code Splitting**. Người dùng truy cập trang nào, trình duyệt mới nạp code của tính năng đó, đạt hiệu năng tối ưu mà không phải chịu sự phức tạp của Module Federation.
+1. **Ranh giới Server Components (RSC) và Client Components rõ ràng:** `[locale]/layout.tsx`, trang root/route shells và `setRequestLocale` chạy trên server để nạp `next-intl` messages, metadata và font; trong khi shell tương tác (`AdminLayout`, `AppSidebar`, `AppHeader`) và các workspace giàu tương tác (`WorkWorkspace`, `ProjectDocumentsWorkspace`, `AiChatWorkspace`, `ChatWorkspace`, `KnowledgeUniverseWorkspace`, `PlatformConsole`) là Client Components (`"use client"`) được tách mã theo route và `next/dynamic` để tránh thổi phồng bundle ban đầu.
+2. **Streaming Server-Sent Events (SSE) & Raw WebSocket:** Trợ lý hỏi đáp AI (`AiChatWorkspace`) tiêu thụ luồng SSE trực tiếp cho token streaming và trích dẫn; Chat nội bộ & Notification realtime dùng **raw WebSocket** với vé một lần (`ws-ticket`) từ backend (không dùng Socket.IO).
+3. **Bảo mật Token với HttpOnly Cookies qua BFF `/api/backend/[...path]`:** Route Handler `src/app/api/backend/[...path]/route.ts` đóng vai trò **BFF (Backend-for-Frontend)** giữ Access/Refresh Token trong `HttpOnly` cookies, gắn CSRF token (`x-csrf-token`), `x-request-id`, `x-expected-organization-id`, và trả phản hồi `503` có cấu trúc khi backend tạm ngắt kết nối. Ngoài ra, `src/app/api/health/route.ts` cung cấp health probe độc lập cho container/K8s.
+4. **Không cần Micro Frontend:** Feature-Driven Modular Architecture kết hợp App Router route-based code splitting và `next/dynamic({ ssr: false })` cho các module WebGL/3D nặng (Knowledge Universe, 3D Companion).
 
 ---
 
-## 2. Cấu trúc thư mục chuẩn Next.js App Router (TailAdmin Foundation)
+## 2. Cấu trúc thư mục thực tế của `DATN_FE` (Next.js 16 + TailAdmin v2.4)
 
 ```text
-frontend/
+DATN_FE/
 ├── src/
-│   ├── app/                                    # Next.js App Router (File-system Routing)
-│ │   │   ├── (dashboard)/                        # Route Group: Không gian làm việc chính
-│   │   │   ├── layout.tsx                      # TailAdmin Dashboard Shell (Sidebar + Header)
-│   │   │   ├── page.tsx                        # Dashboard tổng quan tri thức & chỉ số
-│   │   │   ├── universe/                       # [WOW FACTOR] Vũ Trụ Tri Thức 3D (Knowledge Galaxy)
-│   │   │   │   ├── page.tsx                    # Canvas 3D toàn cảnh không gian tri thức (Three.js/R3F)
-│   │   │   │   └── [partitionId]/page.tsx      # Đi sâu vào chi tiết cụm tinh vân Module/Service
-│   │   │   ├── tasks/                          # Task list/detail/create/edit; Kanban là P1 đề xuất
-│   │   │   │   ├── page.tsx                    # Danh sách + tìm/lọc cơ bản qua BFF/Gateway → Task API
-│   │   │   │   └── [taskId]/page.tsx            # Chi tiết task, owner/status/history theo quyền
-│   │   │   ├── daily-notes/                    # Tính năng ghi nhận công việc hàng ngày
-│   │   │   │   ├── page.tsx                    # Danh sách notes + Lịch làm việc
-│   │   │   │   └── [date]/page.tsx             # Form What/How/Why, liên kết task tùy chọn
-│   │   │   ├── verification/                   # Hộp thư kiểm chứng tri thức (Verification Inbox)
-│   │   │   │   └── page.tsx                    # Danh sách Proposed Knowledge cho SME/Leader
-│   │   │   ├── assistant/                      # Trợ lý thông minh (Cited Chatbot)
-│   │   │   │   └── page.tsx                    # Khung chat RAG, streaming và citation cards
-│   │   │   ├── handover/                       # Studio chuyển giao công việc
-│   │   │   │   ├── page.tsx                    # Danh sách đợt bàn giao & Readiness Checklist
-│   │   │   │   └── [id]/interview/page.tsx     # Phòng phỏng vấn Audio thời gian thực
-│   │   │   └── settings/                       # Quản lý Organization, Projects, Teams, Grants
+│   ├── app/                                    # Next.js 16 App Router
+│   │   ├── [locale]/                           # Đa ngôn ngữ (en / vi) qua next-intl (setRequestLocale)
+│   │   │   ├── (admin)/                        # Authenticated Workspace Shell (AdminLayout)
+│   │   │   │   ├── dashboard/                  # Organization Overview (Manager) / Member Workspace
+│   │   │   │   ├── projects/                   # Projects Directory & [projectId] Workspace
+│   │   │   │   │   └── [projectId]/            # Overview, Tasks/Sprints, Work Notes, Documents,
+│   │   │   │   │                               # Work Reports, Members, Handover, Settings
+│   │   │   │   ├── ai-chat/                    # Trợ lý AI Cited Chat (SSE streaming + citations)
+│   │   │   │   ├── knowledge-universe/         # Vũ Trụ Tri Thức 3D (lazy-loaded raw Three.js)
+│   │   │   │   ├── chat/                       # Team Chat (raw WebSocket + ws-ticket)
+│   │   │   │   ├── organization/               # Manager Governance: Members, Invitations, Settings
+│   │   │   │   └── platform/                   # Platform Operator Console V2 (Admin scope)
+│   │   │   ├── (full-width-pages)/             # Auth (signin, signup, invite accept, 404/error)
+│   │   │   ├── layout.tsx                      # Root Locale Server Layout (NextIntlClientProvider)
+│   │   │   └── page.tsx                        # Landing / Entry routing
 │   │   │
-│   │   ├── api/                                # Route Handlers (BFF Proxy)
-│   │   │   ├── auth/[...nextauth]/route.ts     # Xử lý set HttpOnly Cookies
-│   │   │   └── proxy/[...path]/route.ts        # Chuyển tiếp request an toàn vào NestJS VPC
+│   │   ├── api/                                # Route Handlers (BFF & Health)
+│   │   │   ├── backend/[...path]/route.ts      # BFF Proxy: HttpOnly Cookies + CSRF + Org Context + 503 JSON
+│   │   │   └── health/route.ts                 # Liveness/Readiness endpoint cho Docker/K8s
 │   │   │
-│   │   ├── globals.css                         # Tailwind CSS Tokens & Typography Inter
-│   │   └── layout.tsx                          # Root Layout (Fonts, Theme Provider)
+│   │   └── globals.css                         # Tailwind CSS v4 @theme tokens & logical utilities
 │   │
-│   ├── components/                             # UI Components tái sử dụng
-│   │   ├── ui/                                 # Primitives từ TailAdmin (Button, Modal, Input)
-│   │   ├── common/                             # Header, Sidebar, Breadcrumb, NotificationBell
-│   │   ├── citations/                          # Component hiển thị nguồn trích dẫn tài liệu
-│   │   └── universe-3d/                        # [3D GALAXY] Components WebGL / Three.js
-│   │       ├── GalaxyCanvas.tsx                # R3F Canvas, OrbitControls, Bloom Effect
-│   │       ├── PartitionNebula.tsx             # Tinh vân đại diện cho Module/Service
-│   │       ├── EntityStarNode.tsx              # Tinh cầu thực thể phát sáng (Shader bloom)
-│   │       ├── HyperedgeLinks.tsx              # Đường nối liên kết ngữ nghĩa giữa các node
-│   │       ├── FlyToCameraController.tsx       # Điều khiển camera bay mượt mà theo Citation
-│   │       └── TimeHorizonSlider.tsx           # Thanh trượt xem lịch sử tri thức theo thời gian
+│   ├── components/                             # UI & Domain Components
+│   │   ├── ui/                                 # TailAdmin primitives (Button, Modal, Badge, Alert, Table)
+│   │   ├── common/                             # Breadcrumb, ThemeToggle, LanguageSwitcher, Error states
+│   │   ├── header/                             # AppHeader, NotificationDropdown, UserDropdown, Settings
+│   │   ├── projects/                           # ProjectWorkspace, ProjectCard, Members, Settings
+│   │   ├── work/                               # WorkWorkspace (Tasks, Sprints, Board, Timeline)
+│   │   ├── work-notes/                         # Task Notes, Project Documents, Work Reports, SAG Pipeline
+│   │   ├── ai-chat/                            # AiChatWorkspace, Citation Cards, Mind-Map drawer
+│   │   ├── chat/                               # ChatWorkspace, Attachments, Realtime WS client
+│   │   ├── knowledge-universe/                 # KnowledgeUniverseWorkspace (raw `three` + `three/examples/jsm/*`)
+│   │   ├── organization-overview/              # OrganizationOverviewDashboard (Manager P0)
+│   │   ├── organization-members/               # Membership & Invitation governance
+│   │   ├── organization-settings/              # Allowlisted Organization Settings (CAS)
+│   │   └── platform/                           # Platform Console V2 screens
 │   │
-│   ├── features/                               # Business Logic & Components theo từng Module
-│   │   ├── auth/                               # Hooks, Services, Types của Auth
-│   │   ├── universe/                           # Store 3D Camera, Raycaster, Partition Nodes API
-│   │   ├── tasks/                              # UI/API client gọi BFF/Gateway, không gọi Task container trực tiếp
-│   │   ├── daily-notes/                        # Markdown editor, optional task selector
-│   │   ├── verification/                       # So sánh diff phiên bản, nút Approve/Reject
-│   │   ├── assistant/                          # SSE Stream Consumer, Citation Popover
-│   │   └── handover/                           # Web Audio API recorder, WebSocket clienter, Sidebar, Breadcrumb, NotificationBell
-│   │   └── citations/                          # Component hiển thị nguồn trích dẫn tài liệu
-│   │
-│   ├── features/                               # Business Logic & Components theo từng Module
-│   │   ├── auth/                               # Hooks, Services, Types của Auth
-│   │   ├── daily-notes/                        # Markdown editor, optional task selector
-│   │   ├── verification/                       # So sánh diff phiên bản, nút Approve/Reject
-│   │   ├── assistant/                          # SSE Stream Consumer, Citation Popover
-│   │   └── handover/                           # Web Audio API recorder, WebSocket client
-│   │
-│   ├── hooks/                                  # Custom React Hooks
-│   ├── lib/                                    # Tiện ích chung (api-client, date-format)
-│   └── stores/                                 # Zustand Stores (Local UI State)
+│   ├── icons/                                  # Centralized SVG icon registry (`@/icons`)
+│   ├── layout/                                 # AdminLayout, AppSidebar, AppHeader, SidebarFlyoutMenu
+│   ├── lib/                                    # api-client, auth/org context helpers, i18n, formatting
+│   ├── messages/                               # `en.json`, `vi.json` (next-intl)
+│   ├── hooks/                                  # Custom React hooks (TanStack Query, WS, responsive)
+│   └── stores/                                 # Zustand stores (Sidebar, lightweight client UI state)
 ```
 
 ---
 
 ## 3. Ranh giới Server Components vs Client Components
 
-Để duy trì hiệu năng cao nhất, hệ thống phân định ranh giới render rõ ràng:
+Để duy trì cân bằng giữa bảo mật, tốc độ tải trang và trải nghiệm tương tác thời gian thực:
 
-### 3.1. Server Components (RSC - Mặc định)
+### 3.1. Server Components (RSC)
 * **Áp dụng cho:**
-  - `(dashboard)/layout.tsx`: Nạp cấu hình tổ chức, kiểm tra quyền server-side trước khi render layout.
-  - Các trang danh sách dữ liệu tĩnh: Lấy dữ liệu ban đầu từ NestJS Backend trực tiếp trên Node.js server của Next.js mà không để lộ URL API nội bộ.
-  - Metadata SEO, Tiêu đề trang, OpenGraph tags.
+  - `src/app/[locale]/layout.tsx` và các route `page.tsx` wrappers: gọi `setRequestLocale(locale)`, nạp `next-intl` messages, cấu hình metadata/OpenGraph và truyền props tối giản xuống Client Workspace.
+  - Route Handlers (`src/app/api/backend/[...path]/route.ts`, `src/app/api/health/route.ts`): chạy hoàn toàn phía Node.js server để che giấu URL backend nội bộ và giữ token trong `HttpOnly` cookies.
 
 ### 3.2. Client Components (`'use client'`)
-* **Bắt buộc dùng khi có tương tác người dùng hoặc Web APIs:**
-  - **Trợ lý Cited Chat (`assistant/`):** Lắng nghe luồng SSE (Server-Sent Events) và render Markdown thời gian thực.
-  - **Phòng phỏng vấn Bàn giao (`handover/[id]/interview`):** Sử dụng `navigator.mediaDevices.getUserMedia` để thu âm giọng nói và đẩy chunk audio nhị phân qua WebSocket.
-  - **Trình soạn thảo Daily Note:** Nhập liệu form What/How/Why, Markdown preview và autosave draft vào client state.
-  - **Hộp thư kiểm chứng (`verification/`):** Thao tác bấm nút "Phê duyệt (Verify)" hoặc "Từ chối (Reject)" kèm lý do và kích hoạt Mongoose Transaction ở backend.
+* **Áp dụng cho Shell tương tác và Domain Workspaces:**
+  - **Application Shell (`AdminLayout`, `AppSidebar`, `AppHeader`):** Quản lý trạng thái sidebar, Organization switcher, tìm kiếm project có debounce, và `NotificationDropdown` (tuân thủ RF-02: chỉ tải danh sách đầy đủ khi mở menu, poll nhẹ theo chu kỳ 30 giây).
+  - **Trợ lý AI Cited Chat (`components/ai-chat/`):** Tiêu thụ SSE stream (`MESSAGE_DELTA`, grounding citations), lọc project scope theo active membership, và điều hướng tới bằng chứng.
+  - **Team Chat & Realtime (`components/chat/`):** Kết nối **raw WebSocket** bằng `ws-ticket` một lần (không dùng Socket.IO), gửi tệp qua streaming attachment API.
+  - **Vũ Trụ Tri Thức 3D (`components/knowledge-universe/`):** Lazy-load qua `next/dynamic({ ssr: false })` sử dụng raw **`three`** và **`three/examples/jsm/*`**; đảm bảo hủy `WebGLRenderer`, geometry, material và vòng lặp `requestAnimationFrame` sạch sẽ khi unmount, không dựng canvas WebGL chạy ngầm ở trang ngoài 3D (`FE-PERF-002`, `FE-PERF-011`).
+  - **Capture & Task Workspaces (`components/work/`, `components/work-notes/`):** Form Task Note, upload Project Document (presigned flow + `ETag`/`If-Match`), Periodic Work Report và luồng phê duyệt tuân theo quyền trả về từ server.
 
 ---
 
@@ -162,49 +145,48 @@ export function VerificationInboxView() {
 
 ---
 
-## 5. Tích hợp TailAdmin Design System
+## 5. Tích hợp TailAdmin Design System & Quy ước `DATN_FE`
 
-Hệ thống sử dụng bộ giao diện **TailAdmin (Tailwind CSS)** với:
-* **Chế độ Light Mode chuẩn mực:** Bảng màu chủ đạo: Nền `#f8fafc` (Slate-50), Card `#ffffff`, Viền `#e2e8f0` (Slate-200), Màu chữ chính `#0f172a` (Slate-900).
-* **Typography:** Font chữ không chân hiện đại Inter (`sans-serif`) kết hợp JetBrains Mono (`monospace`) cho các đoạn mã nguồn và trích dẫn bằng chứng.
-* **Bộ Icon Two-Tone:** Đồng bộ với Iconsax™ SVG 24x24 trên toàn bộ Dashboard.
+Hệ thống sử dụng bộ giao diện **TailAdmin v2.4 (Tailwind CSS v4)** với các quy ước bắt buộc:
+* **Tokens tập trung (`@theme` trong `globals.css`):** Dùng semantic tokens cho Light/Dark Mode (`bg-brand-500`, `text-gray-900 dark:text-white/90`, `border-gray-200 dark:border-gray-800`), tuyệt đối tránh hardcode màu HEX rải rác.
+* **Typography & Tabular Numbers:** Font không chân hiện đại kết hợp `tabular-nums` cho mọi cột số liệu/KPI/bảng biểu.
+* **Icon Registry (`@/icons`):** Mọi biểu tượng UI chrome đều đi qua `src/icons` (tránh inline `<svg>` trùng lặp).
+* **CSS Logical Properties & `next-intl`:** Sử dụng `ms-`/`me-`/`ps-`/`pe-`/`start-`/`end-`/`border-s`/`border-e`/`text-start`/`text-end` thay cho các lớp vật lý trái/phải, đồng thời tách toàn bộ chuỗi hiển thị vào `src/messages/{en,vi}.json`.
 
 ---
 
 ## 6. Trực Quan Hóa Vũ Trụ Tri Thức 3D (Interactive 3D Knowledge Universe Canvas)
 
 > ⭐ **ĐIỂM NHẤN CỐT LÕI (WOW FACTOR) CỦA ĐỒ ÁN TỐT NGHIỆP**:  
-> Thay vì xem tri thức dưới dạng bảng phẳng hay danh sách văn bản nhàm chán, Continuum AI cung cấp trang **`(dashboard)/universe/`** biến toàn bộ tri thức kỹ thuật thành một **Vũ Trụ 3D tương tác thời gian thực** (Interactive 3D Galaxy Canvas).
+> Thay vì chỉ xem tri thức dưới dạng bảng phẳng, Continuum AI cung cấp trang **`/[locale]/knowledge-universe`** biến đồ thị tri thức dự án thành một **Vũ Trụ 3D tương tác thời gian thực** (Interactive 3D Galaxy Canvas).
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 │                        3D KNOWLEDGE GALAXY CLIENT PIPELINE                              │
 ├─────────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                         │
-│   [ Backend NestJS / BFF Proxy ] ──(GET /api/v1/universe/overview/active)               │
+│   [ Next.js BFF /api/backend ] ──► [ NestJS ACL Scope Check ] ──► [ SAG Universe API ]  │
 │                   │                                                                     │
 │                   ▼                                                                     │
-│   [ TanStack Query v5 Cache ] ──► Nạp Partitions (x,y,z,radius), Stars & Hyperedges    │
+│   [ TanStack Query v5 Cache ] ──► Nạp Partitions (x,y,z,radius), Nodes & Relations      │
 │                   │                                                                     │
 │                   ▼                                                                     │
-│   [ React Three Fiber (R3F) Canvas ]                                                    │
-│     ├── <CameraControls />        : Tự do xoay (Orbit), Zoom, Pan trong không gian 3D   │
-│     ├── <PostProcessing />        : Hiệu ứng Phát Sáng Tinh Vân (UnrealBloomPass)       │
-│     ├── <PartitionNebula />       : Đám mây tinh vân bao bọc từng Module/Service        │
-│     ├── <InstancedMesh Stars />   : Render hàng chục nghìn thực thể với hiệu năng 60 FPS│
-│     └── <HyperedgeLinks />        : Dây liên kết siêu cạnh (CatmullRomCurve3 Glowing)   │
+│   [ Raw Three.js WebGL Canvas (lazy-loaded via next/dynamic { ssr: false }) ]           │
+│     ├── OrbitControls (`three/examples/jsm/controls/OrbitControls`)                     │
+│     ├── EffectComposer / UnrealBloomPass (`three/examples/jsm/postprocessing/*`)        │
+│     ├── Partition Nebulae & InstancedMesh Nodes                                         │
+│     └── Raycaster & Smooth Camera Fly-To Transitions                                    │
 │                   ▲                                                                     │
 │                   │                                                                     │
-│   [ Tương Tác 2 Chiều: Raycaster & Cited Chat Integration ]                             │
-│     • Click vào Star/Nebula  ──► Mở Inspector Panel bên phải hiển thị Markdown & Bằng chứng│
-│     • Bấm Citation ở Chatbot ──► Camera tự động bay (Fly-to Tween) zoom thẳng vào Node! │
-│     • Kéo Time Slider        ──► Hoạt cảnh các tinh cầu sinh ra theo lịch sử dự án     │
+│   [ Tương Tác 2 Chiều: Inspector Panel & Citation Focus ]                               │
+│     • Click vào Node/Partition ──► Mở Inspector Panel hiển thị nội dung & bằng chứng    │
+│     • Chọn Citation / Search   ──► Camera bay mượt tới tọa độ Node mục tiêu             │
 └─────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 6.1. Kiến Trúc Kỹ Thuật 3D Canvas
-* **Thư viện chủ đạo:** `@react-three/fiber`, `@react-three/drei`, `three-stdlib`, `@react-three/postprocessing`.
-* **Tối ưu hóa hiệu năng (Rendering Optimization):**
-  - Sử dụng `THREE.InstancedMesh` để gom hàng nghìn nốt Thực thể (`Entity`) vào một lệnh vẽ (Single Draw Call), duy trì **60 FPS** ổn định trên cả laptop phổ thông không card rời.
-  - Sử dụng `LOD (Level of Detail)`: Ở góc nhìn toàn cảnh xa, hiển thị cụm Tinh vân (`universe_partitions`); khi người dùng zoom lại gần, các nốt Thực thể con (`entity`) và Sự kiện (`source_event`) mới dần xuất hiện và phát sáng.
-* **Fly-to Camera Tweening:** Khi người dùng tra cứu tài liệu ở trang Trợ lý AI (`/assistant`) và nhấp vào một thẻ trích dẫn Citation, hệ thống kích hoạt hook `useUniverseStore.getState().flyTo(nodeCoordinates)`: Camera 3D sẽ lướt mượt mà qua các tinh vân và cố định góc nhìn vào chính xác nốt tri thức đó, tạo cảm giác trực quan và gây ấn tượng mạnh mẽ cho Hội đồng chấm đồ án.
+### 6.1. Kiến Trúc Kỹ Thuật 3D Canvas (Đồng bộ Runtime)
+* **Thư viện thực tế trong `DATN_FE`:** Raw **`three`** kết hợp **`three/examples/jsm/*`** (`OrbitControls`, `EffectComposer`, `RenderPass`, `UnrealBloomPass`) — **không** sử dụng `@react-three/fiber` hay `@react-three/drei`.
+* **Tối ưu hóa hiệu năng & vòng đời WebGL:**
+  - Tải lười (code-split) toàn bộ thành phần 3D bằng `next/dynamic({ ssr: false })` để không đưa `three` vào bundle các trang dashboard/CRUD thông thường.
+  - Loại bỏ WebGL canvas chạy ngầm khi người dùng không mở khu vực 3D (`FE-PERF-002`, `FE-PERF-011`) và `dispose()` đầy đủ renderer/geometry/material/listeners khi unmount để tránh rò rỉ GPU memory.
+  - Dùng `THREE.InstancedMesh` để giảm draw calls và duy trì độ mượt tương tác trên laptop phổ thông.
