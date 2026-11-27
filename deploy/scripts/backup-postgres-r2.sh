@@ -19,8 +19,12 @@ R2_BUCKET="${R2_BACKUP_BUCKET:-s3://continuum-backups}"
 R2_PREFIX="${R2_POSTGRES_PREFIX:-postgres}"
 RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-7}"
 
-if [[ -z "${SAG_DATABASE_URL:-}" ]]; then
-  echo "[-] ERROR: SAG_DATABASE_URL (postgresql://user:pass@host:5432/db) must be set." >&2
+PG_BACKUP_DSN="${SAG_PG_BACKUP_DSN:-${SAG_DATABASE_URL:-}}"
+if [[ "${PG_BACKUP_DSN}" == postgresql+asyncpg://* ]]; then
+  PG_BACKUP_DSN="postgresql://${PG_BACKUP_DSN#postgresql+asyncpg://}"
+fi
+if [[ "${PG_BACKUP_DSN}" != postgresql://* && "${PG_BACKUP_DSN}" != postgres://* ]]; then
+  echo "[-] ERROR: Set SAG_PG_BACKUP_DSN or SAG_DATABASE_URL to a PostgreSQL URI." >&2
   exit 1
 fi
 if [[ -z "${CF_ACCOUNT_ID:-}" || -z "${AWS_ACCESS_KEY_ID:-}" || -z "${AWS_SECRET_ACCESS_KEY:-}" ]]; then
@@ -34,7 +38,7 @@ trap 'rm -f "${BACKUP_FILE}" "${CHECKSUM_FILE}"' EXIT
 
 echo "[+] Starting SAG PostgreSQL 16 backup at ${TIMESTAMP}..."
 pg_dump \
-  --dbname="${SAG_DATABASE_URL}" \
+  --dbname="${PG_BACKUP_DSN}" \
   --format=custom \
   --compress=9 \
   --no-owner \

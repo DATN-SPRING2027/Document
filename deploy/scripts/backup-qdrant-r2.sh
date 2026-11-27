@@ -11,7 +11,7 @@
 set -euo pipefail
 
 TIMESTAMP="$(date -u +"%Y%m%dT%H%M%SZ")"
-BACKUP_DIR="${BACKUP_DIR:-/tmp/continuum_backups/qdrant/${TIMESTAMP}}"
+BACKUP_ROOT="${BACKUP_DIR:-/tmp/continuum_backups/qdrant}"
 R2_BUCKET="${R2_BACKUP_BUCKET:-s3://continuum-backups}"
 R2_PREFIX="${R2_QDRANT_PREFIX:-qdrant}"
 RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-7}"
@@ -32,8 +32,10 @@ if [[ -n "${SAG_QDRANT_API_KEY:-}" ]]; then
   AUTH_ARGS=(-H "api-key: ${SAG_QDRANT_API_KEY}")
 fi
 
-mkdir -p "${BACKUP_DIR}"
-trap 'rm -rf "${BACKUP_DIR}"' EXIT
+umask 077
+mkdir -p -- "${BACKUP_ROOT}"
+WORK_DIR="$(mktemp -d -- "${BACKUP_ROOT%/}/run.${TIMESTAMP}.XXXXXXXX")"
+trap 'rm -rf -- "${WORK_DIR}"' EXIT
 
 echo "[+] Listing Qdrant collections from ${QDRANT_BASE} at ${TIMESTAMP}..."
 COLLECTIONS_JSON="$(curl -fsS "${AUTH_ARGS[@]}" "${QDRANT_BASE}/collections")"
@@ -49,7 +51,7 @@ while IFS= read -r col; do
   echo "[+] Creating snapshot for collection: ${col}"
   SNAP_RESP="$(curl -fsS -X POST "${AUTH_ARGS[@]}" "${QDRANT_BASE}/collections/${col}/snapshots?wait=true")"
   SNAP_NAME="$(python3 -c 'import json,sys; print(json.loads(sys.stdin.read())["result"]["name"])' <<< "${SNAP_RESP}")"
-  LOCAL_FILE="${BACKUP_DIR}/${col}__${SNAP_NAME}"
+  LOCAL_FILE="${WORK_DIR}/${col}__${SNAP_NAME}"
   CHECKSUM_FILE="${LOCAL_FILE}.sha256"
 
   curl -fsS "${AUTH_ARGS[@]}" -o "${LOCAL_FILE}" \

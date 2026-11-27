@@ -42,7 +42,7 @@ spec:
           env:
             - name: NODE_ENV
               value: "production"
-            - name: BACKEND_API_URL
+            - name: CONTINUUM_API_BASE_URL
               value: "http://backend-service.continuum-core.svc.cluster.local:3001"
           livenessProbe:
             httpGet:
@@ -110,8 +110,13 @@ spec:
               value: "mongodb://mongodb-0.mongo-headless.continuum-data.svc.cluster.local:27017,mongodb-1.mongo-headless.continuum-data.svc.cluster.local:27017,mongodb-2.mongo-headless.continuum-data.svc.cluster.local:27017/?replicaSet=rs0"
             - name: REDIS_HOST
               value: "redis-service.continuum-data.svc.cluster.local"
-            - name: SAG_AI_URL
+            - name: SAG_API_BASE_URL
               value: "http://ai-engine-service.continuum-ai.svc.cluster.local:8000"
+            - name: SAG_BFF_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: continuum-core-secrets
+                  key: sag-bff-service-token
             - name: MONGODB_MAX_POOL_SIZE
               value: "15"
             - name: STORAGE_MODE
@@ -177,7 +182,7 @@ spec:
               value: "8000"
             - name: SAG_VECTOR_BACKEND
               value: "qdrant"
-            - name: DATABASE_URL
+            - name: SAG_DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: sag-secrets
@@ -192,7 +197,12 @@ spec:
                 secretKeyRef:
                   name: sag-secrets
                   key: qdrant-api-key
-            - name: UPLOAD_DIR
+            - name: SAG_BFF_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: sag-secrets
+                  key: sag-bff-service-token
+            - name: SAG_UPLOAD_DIR
               value: "/app/uploads"
           livenessProbe:
             httpGet:

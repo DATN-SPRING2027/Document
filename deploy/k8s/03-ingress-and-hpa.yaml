@@ -31,8 +31,8 @@ spec:
                 name: backend-service
                 port:
                   number: 3001
-          - path: /ws
-            pathType: Prefix
+          - path: /internal/chat/ws
+            pathType: Exact
             backend:
               service:
                 name: backend-service
