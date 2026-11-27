@@ -116,3 +116,15 @@ Source-level request findings đã được xử lý và kiểm tra; deadline in
 - Bước còn lại trước khi đổi chiến lược tìm kiếm: chạy explain và tải đại diện trên tenant lớn/safe production-like dataset; đo list, exact count, số keys/documents examined, `SORT`, p95 và tần suất query. Nếu semantics prefix được chấp nhận, chuẩn hóa trường và dùng prefix index; nếu phải giữ substring, đánh giá MongoDB Search/ngram hoặc dịch vụ search chuyên dụng. Không thêm index B-tree theo phỏng đoán.
 - Workspace member selector tải trang đầu gồm 20 project và có lựa chọn tải tiếp theo từng trang; project được mở bằng deep link vẫn được lấy trực tiếp nếu chưa nằm trong các trang đã tải.
 - Follow-up code được cập nhật trên các nhánh PR FE/BE hiện có. Typecheck FE và BE đều pass sau sửa; chưa chạy test suite hay build cho các follow-up. Số liệu explain ở trên là read-only baseline trước tối ưu, không phải benchmark hoặc xác nhận runtime sau thay đổi.
+
+---
+
+## 9. Follow-up đồng bộ Full-System Audit (`2026-11-27` — RF-02 Regression & `FE-PERF-003` / `FE-PERF-005`)
+
+Trong đợt kiểm toán toàn hệ thống (`CONTINUUM_FULL_AUDIT`, `2026-11-27`), hai điểm sai lệch mới phát sinh sau baseline `2026-10-24` đã được ghi nhận và khắc phục đồng bộ:
+
+1. **Hồi quy RF-02 trên `WorkReportReminderNotice` (`FE-PERF-003` / `FE-UX-007`):**
+   - Sau khi `NotificationDropdown` đã tuân thủ RF-02 (chỉ tải danh sách khi mở dropdown), component mới `WorkReportReminderNotice` được gắn cố định vào `AppHeader` đã gọi lại `GET /notifications?limit=100` theo chu kỳ 30 giây ngay cả khi dropdown đang đóng — gây hồi quy trực tiếp trên chỉ số RF-02 ở mọi trang sau đăng nhập.
+   - **Khắc phục:** Dừng poll toàn cục `limit=100` khi dropdown đóng; hợp nhất dữ liệu nhắc báo cáo vào đúng nguồn thông báo nhẹ (`unread-count` / summary hoặc lazy fetch có điều kiện và tạm dừng khi tab nền `refetchIntervalInBackground: false`) để bảo toàn nguyên tắc RF-02.
+2. **Đồng bộ tự động chọn Organization đơn (`FE-PERF-005` / `DOC-004`):**
+   - Khẳng định lại quy tắc tại `02_ACTORS_ROLES_AND_PERMISSIONS.md` §6: người dùng có đúng **1** `ACTIVE` Organization Membership được tự động chọn ngữ cảnh Organization (`OrganizationTransition` không gây vòng lặp/độ trễ dư thừa trước khi vào `/dashboard`), trong khi người dùng có ≥ 2 Organization vẫn chọn tường minh và được backend xác thực qua header `x-expected-organization-id`.

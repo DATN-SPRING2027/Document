@@ -46,7 +46,7 @@ CONTINUUM AI PLATFORM
 | `TEAM_LEADER` (DTO alias `LEADER`) | Project (`roles` & `role_assignments`, `projectId != null`) | **Leader** / **Leaders** |
 | `MEMBER` | Organization & Project | **Member** |
 
-> **Scope Separation Rule:** Organization Managers (`ADMIN`) govern the Organization (membership, roles, invitations, project metadata visibility, and Project Leader appointment/recovery). They do **not** manage daily task execution inside projects unless separately appointed as a Project `TEAM_LEADER`, and they do **not** automatically bypass confidential content ACLs.
+> **Scope Separation Rule (Updated `2026-11-27`):** Organization Managers (`ADMIN`) govern the Organization (membership, roles, invitations, project metadata visibility, and Project Leader appointment/recovery). Under two subsequently accepted exceptions, a same-Organization active `ADMIN` also holds (1) **Gate G4 (`2026-10-22`)** Task Workspace governance across active Organization projects via `TaskWorkspaceIamBridge`, and (2) the **`2026-10-25` Capture exception** to read Task Notes (after Task scope validation) and read/review Project Documents and Work Reports across active Organization projects (subject to author/reviewer separation). However, Managers still do **not** implicitly become Project Leaders for Team configuration, and they do **not** bypass confidential AI Chat / Knowledge Universe / SAG SSO project membership checks (`scope.isProjectMember === true` on `ACTIVE` projects, including `projectId="all"` — Trap 5 fail-closed baseline).
 
 ---
 
@@ -82,7 +82,7 @@ CONTINUUM AI PLATFORM
 | Change Organization Role (`ADMIN` $\leftrightarrow$ `MEMBER`) | No | **Yes** (`organization.memberships.manage`; blocked on self & last Manager) | No | No |
 | View Projects Directory (`GET /iam/projects`) | Platform Console only | **Yes** (sees all active/archived org projects + `effectiveLeaderCount`) | **Yes** (visible projects) | **Yes** (visible projects) |
 | Recover Leaderless Project (`0 Effective Leaders`) | No | **Yes** (may add member & appoint `TEAM_LEADER` without prior project membership) | N/A (0 Leaders) | No |
-| Read Confidential Project Content (Tasks, Notes, Chat, Evidence) | No | **No** (requires explicit Project Membership & ACL) | **Yes** (in assigned Project/Team scope) | **Yes** (in assigned Project/Team scope) |
+| Read Confidential Project Content (AI Chat / Universe / SAG SSO / Evidence) vs. Accepted G4 & Capture Exceptions | No | **Fail-closed for AI Chat/RAG/Universe/SAG SSO (`scope.isProjectMember === true`, including `projectId="all"`).** Accepted exceptions apply only to Gate G4 Tasks (`2026-10-22`) and Capture Task Notes / Project Documents / Work Reports read/review (`2026-10-25`). | **Yes** (in assigned Project/Team scope) | **Yes** (in assigned Project/Team scope) |
 
 ---
 

@@ -998,7 +998,7 @@ The Task use cases, exact field/status lifecycle, role-action matrix, API payloa
 - Every answer MUST include citations with Document ID, Locator, Hash, and Version.
 - If evidence is insufficient, the system returns INSUFFICIENT_EVIDENCE and offers 1-click Knowledge Gap creation.
 - Permission filtering happens BEFORE retrieval and context construction (Pre-Retrieval ACL).
-- The system never fabricates answers without evidence (anti-hallucination policy).
+- The system enforces an evidence-grounding and anti-hallucination policy: retrieved chunks are isolated as untrusted data, post-generation citation/entailment verification rejects unsupported claims, and benchmark releases require LLM-as-Judge faithfulness scoring (`>= 0.85` target on audited test sets).
 - Chat history respects ACL changes — saved answers are not a permanent access grant.
 - Answers include verification status and last verified date.
 
@@ -1298,17 +1298,17 @@ The Task use cases, exact field/status lifecycle, role-action matrix, API payloa
 
 | Database | Technology | Purpose |
 |----------|-----------|---------|
-| **Primary Database** | MongoDB 7.0 (3-Node Replica Set) | Source of Truth for all business entities, lifecycle, permissions, and audit logs. Each microservice owns its dedicated database (Database-per-Service pattern). |
-| **Vector Store** | LanceDB (Disk-backed IVF-PQ / HNSW) | Local vector index for semantic retrieval, embedded within the SAG AI Engine. |
-| **SAG Post-Extraction Storage** | PostgreSQL 16 + pgvector | Stores chunks, events, entities, dynamic hyperedges, and vector embeddings for deep semantic queries. |
-| **Cache & Session** | Redis 7.2 (In-Memory Cluster) | Distributed L2 cache, token blacklist (<1ms check), SingleFlight mutex, Pub/Sub for real-time notifications. |
+| **Primary Database** | MongoDB 7.0 (3-Node Replica Set) | Source of Truth for all business entities, lifecycle, permissions, tasks (`continuum_task`), and audit logs. Each bounded domain owns its dedicated logical database (Database-per-Service pattern). |
+| **Vector Store** | Qdrant (Per-Project Hybrid Collections) | Mandatory production vector index storing 1024-d Dense Cosine embeddings and native BM25 Sparse (`Modifier.IDF`) vectors per project (`search_units_{project_id}`, `routing_tree_{project_id}`, `session_units_{project_id}`), replacing earlier LanceDB/`pgvector` prototypes. |
+| **SAG Post-Extraction Storage** | PostgreSQL 16 (`sag` schema) | Relational store for SAG documents, versions, `SourceProjectMapping` ACLs, C99 DP `SearchUnit`s, deterministic E0/E1 `DenseGraph`, Leiden routing trees, and 3D Universe layouts (SQLite dev/test only). |
+| **Cache & Session** | Redis 7.2 (`maxmemory-policy noeviction`) | Distributed L2 cache, token blacklist (<1ms check), distributed scheduler leases, BullMQ queues, and Pub/Sub for real-time notifications. |
 
 #### 4.1.2 API Interfaces
 
 | API | Technology | Purpose |
 |-----|-----------|---------|
 | **REST API** | NestJS with OpenAPI/Swagger | Primary API for all CRUD operations, authentication, and management. Base path: `/api/v1/`. |
-| **WebSocket** | NestJS Gateway + Socket.IO | Real-time notifications (Redis Pub/Sub), audio streaming for handover interviews. |
+| **WebSocket** | NestJS Raw WebSocket Gateway (`ws-ticket`) | Real-time team chat and notifications (Redis Pub/Sub `<BULLMQ_PREFIX>:notification.realtime.v1`), plus audio streaming for handover interviews (replaces earlier Socket.IO draft). |
 | **SSE (Server-Sent Events)** | NestJS | Streaming AI chat responses with real-time token delivery. |
 | **Internal API** | FastAPI (Python) with mTLS | SAG AI Engine endpoints for parsing, indexing, hybrid search, and LLM generation. |
 
@@ -1358,7 +1358,7 @@ The Task use cases, exact field/status lifecycle, role-action matrix, API payloa
 
 - **API Response Time:** 95th percentile response time under 500ms for standard CRUD operations.
 - **Token Blacklist Check:** Redis-based JWT validation under 1ms.
-- **Chat Response:** Initial token streaming within 2 seconds for AI chat responses.
+- **Chat Response (Streaming TTFT vs. End-to-End Verification):** Target Time-To-First-Token (TTFT) under **2–3 seconds** in live streaming SSE mode (`MESSAGE_DELTA` incremental streaming with `decision_provider="disabled"` default), with asynchronous/post-stream grounding verification (`SAG-PERF-002`). *Note:* Pre-remediation buffered benchmarks that waited for full answer generation plus synchronous entailment checks prior to emitting the first byte observed `6.2s–15.3s` p50 latency; live benchmark reports distinguish streaming TTFT from full end-to-end verified latency.
 - **File Upload:** Direct-to-R2 upload via presigned URL to minimize backend CPU usage.
 - **Pagination:** All list endpoints support pagination with configurable page size (default: 20, max: 100).
 - **Caching:** Redis L2 cache with SingleFlight pattern to prevent thundering herd.
@@ -1389,10 +1389,10 @@ The Task use cases, exact field/status lifecycle, role-action matrix, API payloa
 | BR-01 | Human-in-the-loop | AI output remains PROPOSED until an authorized human verifies it. No AI-controlled permission grants or autonomous verification. |
 | BR-02 | Pre-Retrieval ACL | Compute effective permissions BEFORE querying the vector database. Post-filtering after restricted content reaches the LLM is insufficient. |
 | BR-03 | Evidence-Grounded Citations | Every AI answer must include citations (Document ID, Locator, Hash, Version). If insufficient evidence, return INSUFFICIENT_EVIDENCE. |
-| BR-04 | Source of Truth | MongoDB is the single source of truth for business data. LanceDB/pgvector are retrieval indexes only. |
-| BR-05 | Database-per-Service | Each bounded service owns its dedicated database. No cross-service JOINs or shared database connections. |
+| BR-04 | Source of Truth | MongoDB is the single source of truth for business data. PostgreSQL 16 (`sag` schema) and Qdrant are retrieval/indexing infrastructure only. |
+| BR-05 | Database-per-Service | Each bounded domain owns its dedicated logical database (`continuum_task` is active and isolated behind `TaskWorkspaceRepository`). No raw cross-domain collection access. |
 | BR-06 | Deny Takes Precedence | Explicit deny overrides all grants, roles, and assignments in the permission model. |
-| BR-07 | Project Creation | Any authenticated User with `OrganizationMembership=ACTIVE` in the trusted matching Organization Context may create a `PRIVATE` Project. `project.create` is not required; creator Project Membership and project-scoped `MEMBER` assignment are bootstrapped atomically. |
+| BR-07 | Project Creation | Any authenticated User with `OrganizationMembership=ACTIVE` in the trusted matching Organization Context may create a `PRIVATE` Project. `project.create` is not required; per the `2026-10-20` Project MVP contract V1, creator `ACTIVE` Project Membership and project-scoped `TEAM_LEADER` assignment are bootstrapped atomically. |
 | BR-08 | Author-Confirmed Notes | Work notes only become knowledge sources after the author explicitly confirms them. |
 | BR-09 | No Performance Scoring | Missing daily notes trigger follow-up reminders, NOT employee performance scoring. |
 | BR-10 | Scoped Handover Confirmation | A successor cannot self-confirm handover completion. Confirmation requires a Team Leader assigned to the relevant scope or another explicitly authorized reviewer; Admin authority alone does not grant it. |

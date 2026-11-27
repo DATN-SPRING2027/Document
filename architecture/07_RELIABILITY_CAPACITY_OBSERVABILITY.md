@@ -24,13 +24,14 @@ Bảng phân bổ tài nguyên nghiêm ngặt cho một máy chủ **16GB RAM (h
 | Container / Service | Image / Runtime | CPU Request / Limit | RAM Request / Limit | Chiến lược kiểm soát bộ nhớ |
 | :--- | :--- | :--- | :--- | :--- |
 | **`ingress-nginx`** | `nginx:alpine` | 0.1 / 0.5 core | 64MB / 128MB | Worker processes: auto, keepalive: 64 |
-| **`frontend-nextjs`** | `node:20-alpine` (Next.js) | 0.2 / 1.0 core | 256MB / 512MB | Node option: `--max-old-space-size=384` |
-| **`api-gateway`** | `node:20-alpine` (NestJS) | 0.2 / 0.8 core | 256MB / 512MB | Stateless routing, Rate Limiting proxy |
-| **`8 NestJS domain services`** | `node:20-alpine` (NestJS; shared BE source/build, separate service processes)| 0.8 / 2.0 cores aggregate | 1024MB / 2048MB aggregate | Mỗi service có entrypoint/config/health riêng; Task dùng chung build nhưng chạy process riêng. Tách ngân sách theo đo đạc khi triển khai |
-| **`ai-engine`** | `python:3.11-slim` (FastAPI) | 0.5 / 2.0 cores | 1536MB / 3072MB | PyTorch CPU-only, LanceDB embedded |
+| **`frontend-nextjs`** | `node:22-alpine` (Next.js 16) | 0.2 / 1.0 core | 256MB / 512MB | Node option: `--max-old-space-size=384` |
+| **`api-gateway`** | `node:22-alpine` (NestJS 11) | 0.2 / 0.8 core | 256MB / 512MB | Stateless routing, Rate Limiting proxy |
+| **`8 NestJS domain services`** | `node:22-alpine` (NestJS 11; shared BE source/build, separate service processes)| 0.8 / 2.0 cores aggregate | 1024MB / 2048MB aggregate | Mỗi service có entrypoint/config/health riêng (`/api/v1/health`, `/api/v1/health/ready`); Task dùng chung build nhưng chạy process riêng. Tách ngân sách theo đo đạc khi triển khai |
+| **`ai-engine` (SAG API)** | `python:3.12-slim` (FastAPI + `uv`) | 0.5 / 2.0 cores | 1536MB / 3072MB | PostgreSQL 16 (`sag`) + Qdrant Cloud/Server; single-replica MVP (`InProcJobQueue`) |
+| **`sag-postgres`** | `postgres:16-alpine` | 0.25 / 1.0 core | 512MB / 1024MB | Lưu trữ metadata, phiên bản, ACL, đồ thị tri thức và cây Leiden của SAG |
 | **`mongodb-rs0`** | `mongo:7.0` (Replica Set) | 0.5 / 1.5 cores | 1024MB / 2048MB | **`wiredTigerCacheSizeGB: 1.0`** (bắt buộc) |
-| **`redis-cluster`** | `redis:7.2-alpine` | 0.1 / 0.5 core | 256MB / 512MB | **`maxmemory 400mb`** + `allkeys-lru` |
-| **`bullmq-workers`** | `node:20-alpine` (Worker Pool) | 0.3 / 1.0 core | 512MB / 1024MB | **`concurrency: 2`** (chống nghẽn CPU) |
+| **`redis-cluster`** | `redis:7.2-alpine` | 0.1 / 0.5 core | 256MB / 512MB | **`maxmemory 400mb`** + **`noeviction`** + **`appendonly yes`** (bắt buộc cho BullMQ) |
+| **`bullmq-workers`** | `node:22-alpine` (Worker Pool) | 0.3 / 1.0 core | 512MB / 1024MB | **`concurrency: 2`** (chống nghẽn CPU) |
 | **Hệ điều hành & Buffer** | Ubuntu 22.04 LTS | 0.4 core | 2048MB | Dự phòng cho Linux OS & Page Cache |
 | **TỔNG CỘNG** | — | **~3.1 / 8.0 cores** | **~7.5GB / 12GB RAM** | **Vận hành an toàn 100% trên VPS 8GB - 16GB** |
 
@@ -42,9 +43,9 @@ Nếu hệ thống được triển khai trên **1 máy chủ VPS chỉ có 4GB 
 * **Bắt buộc kích hoạt Swap Memory 4GB:**
   `sudo fallocate -l 4G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile`
 * **Ép Cache MongoDB:** `--wiredTigerCacheSizeGB 0.25` (giới hạn cache 256MB trong RAM).
-* **Ép Cache Redis:** `--maxmemory 100mb --maxmemory-policy allkeys-lru`.
-* **Ép Node.js Heap Size:** `--max-old-space-size=200` cho Next.js và `--max-old-space-size=380` cho Backend Core.
-* **Sử dụng Cloud LLM & Embedding:** Container FastAPI không nạp mô hình PyTorch cục bộ mà gọi trực tiếp Google Gemini API (`text-embedding-004` & `gemini-2.5-flash`), giảm dung lượng RAM từ 2GB xuống chỉ còn **400MB**.
+* **Ép Cache Redis:** `--maxmemory 128mb --maxmemory-policy noeviction --appendonly yes` (không dùng `allkeys-lru` để tránh BullMQ mất job/lock).
+* **Ép Node.js Heap Size:** `--max-old-space-size=256` cho Next.js và `--max-old-space-size=384` cho Backend Core.
+* **Sử dụng Cloud LLM, Embedding & Qdrant:** Container FastAPI SAG (Python 3.12) không nạp mô hình trọng số lớn cục bộ mà gọi Cloud Embedding/LLM và **Qdrant Cloud**, kết hợp `postgres:16-alpine` cục bộ.
 * **Tổng lượng RAM thực tế tiêu thụ:** **~2.4GB – 2.8GB RAM**, máy hoạt động mát mẻ, dư dả hơn 1.2GB RAM dự phòng và không bao giờ kích hoạt Linux OOM-Killer!
 
 ---
@@ -104,7 +105,7 @@ MongooseModule.forRootAsync({
 
 ## 5. Dấu vết phân tán (Correlation ID & Structured Logging)
 
-Để tìm ra nguyên nhân lỗi khi một thao tác người dùng đi qua nhiều service (Client ➔ Gateway ➔ Chat ➔ AI Engine ➔ LanceDB), hệ thống áp dụng chuẩn **W3C Traceparent / Correlation ID**:
+Để tìm ra nguyên nhân lỗi khi một thao tác người dùng đi qua nhiều service (Client ➔ Gateway ➔ Domain Service ➔ SAG AI Engine ➔ PG16 / Qdrant), hệ thống áp dụng chuẩn **W3C Traceparent / `X-Request-Id` & `X-Correlation-ID`** (kèm xác thực ký tự an toàn `^[A-Za-z0-9._-]{1,128}$` chống log injection):
 
 ```
 [ User Request ] ──► [ Ingress / Gateway ] ──► [ Task Service / MongoDB ]
@@ -153,21 +154,21 @@ export class CorrelationInterceptor implements NestInterceptor {
 Khi thực hiện các chuỗi thao tác phức tạp (Upload ➔ OCR ➔ Indexing ➔ Lưu DB), nếu bước sau gặp lỗi, hệ thống phải tự động dọn rác qua cơ chế **Giao dịch bù trừ (Compensating Transaction)**:
 
 ```
-[ Bước 1: Upload R2 ] ──────► Thành công (File objectKey: "doc_123.pdf")
+[ Bước 1: Lưu File BE (R2/Local) ] ──► Thành công (File objectKey + SHA-256)
           │
           ▼
-[ Bước 2: OCR & Embed ] ────► Thành công (Tạo 50 chunks vector)
+[ Bước 2: Outbox -> SAG /upload ] ──► Parse & Embed -> PostgreSQL 16 (DocumentVersion staging)
           │
           ▼
-[ Bước 3: Ghi LanceDB ] ────► THẤT BẠI (Lỗi phân vùng ổ đĩa!)
+[ Bước 3: Upsert Qdrant (<=128/batch) ] ──► THẤT BẠI (Lỗi mạng / Qdrant)
           │
           ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │ KÍCH HOẠT GIAO DỊCH BÙ TRỪ (COMPENSATING TRANSACTION)                  │
-│ 1. Gọi R2StorageAdapter.deleteObject("doc_123.pdf")                    │
-│ 2. Xóa các vector chunks dở dang trong LanceDB theo temporaryId        │
-│ 3. Cập nhật ingestion_jobs: status = 'FAILED', error = 'DISK_FULL'     │
-│ 4. Không để lại bất kỳ dữ liệu rác nào trong hệ thống!                 │
+│ 1. Rollback điểm vector theo `document_version_id` trong Qdrant        │
+│ 2. Giữ nguyên phiên bản `v1` đang `SEARCH_READY` (không clobber `v1`)  │
+│ 3. Cập nhật `knowledgeSync.status = 'FAILED'` và retry qua Outbox      │
+│ 4. Không để lại điểm vector mồ côi hoặc dữ liệu split-brain!           │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -175,28 +176,22 @@ Khi thực hiện các chuỗi thao tác phức tạp (Upload ➔ OCR ➔ Indexi
 
 ## 7. Chiến lược Sao lưu (Backup/Restore) 0đ & Chính sách Xóa mềm (Soft Delete)
 
-### 7.1. Backup tự động lưu trữ lên Cloudflare R2 (Chi phí 0 VNĐ)
-* Không cần hệ thống SAN/NAS đắt tiền, một Cronjob chạy lúc **03:00 AM** hàng đêm trực tiếp trên server:
-```bash
-#!/bin/bash
-# Script tự động backup MongoDB và đẩy lên Cloudflare R2
-DATE=$(date +%Y%m%d_%H%M%S)
-BACKUP_NAME="continuum_backup_${DATE}.gz"
+### 7.1. Backup tự động toàn bộ 3 kho dữ liệu lên Cloudflare R2 (`INFRA-006`, cập nhật 2026-11-27)
+Continuum AI vận hành **3 kho dữ liệu bền vững độc lập**; mọi kịch bản Disaster Recovery **bắt buộc** sao lưu đồng bộ cả 3 kho (không bao giờ truyền hậu tố `/continuum` vào `mongodump`, vì hệ thống dùng kiến trúc database-per-service gồm 10 DB riêng: `continuum_iam`, `continuum_capture`, `continuum_task`, `continuum_handover`, `continuum_chat`, `continuum_notification`, `continuum_audit`, `continuum_jira`, `continuum_ingestion`, `continuum_lifecycle`):
 
-# 1. Dump MongoDB ra file nén
-# Full-instance backup: mongodump dumps all databases when the URI does not specify one.
-mongodump --uri="mongodb://localhost:27017/?replicaSet=rs0" --archive="/tmp/${BACKUP_NAME}" --gzip
+| Kho dữ liệu | Script chuẩn hóa | Tần suất (UTC) | Cơ chế nhất quán & xác minh | Chính sách lưu giữ (Retention) |
+| :--- | :--- | :--- | :--- | :--- |
+| **MongoDB 7.0** *(toàn bộ 10 service DBs)* | [`deploy/scripts/backup-mongodb-r2.sh`](../deploy/scripts/backup-mongodb-r2.sh) | `03:00` hằng ngày | `mongodump --oplog --archive=... --gzip` (URI **không** có `/<db>`), `gzip -t`, `sha256sum` tải kèm lên R2 | Tự động xóa bản cũ hơn `BACKUP_RETENTION_DAYS=7` ngày trên R2 |
+| **PostgreSQL 16** *(SAG `sag` schema)* | [`deploy/scripts/backup-postgres-r2.sh`](../deploy/scripts/backup-postgres-r2.sh) | `03:15` hằng ngày | `pg_dump --format=custom --compress=9`, kiểm tra mục lục `pg_restore --list`, `sha256sum` tải kèm lên R2 | Tự động xóa bản cũ hơn `7` ngày trên R2 |
+| **Qdrant** *(per-project vector collections)* | [`deploy/scripts/backup-qdrant-r2.sh`](../deploy/scripts/backup-qdrant-r2.sh) | `03:30` hằng ngày | Gọi Qdrant Snapshot API cho từng collection (`search_units_*`, `routing_tree_*`, `session_units_*`), `sha256sum`, xóa snapshot tạm trên node sau khi tải lên R2 | Cấu hình R2 Bucket Lifecycle Rule `7` ngày cho tiền tố `qdrant/` |
 
-# 2. Upload file nén lên Cloudflare R2 qua AWS CLI (S3 compatible)
-aws s3 cp "/tmp/${BACKUP_NAME}" "s3://continuum-backups/${BACKUP_NAME}" --endpoint-url="https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com"
-
-# 3. Xoá file tạm trên VPS & Giữ lại 7 bản backup gần nhất
-rm -f "/tmp/${BACKUP_NAME}"
-echo "Sao lưu thành công: ${BACKUP_NAME} tại thời điểm $(date)"
-```
-* **Chỉ số RPO / RTO đạt được:**
-  - **RPO (Recovery Point Objective):** $\le 24\text{ giờ}$ (Mất tối đa 1 ngày dữ liệu nếu cả VPS bị cháy).
-  - **RTO (Recovery Time Objective):** $\le 30\text{ phút}$ (Thời gian kéo backup từ R2 về và chạy `mongorestore`).
+* **Diễn tập phục hồi (Restore Drill & Verification Gate):**
+  - Định kỳ hằng tháng (hoặc trong staging CI trước release), kéo bản mới nhất từ R2, kiểm tra khớp `sha256sum -c`, chạy `mongorestore --archive=... --gzip --oplogReplay --dryRun` (xác nhận đủ 10 DB `continuum_*`), chạy `pg_restore --list` / khôi phục thử vào instance PG16 staging, và xác minh khôi phục ít nhất 1 snapshot Qdrant.
+* **An toàn chuỗi cung ứng & CI/SCA (`DEP-005`, `INFRA-010`):**
+  - Tất cả 5 repository (`DATN_FE`, `DATN_BE`, `sag-laya-integration`, `Document`, `Dataset`) duy trì `.github/dependabot.yml` kiểm tra cập nhật hằng tuần và chạy kiểm định tự động trên cả `push: [main]` lẫn `pull_request` (`npm audit --audit-level=high` cho Node/TS, `pip-audit` cho Python 3.12, kiểm tra YAML/OpenAPI/shell cho `Document`).
+* **Chỉ số RPO / RTO mục tiêu (khi cả 3 cronjob & restore drill hoạt động):**
+  - **RPO (Recovery Point Objective):** $\le 24\text{ giờ}$ (có thể rút ngắn bằng oplog/WAL archiving khi lên production quy mô lớn).
+  - **RTO (Recovery Time Objective):** $\le 30\text{ phút}$ cho MongoDB + PostgreSQL 16 + Qdrant snapshot restore.
 
 ### 7.2. Chính sách Xóa mềm (Soft Delete Policy)
 * **Quy tắc bất biến:** Không bao giờ gọi lệnh `.deleteOne()` hay `.deleteMany()` trên các bảng tri thức và người dùng.

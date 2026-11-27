@@ -1,10 +1,9 @@
 # ==============================================================================
-# Continuum AI — Ultra-Lean Profile (Dành riêng cho VPS 4GB RAM)
-# Chạy toàn bộ 9 microservices + Mongo + Redis + AI trong < 2.8GB RAM!
-# Lệnh chạy: docker compose -f Document/deploy/docker-compose.4gb-ultra-lean.yml up -d
+# Continuum AI — Reference Ultra-Lean Blueprint (4GB RAM VPS + Cloud Qdrant/LLM)
+# File: Document/deploy/docker-compose.4gb-ultra-lean.yml
+# STATUS: Reference memory-constrained blueprint synchronized 2026-11-27 (`INFRA-009`).
+# Uses build contexts from sibling repos + PG16 + Qdrant Cloud + Redis noeviction.
 # ==============================================================================
-
-version: '3.8'
 
 networks:
   continuum-vpc:
@@ -13,119 +12,133 @@ networks:
 volumes:
   mongo-data-4gb:
   redis-data-4gb:
-  lancedb-data-4gb:
+  sag-pgdata-4gb:
+  sag-uploads-4gb:
 
 services:
-  # 1. Reverse Proxy (Cực nhẹ: 40MB RAM)
   ingress:
     image: nginx:alpine
     container_name: continuum-ingress
-    restart: always
+    restart: unless-stopped
     ports:
       - "80:80"
     networks:
       - continuum-vpc
-    deploy:
-      resources:
-        limits:
-          memory: 64M
 
-  # 2. Next.js Frontend (Giới hạn: 256MB RAM)
   frontend:
-    image: node:20-alpine
+    build:
+      context: ../../DATN_FE
+      dockerfile: Dockerfile
     container_name: continuum-frontend
-    restart: always
-    working_dir: /app
+    restart: unless-stopped
     environment:
-      - NODE_ENV=production
-      - NODE_OPTIONS=--max-old-space-size=200
-      - NEXT_PUBLIC_API_URL=/api/v1
+      NODE_ENV: production
+      NODE_OPTIONS: --max-old-space-size=256
+      BACKEND_API_URL: http://backend:3001
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
     networks:
       - continuum-vpc
-    deploy:
-      resources:
-        limits:
-          memory: 256M
 
-  # 3. Backend Core (NestJS Modular Monolith gộp chung: 450MB RAM)
   backend:
-    image: node:20-alpine
+    build:
+      context: ../../DATN_BE
+      dockerfile: Dockerfile
     container_name: continuum-backend
-    restart: always
-    working_dir: /app
+    restart: unless-stopped
     environment:
-      - NODE_ENV=production
-      - NODE_OPTIONS=--max-old-space-size=380
-      - PORT=3000
-      - MONGODB_URI=mongodb://db_mongo:27017/continuum?replicaSet=rs0
-      - REDIS_HOST=db_redis
-      - REDIS_PORT=6379
-      - SAG_AI_URL=http://ai_engine:8001
-      - MONGO_MAX_POOL_SIZE=8
-      - BULLMQ_CONCURRENCY=1
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      NODE_ENV: production
+      NODE_OPTIONS: --max-old-space-size=384
+      PORT: "3001"
+      MONGODB_URI: mongodb://db_mongo:27017/?replicaSet=rs0
+      REDIS_HOST: db_redis
+      REDIS_PORT: "6379"
+      SAG_AI_URL: http://ai_engine:8000
+      MONGODB_MAX_POOL_SIZE: "8"
+      BULLMQ_CONCURRENCY: "1"
+      STORAGE_MODE: ${STORAGE_MODE:-r2}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3001/api/v1/health/ready || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
     networks:
       - continuum-vpc
     depends_on:
       - db_mongo
       - db_redis
-    deploy:
-      resources:
-        limits:
-          memory: 512M
 
-  # 4. FastAPI SAG Engine (Gọi Cloud API, không load model nặng: 400MB RAM)
   ai_engine:
-    image: python:3.11-slim
-    container_name: continuum-ai-engine
-    restart: always
-    working_dir: /app
+    build:
+      context: ../../sag-laya-integration/SAG/apps/api
+      dockerfile: Dockerfile
+    container_name: continuum-sag-api
+    restart: unless-stopped
     environment:
-      - PYTHONUNBUFFERED=1
-      - PORT=8001
-      - LANCEDB_PATH=/app/data/lancedb
-      - USE_CLOUD_EMBEDDING=true
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      PYTHONUNBUFFERED: "1"
+      PORT: "8000"
+      DATABASE_URL: postgresql+asyncpg://${SAG_PG_USER:-sag}:${SAG_PG_PASSWORD:?Set SAG_PG_PASSWORD}@sag_postgres:5432/${SAG_PG_DB:-sag}
+      SAG_VECTOR_BACKEND: qdrant
+      SAG_QDRANT_URL: ${SAG_QDRANT_URL:?Set SAG_QDRANT_URL}
+      SAG_QDRANT_API_KEY: ${SAG_QDRANT_API_KEY:-}
+      UPLOAD_DIR: /app/uploads
     volumes:
-      - lancedb-data-4gb:/app/data/lancedb
+      - sag-uploads-4gb:/app/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/system/health')\" || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     networks:
       - continuum-vpc
-    deploy:
-      resources:
-        limits:
-          memory: 512M
+    depends_on:
+      sag_postgres:
+        condition: service_healthy
 
-  # 5. MongoDB (Ép Cache WiredTiger xuống 256MB: Tối đa 512MB RAM)
   db_mongo:
     image: mongo:7.0
     container_name: continuum-mongodb
-    restart: always
-    command: >
-      mongod --replSet rs0 --bind_ip_all
-      --wiredTigerCacheSizeGB 0.25
+    restart: unless-stopped
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--wiredTigerCacheSizeGB", "0.25"]
     volumes:
       - mongo-data-4gb:/data/db
     networks:
       - continuum-vpc
-    deploy:
-      resources:
-        limits:
-          memory: 600M
 
-  # 6. Redis (Ép bộ nhớ tối đa 100MB RAM)
+  sag_postgres:
+    image: postgres:16-alpine
+    container_name: continuum-sag-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${SAG_PG_USER:-sag}
+      POSTGRES_PASSWORD: ${SAG_PG_PASSWORD:?Set SAG_PG_PASSWORD}
+      POSTGRES_DB: ${SAG_PG_DB:-sag}
+    volumes:
+      - sag-pgdata-4gb:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SAG_PG_USER:-sag} -d ${SAG_PG_DB:-sag}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - continuum-vpc
+
   db_redis:
     image: redis:7.2-alpine
     container_name: continuum-redis
-    restart: always
-    command: >
-      redis-server --appendonly no
-      --maxmemory 100mb
-      --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "128mb", "--maxmemory-policy", "noeviction"]
     volumes:
       - redis-data-4gb:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
     networks:
       - continuum-vpc
-    deploy:
-      resources:
-        limits:
-          memory: 128M

@@ -2,9 +2,9 @@
 ## (Bản Đối Chiếu Schema Gốc Zleap-AI/SAG & Bản Tinh Chỉnh Áp Dụng Cho Continuum AI)
 
 > **Tài liệu:** Đặc tả kỹ thuật Cơ sở dữ liệu Tri thức sau Trích xuất (Post-Extraction Knowledge Store)
-> **Hệ quản trị CSDL quan hệ:** **PostgreSQL 16** (Database: `continuum_sag_storage`)
-> **Kho Vector Lưu Trữ:** **PostgreSQL 16 pgvector** (Mặc định hợp nhất) hoặc **Qdrant** (Lựa chọn chuyên dụng phân tán)
-> **Service sở hữu & điều phối:** `svc_ai_engine` (Orchestrator) & `svc_ingestion` (Feeder)  
+> **Kiến trúc triển khai thực tế (`2026-11-27` — `SAG-DB-003`, `DOC-004`):** **PostgreSQL 16 (`sag` schema)** cho relational metadata/ACL/versions/DenseGraph E0-E1/Leiden routing tree/3D Universe + **Qdrant** (bắt buộc cho production) cho per-project hybrid vectors (1024-d Dense Cosine + native BM25 Sparse `Modifier.IDF`). SQLite chỉ dùng cho dev/test đơn tiến trình.
+> **Lưu ý lịch sử:** Các DDL `pgvector` (`chunk_vectors`), LanceDB, UMAP và cột `allowed_roles` trong Phần II–IV bên dưới là bản thiết kế khái niệm giai đoạn đầu; trong runtime `sag-laya-integration` hiện hành chúng đã được thay thế bởi kiến trúc **PostgreSQL 16 (`sag`) + Qdrant** mô tả tại Mục 1.1 & Mục 6.
+> **Service sở hữu & điều phối:** `sag-laya-integration` (FastAPI Python 3.12, `InProcJobQueue`) nhận file bytes qua HTTP multipart từ `DATN_BE` (`KnowledgeOutboxConsumer`)  
 > Nằm trong bộ tài liệu thiết kế Database Microservices Continuum AI. Xem [Mục lục](README.md).
 
 ---
@@ -14,8 +14,11 @@
 Trong Continuum AI, **MongoDB 7.0 là Source of Truth** cho toàn bộ dữ liệu nghiệp vụ: tài khoản, phân quyền (IAM), task nội bộ do Task Service sở hữu, ghi chú công việc (Capture), vòng đời tri thức bất biến (Lifecycle), gói bàn giao (Handover) và kiểm toán (Audit).
 
 Tuy nhiên, đối với bài toán **Truy vấn Tri thức Chuyên sâu (Semantic Search, Multi-hop Reasoning & Graph Retrieval)**:
-- Chỉ tài liệu/evidence được phép và Work Note đã được xác nhận mới đủ điều kiện vào **Bộ lưu trữ dữ liệu sau extract chuyên dụng (Post-Extraction Store)**. Task records, task title/description/status/assignee không phải nguồn SAG.
-- Dự án chuẩn hóa trên **PostgreSQL 16 kết hợp extension pgvector** dựa trên nguyên lý kiến trúc của **Zleap-AI/SAG (SQL-Retrieval Augmented Generation)**: Thay vì tách biệt 2 hệ thống lưu trữ rời rạc (Relational DB và Vector DB riêng) dễ gây lệch pha dữ liệu khi xóa/sửa, hệ thống hợp nhất toàn bộ thực thể quan hệ (Chunk, Event, Entity, Hyperedge) và các Vector Embeddings vào **duy nhất một Database PostgreSQL 16 + pgvector**.
+- Chỉ tài liệu/evidence đã qua kiểm duyệt (`APPROVED` Project Documents, Work Reports, hoặc Task Note được phê duyệt) mới được `KnowledgeOutboxConsumer` stream qua HTTP multipart tới `POST /api/v1/projects/{project_id}/documents/upload` của SAG (SAG không kết nối trực tiếp Cloudflare R2 theo `adr-remove-laya-and-r2.md`). Task records không phải nguồn SAG.
+- **Kiến trúc lưu trữ thực tế (`sag-laya-integration` `main`, cập nhật `2026-11-27`):**
+  - **PostgreSQL 16 (`sag` schema):** Lưu trữ `documents` (`is_active`), `document_versions` (`status != 'REVOKED'`), `source_project_mappings` (`state='CONFIRMED'`), `search_units` (C99 DP + Dense DP chunking), `dense_graph` (deterministic E0/E1 entities & relations; E2 LLM enrichment đã bị loại bỏ theo ADR), cây điều hướng Leiden (`routing_tree`), và dữ liệu 3D Universe. SQLAlchemy async engine sử dụng connection pooling tường minh (`pool_size`, `max_overflow`, `pool_pre_ping=True`, `pool_recycle`).
+  - **Qdrant (Kho Vector Bắt Buộc Trong Production — thay thế LanceDB & `pgvector`):** Cô lập theo từng project qua 3 nhóm collection (`search_units_{project_id}`, `routing_tree_{project_id}`, `session_units_{project_id}`) với **1024-d Dense Cosine + Native BM25 Sparse (`Modifier.IDF`)**, hỗ trợ upsert theo batch và lọc ACL trước truy xuất (`project_id`, `partition_id`, `document_id`, `version_id`, `is_active`, `status`). Khi `KNOWLEDGE_SOURCE_REVOKED` / `KNOWLEDGE_SOURCE_REPLACED` xảy ra, SAG vừa đánh dấu thu hồi trong PostgreSQL (`UnitSupersessionOverlay` chặn ngay lập tức) vừa xóa điểm vector tương ứng khỏi Qdrant theo batch.
+  - **Lưu ý đối chiếu:** Các sơ đồ và DDL `pgvector`/`allowed_roles`/`UMAP` ở Phần II–V bên dưới được giữ nguyên như tài liệu khảo sát thiết kế ban đầu để tham chiếu học thuật; không sử dụng để cấu hình runtime production.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -707,4 +710,4 @@ ORDER BY ee.weight DESC NULLS LAST;
 | **Độ trễ truy vấn** | Siêu thấp nhờ cơ chế **Single-Query CTE** (không tốn network hop trung gian). | Cần **2 network hops** (App ➔ Qdrant ➔ App ➔ PostgreSQL). |
 | **Khả năng Scale độc lập** | Phụ thuộc vào tài nguyên của cụm PostgreSQL. | Scale Pod Qdrant độc lập (CPU/RAM riêng cho vector search mà không ảnh hưởng DB giao dịch). |
 | **Vận hành & Triển khai** | **Cực kỳ đơn giản:** Chỉ duy nhất 1 container `pgvector/pgvector:pg16`, backup bằng `pg_dump`. | Cần vận hành thêm 1 cụm Qdrant riêng biệt kèm cơ chế snapshot riêng. |
-| **Khuyến nghị áp dụng** | **LỰA CHỌN MẶC ĐỊNH CHO continuum_sag_storage**. | **LỰA CHỌN MỞ RỘNG** khi hệ thống đạt ngưỡng scale tải hàng chục triệu chunks. |
+| **Khuyến nghị áp dụng (Đồng bộ `2026-11-27`)** | **Thiết kế khái niệm ban đầu (Không dùng trong production runtime hiện tại).** | **KIẾN TRÚC TRIỂN KHAI CHÍNH THỨC (`sag-laya-integration`):** PostgreSQL 16 (`sag` schema) + Qdrant (per-project hybrid Dense 1024-d + native BM25 Sparse + `UnitSupersessionOverlay` & batch revocation cleanup). |

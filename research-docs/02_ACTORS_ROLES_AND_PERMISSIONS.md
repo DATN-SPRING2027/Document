@@ -90,18 +90,18 @@ Human review is required before AI-proposed knowledge becomes verified/active. T
 
 | Action | PLATFORM_OPERATOR | ADMIN | TEAM_LEADER | MEMBER | Scoped assignment |
 | --- | --- | --- | --- | --- |
-| Provision Organization / bootstrap first Admin | Yes | No | No | No | No |
-| Manage Organization users, membership, roles and settings | No by platform role alone | Yes, within Organization | No | No | No |
+| Provision Organization / bootstrap first Admin | Yes (Platform Console V2) | No (authenticated `ACCOUNT` self-service `FREE` org creation is separately rate-limited; see §9) | No | No | No |
+| Manage Organization users, membership, roles and settings | Audited Platform Console V2 ops (see §9) | Yes, within Organization | No | No | No |
 | Create Project | No by platform role alone | Yes with `ACTIVE` Organization Membership | Yes with `ACTIVE` Organization Membership | Yes with `ACTIVE` Organization Membership | No extra right; Organization Membership is required |
-| Manage Project/Team configuration and membership | No by platform role alone | No by Organization Admin role alone; Organization role/scope administration does not itself grant Project/Team mutation or content rights | Explicit assigned Project/Team scope and approved action policy | No by role alone | No privilege beyond assignment/ACL |
-| Assign persistent roles or Organization membership | No | Yes, within Organization policy | No | No | No |
-| Create/view/update task | No by platform role alone | No by Organization role alone | Assigned Project/Team scope | May create in scope; may edit own/currently assigned task fields in scope | `SUCCESSOR` reads only handed-over tasks allowed by ACL |
-| Assign/reassign task | No by platform role alone | No by Organization role alone | Assigned Project/Team scope; may assign only eligible members in that scope | May self-assign on create or leave unassigned; cannot assign another user | No; authorized Team Leader acts through Task API |
-| Change task status / reopen DONE | No by platform role alone | No by Organization role alone | Assigned Project/Team scope | Current assignee under approved task policy | Only after explicit assignment and within current task ACL |
-| Cancel task / read task history | No by platform role alone | No by Organization role alone | Assigned Project/Team scope | No cancel by role alone; history within readable task scope | History only for handed-over tasks allowed by ACL |
-| Read confidential content / ask chat | No | Same-Organization active Manager may read Task Notes (after Task scope validation), Project Documents and Work Reports under the 2026-10-25 exception; no blanket access to other confidential sources or assistant retrieval | ACL and membership required | ACL and membership required | Only matching assignment and ACL |
+| Manage Project/Team configuration and membership | Audited Platform Console V2 project/membership governance (see §9) | Recover leaderless projects (`F-05`); no implicit daily Team management | Explicit assigned Project/Team scope and approved action policy | No by role alone | No privilege beyond assignment/ACL |
+| Assign persistent roles or Organization membership | Platform Console V2 membership/authority workflows (`PlatformAuthorityChangeService` remains fail-closed `503`) | Yes, within Organization policy | No | No | No |
+| Create/view/update task | No by platform role alone | **Yes (Gate G4 `2026-10-22`):** same-Org active `ADMIN` via `TaskWorkspaceIamBridge` across active Org projects | Assigned Project/Team scope | May create in scope; may edit own/currently assigned task fields in scope | `SUCCESSOR` reads only handed-over tasks allowed by ACL |
+| Assign/reassign task | No by platform role alone | **Yes (Gate G4 `2026-10-22`):** same-Org active `ADMIN` across active Org projects | Assigned Project/Team scope; may assign only eligible members in that scope | May self-assign on create or leave unassigned; cannot assign another user | No; authorized Team Leader/Manager acts through Task API |
+| Change task status / reopen DONE | No by platform role alone | **Yes (Gate G4 `2026-10-22`):** same-Org active `ADMIN` across active Org projects | Assigned Project/Team scope | Current assignee under approved task policy | Only after explicit assignment and within current task ACL |
+| Cancel task / read task history | No by platform role alone | **Yes (Gate G4 `2026-10-22`):** same-Org active `ADMIN` across active Org projects | Assigned Project/Team scope | No cancel by role alone; history within readable task scope | History only for handed-over tasks allowed by ACL |
+| Read confidential content / ask AI Chat / Universe / SAG SSO | No | Same-Organization active Manager may read Task Notes (after Task scope validation), Project Documents and Work Reports under the 2026-10-25 exception. **AI Chat / Mind-Map / Universe / SAG SSO (`projectId` or `"all"`):** requires explicit `ACTIVE` Project Membership (`scope.isProjectMember === true`, Trap 5 fail-closed baseline; no blanket access to non-member or `ARCHIVED` projects) | ACL and active Project membership required | ACL and active Project membership required | Only matching assignment and ACL |
 | Review Project Documents / Work Reports | No | Yes, for active Projects in the current Organization under the 2026-10-25 exception, without Project Membership; lifecycle and no-self-review checks apply | Matching approved review scope; LEADER Work Reports require Manager review | No by role alone | Only matching approved review assignment and ACL |
-| See audit | Platform operational metadata only | Organization security scope | Assigned Project/Team scope | Own activity where policy allows | No extra right |
+| See audit | Platform operational metadata & Platform Console V2 audit | Organization security scope | Assigned Project/Team scope | Own activity where policy allows | No extra right |
 
 All Organization/Project operations also require a valid Organization Context and the corresponding active membership. `PLATFORM_OPERATOR` is not a bypass for Organization ACL. Project/Team administration actions beyond this high-level boundary still require the approved detailed permission matrix.
 
@@ -124,3 +124,22 @@ Audit at least: Organization provisioning and first-Admin bootstrap; membership/
 No enterprise-wide HR hierarchy, automatic disciplinary action, AI-controlled permission grants, automatic successor assignment, or blanket `ADMIN`/`PLATFORM_OPERATOR` access to confidential content in the 10-week MVP.
 
 Project, Team and membership operations are detailed in the proposed [Project, Team and Membership Use Cases](Workspace/05-project-team-access-use-cases.md). This document remains the source of truth for persistent role vocabulary and the authorization baseline; the linked use-case proposal adds no roles and does not approve unresolved capability mappings.
+
+---
+
+## 9. Policy Alignment & Decision Record (2026-11-27 — `SEC-AUTH-017` & `SEC-AUTH-001` Trap 5)
+
+Following the Full-System Security & Architecture Audit (`2026-11-27`), the following four policy alignments reconcile this baseline with the implemented `DATN_BE` / `DATN_FE` runtime:
+
+1. **Self-Service Organization Creation (`POST /api/v1/iam/organizations`):**
+   - Alongside `PLATFORM_OPERATOR` provisioning in §5, an authenticated `ACCOUNT` without existing administrative delegation may self-provision a `FREE`-tier Organization via `AccountOrganizationController` (becoming its bootstrap Organization `ADMIN`, rate-limited to `3` organizations/hour and audited). This capability is explicitly recognized and feature-governed; production deployments that require strict Platform-only provisioning must gate/disable self-service creation via configuration.
+2. **Platform Console V2 (`platform-operator-console-v2.md`):**
+   - Platform Console V2 expands `PLATFORM_OPERATOR` operations beyond V1 provisioning to 22 audited platform permissions (including `platform.projects.project.manage`, `platform.memberships.*`, and `platform.users.account.manage` with per-route guards, CSRF verification, and Last-Manager emergency-override auditing). `PlatformAuthorityChangeService` (granting/revoking platform operator authority itself) remains intentionally fail-closed (`503`) until formally activated. Platform Console V2 grants **zero** access to private Organization documents, Work Notes, Chat, or SAG RAG content.
+3. **Gate G4 Manager Task Access (`2026-10-22`):**
+   - Accepted Gate G4 (`TaskWorkspaceIamBridge`) grants an `ACTIVE` same-Organization `ADMIN` (`Manager`) full Task & Sprint workspace governance across active Projects in their Organization, reflected in §5 above. This exception applies specifically to the active Workspace Task slice and does not grant blanket confidential content or RAG access.
+4. **Trap 5 — Fail-Closed AI Chat, Mind-Map, Universe & SAG SSO Scoping (`SEC-AUTH-001` / `DOC-001`):**
+   - `PUBLIC` project visibility permits **metadata discovery only** (project listing/cards) and **never** authorizes AI Chat, Mind-Map, Knowledge Universe, or SAG SSO access.
+   - `ARCHIVED` projects are read-blocked in AI Chat and SAG retrieval (`scope.project.status === 'ACTIVE'` is mandatory).
+   - Both single-project and `projectId="all"` AI Chat / SAG SSO / Universe calls enforce `scope.isProjectMember === true` on `ACTIVE` projects. Even an Organization `ADMIN` (`Manager`) sees only their explicitly joined `ACTIVE` projects when querying `projectId="all"`, preventing accidental exposure of confidential project knowledge bases across non-member projects unless a future signed Security ADR introduces document-level confidentiality ACLs inside SAG.
+   - SAG SSO uses a CSRF-protected single-use opaque code exchange (`POST /api/v1/ai-engine/auth/sag-login` -> 30s single-use Redis code -> `POST /api/v1/ai-engine/auth/sag-exchange` with `Cache-Control: no-store`, never passing a JWT in URL fragments; `GET /sag-login` rejects cross-site `Sec-Fetch-Site` requests — `SEC-BE-001`).
+   - Single-Organization auto-selection (§6 line 114) remains authoritative and is synchronized with `DATN_FE` `OrganizationTransition` / `FE-PERF-005`.
