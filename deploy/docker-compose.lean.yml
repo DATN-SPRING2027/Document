@@ -43,6 +43,7 @@ services:
     environment:
       NODE_ENV: production
       CONTINUUM_API_BASE_URL: http://backend:3001
+      CONTINUUM_TRUSTED_EDGE_HOPS: "1"
       NODE_OPTIONS: --max-old-space-size=384
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health || exit 1"]

@@ -9,10 +9,10 @@ The three records (`Task Note`, `Project Document`, `Periodic Work Report`) have
 ## Task Note
 
 - Scope: an existing Task in the same Project. The Task Note API verifies the task through the Task API and stores only its task reference and structured note content.
-- Content: title, accomplishments, approach, and reason. A Task Note is confirmed when created; no Leader review is required.
-- Access: active Project members with access to the Task can read it; the same-Organization Manager exception below also permits reading after the Task scope check succeeds. The author and Project review authority may edit or archive a Task Note under the existing Project/Task scope checks; changes are audited. Task Notes have no approve/reject review transition.
-- Knowledge: Task Notes do not automatically enter official AI knowledge.
-- API: `GET|POST /api/v1/capture/projects/{projectId}/tasks/{taskId}/notes`; `PATCH|DELETE .../notes/{noteId}`. Project-wide list/detail routes are `GET .../work-notes` and `GET .../work-notes/{noteId}`.
+- Content: title, accomplishments, approach, and reason. A Task Note is immediately visible for daily task collaboration upon creation (no approval gate is required simply to record or read a Task Note).
+- Access: active Project members with access to the Task can read it; the same-Organization Manager exception below also permits reading after the Task scope check succeeds. The author and Project review authority may edit or archive a Task Note under the existing Project/Task scope checks; changes are audited.
+- Knowledge & optional review promotion: Task Notes do **not** automatically enter official SAG AI knowledge. When promoted for official AI knowledge indexing, the Capture API provides explicit dual-control review transitions (`POST .../work-notes/{noteId}/approve`, `request-changes`, `reject`) enforcing distinct reviewer authority (`assertReviewerCanReview`) and automatic `KNOWLEDGE_SOURCE_REVOKED` emission if edited or deleted after sync.
+- API: `GET|POST /api/v1/capture/projects/{projectId}/tasks/{taskId}/notes`; `PATCH|DELETE .../notes/{noteId}`; project-wide list/detail `GET .../work-notes`, `GET .../work-notes/{noteId}`; and governed knowledge review routes `POST .../work-notes/{noteId}/approve|request-changes|reject|knowledge-sync`.
 
 ## Project Document
 
@@ -40,7 +40,7 @@ The covered record types are:
 
 | Record | Manager read/review exception | Existing constraints retained |
 | --- | --- | --- |
-| Task Note (`work_notes`) | Read across the current Organization's active Projects after the owning Task API validates the Task scope; no Project Membership prerequisite is added by Capture for a Manager. | No approve/reject workflow exists. Existing author/review-authority edit/archive rules remain unchanged; this decision creates no new mutation operation. |
+| Task Note (`work_notes`) | Read across the current Organization's active Projects after the owning Task API validates the Task scope; no Project Membership prerequisite is added by Capture for a Manager. | Creation requires no approval gate; optional knowledge-indexing promotion (`approve`/`request-changes`/`reject`) still enforces server scope, author/reviewer separation (`assertReviewerCanReview`), and audit logging. |
 | Project Document | Read document content, versions and authorized files; approve, request changes or reject submitted documents. | Server scope, author/reviewer separation, lifecycle and audit checks still apply. |
 | Periodic Work Report | Read and review MEMBER and LEADER reports in the current Organization's active Projects. | Review requires a pending report and a different author; LEADER report review requires Manager authority. Member/Leader reporting obligations and schedule/configuration rules are unchanged. |
 

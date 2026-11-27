@@ -4,7 +4,7 @@
 > **Tài liệu:** Đặc tả kỹ thuật Cơ sở dữ liệu Tri thức sau Trích xuất (Post-Extraction Knowledge Store)
 > **Kiến trúc triển khai thực tế (`2026-11-27` — `SAG-DB-003`, `DOC-004`):** **PostgreSQL 16 (`sag` schema)** cho relational metadata/ACL/versions/DenseGraph E0-E1/Leiden routing tree/3D Universe + **Qdrant** (bắt buộc cho production) cho per-project hybrid vectors (1024-d Dense Cosine + native BM25 Sparse `Modifier.IDF`). SQLite chỉ dùng cho dev/test đơn tiến trình.
 > **Lưu ý lịch sử:** Các DDL `pgvector` (`chunk_vectors`), LanceDB, UMAP và cột `allowed_roles` trong Phần II–IV bên dưới là bản thiết kế khái niệm giai đoạn đầu; trong runtime `sag-laya-integration` hiện hành chúng đã được thay thế bởi kiến trúc **PostgreSQL 16 (`sag`) + Qdrant** mô tả tại Mục 1.1 & Mục 6.
-> **Service sở hữu & điều phối:** `sag-laya-integration` (FastAPI Python 3.12, `InProcJobQueue`) nhận file bytes qua HTTP multipart từ `DATN_BE` (`KnowledgeOutboxConsumer`)  
+> **Service sở hữu & điều phối:** `sag-laya-integration` (FastAPI Python 3.12, `InProcJobQueue`) nhận file bytes qua HTTP multipart từ `DATN_BE` (`KnowledgeOutboxConsumer`)
 > Nằm trong bộ tài liệu thiết kế Database Microservices Continuum AI. Xem [Mục lục](README.md).
 
 ---

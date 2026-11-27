@@ -2,7 +2,7 @@
 ## (Service-Owned Database & Schema Catalog — Product Target)
 
 > **Dự án:** Continuum AI — Nền tảng kế thừa và chuyển giao tri thức dự án phần mềm  
-> **Phiên bản thiết kế DB:** 3.1 (Cập nhật đồng bộ Full-System Audit `2026-11-27`: Service-Owned MongoDB + Audit + SAG PostgreSQL 16 & Qdrant)  
+> **Phiên bản thiết kế DB:** 3.1 (Cập nhật đồng bộ Full-System Audit `2026-11-27`: Service-Owned MongoDB + Audit + SAG PostgreSQL 16 & Qdrant)
 > **Ngăn xếp lưu trữ:** MongoDB 7.0 (Source of Truth) + PostgreSQL 16 (`sag` schema) & **Qdrant** (SAG Post-Extraction & Hybrid Vector Store) + Backend Object Storage (`STORAGE_MODE=r2|s3|local`, Cloudflare R2 cho Prod)
 
 > **Phạm vi (`2026-11-27`):** Đây là catalog schema của Continuum AI đã đối soát với runtime `DATN_BE` và `sag-laya-integration`. Theo workspace ADR-003/DEC-011, mỗi bounded domain sở hữu một logical MongoDB database trên replica set dùng chung; audit dùng `continuum_audit`.

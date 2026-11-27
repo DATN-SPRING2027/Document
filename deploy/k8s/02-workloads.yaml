@@ -44,6 +44,8 @@ spec:
               value: "production"
             - name: CONTINUUM_API_BASE_URL
               value: "http://backend-service.continuum-core.svc.cluster.local:3001"
+            - name: CONTINUUM_TRUSTED_EDGE_HOPS
+              value: "1"
           livenessProbe:
             httpGet:
               path: /api/health
