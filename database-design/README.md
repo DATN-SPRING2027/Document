@@ -27,7 +27,7 @@ Trong kiến trúc Microservices của Continuum AI:
 │  [02. continuum_capture]      ➔ svc_capture (Work Notes What/How/Why, Requirements)     │
 │  [03. continuum_task]         ➔ svc_task (Canonical task lifecycle, history, outbox)     │
 │  [04. continuum_lifecycle]    ➔ svc_lifecycle (Verified Knowledge, Snapshots, Evidence) │
-│  [05. continuum_chat]         ➔ svc_chat (Cited Assistant, Sessions, Messages, Logs)   │
+│  [05. continuum_chat]         ➔ svc_chat (Cited Assistant, Human Chat & @continuumAI)  │
 │  [06. continuum_handover]     ➔ svc_handover (Responsibilities, Handover, Audio STT)    │
 │  [07. continuum_ingestion]    ➔ svc_ingestion (Documents, R2 Metadata, SAG Mappings)    │
 │  [08. continuum_notification] ➔ svc_notification (In-App Alerts, Resend/SMTP Logs)     │
@@ -52,7 +52,7 @@ Tất cả các thành phần cơ sở dữ liệu đều có **1 tài liệu đ
 | **02** | [02_SVC_CAPTURE_SCHEMA.md](02_SVC_CAPTURE_SCHEMA.md) | **`svc_capture`** | `continuum_capture` (MongoDB) | Ghi nhận What/How/Why, autosave drafts, bắt buộc tác giả tự xác nhận (`authorConfirmedAt`). |
 | **03** | [12_TASK_MANAGEMENT_SCHEMA.md](12_TASK_MANAGEMENT_SCHEMA.md) | **`svc_task` (active in `IamModule`)** | `continuum_task` (MongoDB; active since `2026-10-22`) | Task canonical, sprints, history append-only và `deadline_scan_due_cursor`; truy cập độc quyền qua `TaskWorkspaceRepository` / Task API. |
 | **04** | [04_SVC_LIFECYCLE_SCHEMA.md](04_SVC_LIFECYCLE_SCHEMA.md) | **`svc_lifecycle`** | `continuum_lifecycle` (MongoDB) | Vòng đời tri thức bất biến (`v1 → v2`), Verification Inbox, ACID Transaction, truy vết Evidence. |
-| **05** | [05_SVC_CHAT_SCHEMA.md](05_SVC_CHAT_SCHEMA.md) | **`svc_chat`** | `continuum_chat` (MongoDB) | Hội thoại hỏi đáp RAG, bắt buộc trích dẫn citations, log trạng thái `INSUFFICIENT_EVIDENCE`. |
+| **05** | [05_SVC_CHAT_SCHEMA.md](05_SVC_CHAT_SCHEMA.md) | **`svc_chat`** | `continuum_chat` (MongoDB) | Hội thoại hỏi đáp RAG (Cited Assistant) và Human Chat `DIRECT`/`ROOM` + outbox `@continuumAI` (`chat_conversations`, `chat_conversation_messages`, `chat_assistant_jobs`, migration `20261128-chat-dm-assistant-schema`). |
 | **06** | [06_SVC_HANDOVER_SCHEMA.md](06_SVC_HANDOVER_SCHEMA.md) | **`svc_handover`** | `continuum_handover` (MongoDB) | Quản lý chuyển giao kế thừa, thực thể Trách nhiệm độc lập, phỏng vấn âm thanh bóc băng STT. |
 | **07** | [07_SVC_INGESTION_SCHEMA.md](07_SVC_INGESTION_SCHEMA.md) | **`svc_ingestion`** | `continuum_ingestion` (MongoDB) | Siêu dữ liệu file Cloudflare R2, băm SHA-256 chống trùng lặp, cầu nối `sag_mappings`. |
 | **08** | [08_SVC_NOTIFICATION_SCHEMA.md](08_SVC_NOTIFICATION_SCHEMA.md) | **`svc_notification`** | `continuum_notification` (MongoDB) | Thông báo In-App WebSocket, cấu hình nhận tin, nhật ký gửi Mail giao dịch Resend/SMTP. |
