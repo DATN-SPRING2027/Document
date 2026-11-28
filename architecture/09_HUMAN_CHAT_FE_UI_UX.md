@@ -23,16 +23,16 @@ Các xử lý giao diện này không cần API riêng. Dữ liệu hội thoạ
 
 ## Bubble và thao tác tin
 
-12. Gom các tin liên tiếp cùng người gửi thành nhóm; chỉ hiện tên người gửi và thời gian ở vị trí cần thiết; căn bubble theo phía người gửi.
-13. Hiển thị nhãn đã sửa, tin đã xóa, tin được ghim, nguồn chuyển tiếp và phần trích dẫn reply; nhấn trích dẫn để đi tới tin gốc.
-14. Toolbar thao tác tin hiện khi hover/focus trên desktop; menu được đặt gần nút mở, giới hạn trong viewport và đóng khi click ngoài, cuộn, resize hoặc Escape.
-15. Sửa tin ngay trong bubble; xác nhận trước khi xóa; chọn emoji reaction và bấm lại reaction đã có để bỏ.
+12. Gom các tin liên tiếp cùng người gửi thành nhóm; chỉ hiện tên người gửi và thời gian ở vị trí cần thiết; căn bubble theo phía người gửi. Tin AI (`authorType: 'ASSISTANT'`) không bao giờ gộp nhóm với tin người (`sameMessageGroup` trả `false`) và luôn hiển thị nhãn/card **Continuum AI** tách biệt ở cả Full Chat và Mini Chat.
+13. Hiển thị nhãn đã sửa, tin đã xóa, tin được ghim, nguồn chuyển tiếp và phần trích dẫn reply; nhấn trích dẫn để đi tới tin gốc. Với tin AI (`AssistantMessageCard`, `AssistantMarkdownContent`), render nội dung markdown có cấu trúc kèm badge trích dẫn `[M#]` và danh sách chip nguồn: `ACTIVE` bấm nhảy tới tin gốc (`aroundMessageId`), `EDITED` gắn nhãn **Tin nguồn đã sửa** và vẫn mở bản hiện tại, `DELETED` gắn nhãn **Tin nguồn đã xóa** và vô hiệu hóa nút bấm.
+14. Toolbar thao tác tin hiện khi hover/focus trên desktop; menu được đặt gần nút mở, giới hạn trong viewport và đóng khi click ngoài, cuộn, resize hoặc Escape. Trên tin AI, ẩn các hành động không hợp lệ (`Sửa`, `Xóa`, `Chuyển tiếp`, `Xem đã nhận/đọc`) và giữ `Reaction`, `Trả lời`, `Ghim`, `Báo cáo`.
+15. Sửa tin ngay trong bubble; xác nhận trước khi xóa; chọn emoji reaction và bấm lại reaction đã có để bỏ. Dưới tin người dùng đã gọi `@continuumAI`, hiển thị thẻ trạng thái inline tách biệt cho `PENDING`/`PROCESSING` (tôn trọng `motion-safe:`), `CANCELLED` (`SOURCE_CHANGED`, `ACCESS_REVOKED`), `FAILED` (`SERVICE_UNAVAILABLE`/`TIMEOUT`/`INVALID_MODEL_OUTPUT`) kèm nút thử lại câu hỏi; câu trả lời `INSUFFICIENT_EVIDENCE` hiển thị nhãn thiếu căn cứ và gợi ý hỏi cụ thể hơn.
 16. Hiển thị delivered/seen của tin mình gửi và số người đã nhận/đọc; thời gian hiển thị theo locale của trình duyệt.
 
 ## Soạn tin và media
 
-17. Ô nhập nhiều dòng tự tăng chiều cao; Enter gửi, Shift+Enter xuống dòng; nút gửi bị khóa khi không có nội dung/tệp hoặc đang gửi.
-18. Gợi ý `@` từ danh sách thành viên đã tải, giới hạn số gợi ý; hiện trích dẫn khi trả lời và có nút hủy reply.
+17. Ô nhập nhiều dòng tự tăng chiều cao; Enter gửi, Shift+Enter xuống dòng; nút gửi bị khóa khi không có nội dung/tệp hoặc đang gửi; kiểm tra `isComposing` (`compositionstart`/`compositionend`) để phím Enter không cắt dở dấu bộ gõ tiếng Việt (Telex/VNI).
+18. Gợi ý `@` từ danh sách thành viên đã tải, giới hạn số gợi ý; trong hội thoại `DIRECT` có `capabilities.dmAssistantEnabled === true`, bổ sung mục **`@continuumAI`** hỗ trợ điều hướng bàn phím (`ArrowUp`/`ArrowDown`/`Enter`/`Tab`/`Escape`), đồng bộ trạng thái `assistantMention` qua draft giữa Full Chat và Mini Chat, và bảo toàn `clientMessageId` theo fingerprint khi gửi lại sau lỗi mạng; hiện trích dẫn khi trả lời và có nút hủy reply.
 19. Chọn nhiều tệp; hiển thị thumbnail ảnh bằng object URL, tên tệp, dung lượng và nút bỏ từng tệp; giải phóng object URL khi bỏ/gửi/rời composer.
 20. Kiểm tra sơ bộ số lượng, kích thước và loại tệp trước upload; giữ `clientMessageId`/upload ID cho cùng lần gửi khi retry.
 21. Nhận diện URL HTTP(S), tránh URL có username/password, render anchor mở tab mới với `rel="noopener noreferrer"`; hiện tối đa ba thẻ link chỉ gồm tên miền/đường dẫn. Không có tải metadata website.
@@ -41,7 +41,7 @@ Các xử lý giao diện này không cần API riêng. Dữ liệu hội thoạ
 ## Realtime và thông báo phía trình duyệt
 
 23. Hiển thị typing của một, hai hoặc nhiều người; tự xóa trạng thái typing khi không nhận cập nhật tiếp.
-24. Cập nhật TanStack Query cache khi nhận event, loại tin trùng ID, làm mới phần dữ liệu cần thiết và hiển thị kết nối/đang kết nối lại.
+24. Cập nhật TanStack Query cache khi nhận event (`message.*`, `conversation.*`, `assistant.status`), loại tin trùng ID, invalidate `chatKeys.messages(orgId, convId)` (phủ cả query `context`) khi tin nguồn bị sửa/xóa để cập nhật ngay trạng thái chip nguồn trên Full Chat và Mini Chat, và hiển thị kết nối/đang kết nối lại.
 25. Thông báo hệ điều hành chỉ hiện khi đã cấp quyền, tab không ở foreground và có thông báo mới; nội dung lock screen chỉ dùng tên người gửi, không đưa thân tin lên đó.
 
-Các thành phần này nằm chủ yếu trong `DATN-FE/src/components/chat/ChatWorkspace.tsx`, `ChatMessageBubble.tsx`, `ChatComposer.tsx`, `ChatSearchResults.tsx`, `HighlightedText.tsx`, `MessageContent.tsx`, `message-layout.ts` và `ChatNotifications.tsx`.
+Các thành phần này nằm chủ yếu trong `DATN_FE/src/components/chat/ChatWorkspace.tsx`, `ChatMessageBubble.tsx`, `AssistantMessageCard.tsx`, `AssistantMarkdownContent.tsx`, `assistant-utils.ts`, `ChatComposer.tsx`, `ChatDraftComposer.tsx`, `ChatSearchResults.tsx`, `HighlightedText.tsx`, `MessageContent.tsx`, `message-layout.ts`, `ChatNotifications.tsx` và `src/components/chat/floating/{FloatingChatDock,MiniChatWindow,useFloatingChatRealtime}.ts(x)`.

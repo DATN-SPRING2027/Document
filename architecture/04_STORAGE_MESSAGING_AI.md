@@ -116,6 +116,7 @@ Phân định ranh giới hàng đợi giữa hai runtime Node.js và Python:
 4. **LLM Generation, Streaming SSE & Citation Verification:**
    - Prompt cách ly hoàn toàn ngữ cảnh tài liệu như untrusted data; `decision_provider` mặc định là `"disabled"` (không gọi thêm router LLM thừa trước mỗi truy vấn trừ khi bật tường minh).
    - Hỗ trợ streaming SSE (`MESSAGE_DELTA`) kết hợp kiểm chứng trích dẫn/grounding và trả `INSUFFICIENT_EVIDENCE` khi thiếu bằng chứng hợp lệ.
+   - **Stateless 1–1 DM Assistant Synthesis (`POST /api/v1/internal/dm-assistant/answer`, `2026-11-28`):** Endpoint nội bộ chuyên biệt cho `@continuumAI` trong Human Chat 1–1 (`sag-laya-integration`, commit `3aa4987`, OpenAPI snapshot `115` paths). Khác với luồng RAG dự án ở trên, endpoint này **không** truy vấn PostgreSQL, Qdrant hay web (`get_session` không được inject); chỉ xác thực fail-closed qua `X-SAG-BFF-Service-Token` + 3 header 24-hex (`X-Continuum-{Organization,User,Conversation}-Id`), nhận tối đa `80` trích đoạn (`<= 24.000` ký tự) do Chat BE lọc quyền, gọi `LLMClient.complete` (`json_object`, `temperature=0.1`, `max_tokens=1024`) và từ chối cứng mọi `citedRefIds` bịa (`502`). Chi tiết xem [10_HUMAN_CHAT_RUNTIME_ARCHITECTURE.md](10_HUMAN_CHAT_RUNTIME_ARCHITECTURE.md).
 5. **Các thành phần đã loại bỏ / không có trong runtime (tránh nhầm lẫn tài liệu cũ):**
    - **Không** dùng LanceDB hay `pgvector` trong production.
    - **Không** dùng E2 LLM graph enrichment hoặc Laya (đã loại bỏ chính thức theo ADR để giảm chi phí/latency và đảm bảo tính tất định).
