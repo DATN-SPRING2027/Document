@@ -148,7 +148,7 @@ export interface IRetrievalLog {
 
 ## 4. Schema Human Chat & Trợ Lý 1–1 `@continuumAI` (Active Runtime — `continuum_chat`)
 
-> **Đồng bộ runtime (`28/11/2026`):** Đối chiếu trực tiếp với `DATN_BE/src/services/chat/infrastructure/persistence.ts`, `mongodb/mongodb.schemas.ts` và migration `20261128-chat-dm-assistant-schema` (`DATN-BE#158` merged `main` tại `31e1dcf` từ `4a19f83`; Chat BE `DATN-BE#159` tại `50955a1`). Các collection dưới đây nằm trong cùng database `continuum_chat` nhưng tách biệt hoàn toàn với nhóm Cited Assistant (`chat_sessions`/`chat_messages`) ở Mục 2. Xem thêm kiến trúc runtime tại [10_HUMAN_CHAT_RUNTIME_ARCHITECTURE.md](../architecture/10_HUMAN_CHAT_RUNTIME_ARCHITECTURE.md).
+> **Đồng bộ runtime (`28/11/2026`):** Đối chiếu trực tiếp với `DATN_BE/src/services/chat/infrastructure/persistence.ts`, `mongodb/mongodb.schemas.ts` và migration `20261128-chat-dm-assistant-schema` (`DATN-BE#158` merged `main` tại `31e1dcf` từ `4a19f83`; Chat BE `DATN-BE#159` tại `a030c2d`). Các collection dưới đây nằm trong cùng database `continuum_chat` nhưng tách biệt hoàn toàn với nhóm Cited Assistant (`chat_sessions`/`chat_messages`) ở Mục 2. Xem thêm kiến trúc runtime tại [10_HUMAN_CHAT_RUNTIME_ARCHITECTURE.md](../architecture/10_HUMAN_CHAT_RUNTIME_ARCHITECTURE.md).
 
 Hằng số định danh tác giả AI trong Human Chat 1–1:
 - `CONTINUUM_AI_SENDER_ID = 'assistant:continuum_ai'` (không phải 24-hex ObjectId nên không thể trùng `userId` người thật)
@@ -171,7 +171,7 @@ export interface IChatConversation {
   lastMessagePreview: string;       // AI reply: ('Continuum AI: ' + content).slice(0, 180)
   lastMessageSenderId: string | null;
   membershipVersion: number;        // default 0
-  contextRevision?: number;         // int >= 0 (logical default 0); $inc: 1 khi sửa/xóa tin người trong DIRECT, setBlock (block/unblock) DIRECT & Step 5a worker commit
+  contextRevision?: number;         // int >= 0 (logical default 0); $inc: 1 khi sửa/xóa tin người trong DIRECT, setBlock (block/unblock) DIRECT & Step 5a worker commit; cũng dùng đối chiếu phong bì Redis cache __v: 2 qua getConversationContextRevisions
   status: 'ACTIVE' | 'ARCHIVED';
   createdAt: Date;
   updatedAt: Date;
